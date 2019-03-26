@@ -13,7 +13,6 @@
 #include <algorithm>
 
 #include "BaseTypes.h"
-#include "KeyboardTypes.h"
 #include "Sequencer.h"
 
 #include "SDL_syswm.h"
@@ -60,10 +59,8 @@ static GLuint pauseButtonIconTexture = 0;
 static int subdivisionComboIndex = 0;
 static int subdivisionCount = 0;
 static double currentTime = 0;
-static std::map<int, double> playingTrackFlashTimes;
-static std::vector<int> pendingTrackFlashTimeDeletes;
-static std::map<int, double> playingNoteFlashTimes;
-static std::vector<int> pendingNoteFlashTimeDeletes;
+static std::map<int, double> playingTrackFlashTimes[2];
+static std::map<int, double> playingNotesFlashTimes[2];
 static std::mutex mutexInstrument;
 static int32 pendingPlayTrack = -1;
 
@@ -212,8 +209,8 @@ void ImGuiRenderDrawLists(ImDrawData* drawData) {
 
 void OnNotePlayed(int trackIndex, int noteLocalIndex, void *payload) {
   // NOTE: Called from the SDL audio thread!
-  playingTrackFlashTimes[trackIndex] = currentTime;
-  playingNoteFlashTimes[trackIndex * sequencer->GetNumMeasures() * sequencer->
+  playingTrackFlashTimes[1][trackIndex] = currentTime;
+  playingNotesFlashTimes[1][trackIndex * sequencer->GetNumMeasures() * sequencer->
     GetBeatsPerMeasure() * sequencer->GetMaxSubdivisions() + noteLocalIndex] = currentTime;
 }
 
@@ -291,17 +288,8 @@ void UpdateImGui() {
 
   // Lock out the audio callback to update the shared data
   SDL_LockAudio();
-  for (auto& trackDelete : pendingTrackFlashTimeDeletes) {
-    playingTrackFlashTimes.erase(trackDelete);
-  }
-  pendingTrackFlashTimeDeletes.clear();
-  auto copyPlayingTrackFlashTimes = playingTrackFlashTimes;
-
-  for (auto& noteDelete : pendingNoteFlashTimeDeletes) {
-    playingNoteFlashTimes.erase(noteDelete);
-  }
-  pendingNoteFlashTimeDeletes.clear();
-  auto copyPlayingNoteFlashTimes = playingNoteFlashTimes;
+  playingTrackFlashTimes[0] = playingTrackFlashTimes[1];
+  playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
   if (pendingPlayTrack != -1) {
     if (instrument != nullptr) {
@@ -380,11 +368,11 @@ void UpdateImGui() {
         // If it's playing, flash it
         float flashPct = 0.0f;
         {
-          auto flashTime = copyPlayingTrackFlashTimes.find(trackIndex);
-          if (flashTime != copyPlayingTrackFlashTimes.end()) {
+          auto flashTime = playingTrackFlashTimes[0].find(trackIndex);
+          if (flashTime != playingTrackFlashTimes[0].end()) {
             auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayTrackFlashDuration);
             if (pct >= 1.0f) {
-              pendingTrackFlashTimeDeletes.push_back(trackIndex);
+              playingTrackFlashTimes[0].erase(flashTime);
             }
             else {
               flashPct = 1.0f - pct;
@@ -443,11 +431,11 @@ void UpdateImGui() {
               // If it's playing, flash it
               float flashPct = 0.0f;
               {
-                auto flashTime = copyPlayingNoteFlashTimes.find(noteGlobalIndex);
-                if (flashTime != copyPlayingNoteFlashTimes.end()) {
+                auto flashTime = playingNotesFlashTimes[0].find(noteGlobalIndex);
+                if (flashTime != playingNotesFlashTimes[0].end()) {
                   auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayNoteFlashDuration);
                   if (pct >= 1.0f) {
-                    pendingNoteFlashTimeDeletes.push_back(noteGlobalIndex);
+                    playingNotesFlashTimes[0].erase(flashTime);
                   }
                   else {
                     flashPct = 1.0f - pct;

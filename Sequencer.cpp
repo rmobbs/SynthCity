@@ -30,8 +30,30 @@ Sequencer::Track::Track() {
 
 }
 
-Sequencer::Track::~Track() {
+Sequencer::Track::Track(Track&& other) noexcept {
+  this->data = other.data;
+  other.data.clear();
+  this->decay = other.decay;
+  other.decay = 0;
+  this->lvol = other.lvol;
+  other.lvol = 0;
+  this->mute = other.mute;
+  other.mute = 0;
+  this->name = other.name;
+  other.name.clear();
+  this->rvol = other.rvol;
+  other.rvol = 0;
+  this->skip = other.skip;
+  other.skip = 0;
+  this->soundIndex = other.soundIndex;
+  other.soundIndex = Mixer::kInvalidSoundHandle;
+  this->voiceIndex = other.voiceIndex;
+  other.voiceIndex = Mixer::kInvalidVoiceHandle;
+}
 
+Sequencer::Track::~Track() {
+  Mixer::Get().ReleaseVoice(voiceIndex);
+  Mixer::Get().ReleaseSound(soundIndex);
 }
 
 void Sequencer::Track::ClearNotes() {
@@ -80,12 +102,12 @@ void Sequencer::Instrument::SetNoteCount(uint32 numNotes) {
 }
 
 void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorScheme, std::string fileName) {
-  auto soundIndex = sm_load(fileName.c_str());
+  auto soundIndex = Mixer::Get().LoadSound(fileName);
   if (soundIndex != -1) {
     auto trackIndex = tracks.size();
     tracks.resize(trackIndex + 1);
 
-    auto voiceIndex = sm_addvoice();
+    auto voiceIndex = Mixer::Get().AddVoice();
 
     tracks[trackIndex].name = voiceName;
     tracks[trackIndex].colorScheme = colorScheme;
@@ -104,8 +126,7 @@ void Sequencer::Instrument::PlayTrack(uint32 trackIndex, uint8 velocity) {
     vel = 0.3f + vel * 0.7f;
   }
   const Track& track = tracks[trackIndex];
-  sm_play(track.voiceIndex, track.soundIndex, vel * track.lvol, vel * track.rvol);
-  sm_decay(track.voiceIndex, track.decay);
+  Mixer::Get().Play(track.voiceIndex, track.soundIndex, vel * track.lvol);
   SDL_UnlockAudio();
 }
 
@@ -217,7 +238,7 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
 void Sequencer::SetBeatsPerMinute(uint32 bpm) {
   currentBpm = bpm;
   interval = static_cast<int>(CalcInterval(GetSubdivision()));
-  sm_force_interval(interval);
+  Mixer::Get().ApplyInterval(interval);
 }
 
 void Sequencer::PartialNoteCallback() {
@@ -230,8 +251,7 @@ void Sequencer::FullNoteCallback(bool isMeasure) {
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(Sounds::MetronomeFull);
     }
-    sm_play(static_cast<uint32>(Voices::Reserved1),
-      metronomeSound, kMetronomeVolume, kMetronomeVolume);
+    Mixer::Get().Play(static_cast<uint32>(Voices::Reserved1), reservedSounds[metronomeSound], kMetronomeVolume);
   }
 }
 
@@ -364,24 +384,24 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   this->beatsPerMeasure = beatsPerMeasure;
   this->maxBeatSubdivisions = maxBeatSubdivisions;
 
-  sm_set_control_cb([](void* payload) {
-    return reinterpret_cast<Sequencer*>(payload)->NextFrame();
-  },
-  reinterpret_cast<void*>(this));
-
   SetLooping(true);
   Clear();
 
-  // Create the reserved voices
-  if (sm_open(kAudioBufferSize, static_cast<int>(Voices::ReservedCount)) < 0) {
-    return false;
-  }
+  Mixer::InitSingleton(kAudioBufferSize);
+
+  sm_set_control_cb([](void* payload) {
+    return reinterpret_cast<Sequencer*>(payload)->NextFrame();
+  }, reinterpret_cast<void*>(this));
+
+  // Create the reserved voice
+  Mixer::Get().AddVoice();
 
   // Load the reserved sounds
-  sm_load(static_cast<int>(Sounds::MetronomeFull),
-    std::string("Instrument\\Metronome\\seikosq50_hi.wav").c_str());
-  sm_load(static_cast<int>(Sounds::MetronomePartial),
-    std::string("Instrument\\Metronome\\seikosq50_lo.wav").c_str());
+  reservedSounds.resize(static_cast<int>(Sounds::Count));
+  reservedSounds[static_cast<int>(Sounds::MetronomeFull)] = Mixer::Get().
+    LoadSound(std::string("Instrument\\Metronome\\seikosq50_hi.wav").c_str());
+  reservedSounds[static_cast<int>(Sounds::MetronomePartial)] = Mixer::Get().
+    LoadSound(std::string("Instrument\\Metronome\\seikosq50_lo.wav").c_str());
 
   SetSubdivision(currBeatSubdivision);
   SetBeatsPerMinute(bpm);
@@ -395,4 +415,5 @@ Sequencer::~Sequencer() {
   sm_set_control_cb(nullptr, nullptr);
   delete instrument;
   instrument = nullptr;
+  Mixer::TermSingleton();
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseTypes.h"
-#include "KeyboardTypes.h"
 #include <vector>
 #include <string>
 
@@ -24,6 +23,7 @@ public:
     float	rvol = 1.0f;
 
      Track();
+     Track(Track&& other) noexcept; // Necessary for vector.resize ...
     ~Track();
 
     void ClearNotes();
@@ -84,6 +84,7 @@ private:
   int nextPosition;
   int interval;
   Instrument* instrument = nullptr;
+  std::vector<uint32> reservedSounds;
 
   void PartialNoteCallback();
   void FullNoteCallback(bool isMeasure);
