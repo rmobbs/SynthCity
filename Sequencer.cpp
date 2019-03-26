@@ -31,6 +31,8 @@ Sequencer::Track::Track() {
 }
 
 Sequencer::Track::Track(Track&& other) noexcept {
+  this->colorScheme = other.colorScheme;
+  other.colorScheme.clear();
   this->data = other.data;
   other.data.clear();
   this->decay = other.decay;
