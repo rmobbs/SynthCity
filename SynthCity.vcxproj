@@ -172,7 +172,6 @@
     <ClInclude Include="..\3rdParty\imgui\stb_truetype.h" />
     <ClInclude Include="BaseTypes.h" />
     <ClInclude Include="EnumIterator.h" />
-    <ClInclude Include="keyboardtypes.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sequencer.h" />
@@ -184,7 +183,6 @@
     <ClCompile Include="..\3rdParty\imgui\imgui.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_draw.cpp" />
-    <ClCompile Include="keyboardtypes.cpp" />
     <ClCompile Include="Sequencer.cpp" />
     <ClCompile Include="Mixer.cpp" />
     <ClCompile Include="SynthCity.cpp" />
