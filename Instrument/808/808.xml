@@ -1,0 +1,25 @@
+<SynthCityInstrument Name="Roland TR-808" Version="1">
+	<Voices>
+    <Voice Name="Kick" ColorScheme="808:Kick">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\808-kickdrum.wav"/>
+      </Wavs>
+    </Voice>
+    
+    <Voice Name="Clap" ColorScheme="808:Clap">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\808-clap.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Cowbell" ColorScheme="808:Cowbell">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\808-cowbell.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Hi-Hat" ColorScheme="808:HiHat">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\808-hihat.wav"/>
+      </Wavs>
+    </Voice>
+  </Voices>
+</SynthCityInstrument>

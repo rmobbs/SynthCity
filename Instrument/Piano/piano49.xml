@@ -1,0 +1,254 @@
+<SynthCityInstrument Name="49-Key Piano" Version="1">
+	<Voices>
+    <Voice Name="C6" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.C6.wav"/>
+      </Wavs>
+    </Voice>
+    
+    <Voice Name="B5" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.B5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Bb5" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Bb5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="A5" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.A5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Ab5" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Ab5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="G5" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.G5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Gb5" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Gb5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="F5" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.F5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="E5" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.E5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Eb5" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Eb5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="D5" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.D5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Db5" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Db5.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="C5" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.C5.wav"/>
+      </Wavs>
+    </Voice>
+    
+    <Voice Name="B4" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.B4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Bb4" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Bb4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="A4" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.A4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Ab4" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Ab4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="G4" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.G4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Gb4" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Gb4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="F4" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.F4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="E4" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.E4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Eb4" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Eb4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="D4" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.D4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Db4" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Db4.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="C4" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.C4.wav"/>
+      </Wavs>
+    </Voice>
+    
+    <Voice Name="B3" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.B3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Bb3" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Bb3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="A3" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.A3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Ab3" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Ab3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="G3" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.G3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Gb3" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Gb3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="F3" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.F3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="E3" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.E3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Eb3" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Eb3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="D3" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.D3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Db3" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Db3.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="C3" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.C3.wav"/>
+      </Wavs>
+    </Voice>
+    
+    <Voice Name="B2" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.B2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Bb2" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Bb2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="A2" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.A2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Ab2" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Ab2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="G2" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.G2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Gb2" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Gb2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="F2" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.F2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="E2" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.E2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Eb2" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Eb2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="D2" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.D2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="Db2" ColorScheme="Piano:Black">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.Db2.wav"/>
+      </Wavs>
+    </Voice>
+    <Voice Name="C2" ColorScheme="Piano:White">
+      <Wavs>
+        <Wav Dynamic="Fortissimo" File="Wavs\Piano.ff.C2.wav"/>
+      </Wavs>
+    </Voice>
+
+  </Voices>
+</SynthCityInstrument>
