@@ -402,9 +402,9 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   // Load the reserved sounds
   reservedSounds.resize(static_cast<int>(Sounds::Count));
   reservedSounds[static_cast<int>(Sounds::MetronomeFull)] = Mixer::Get().
-    LoadSound(std::string("Instrument\\Metronome\\seikosq50_hi.wav").c_str());
+    LoadSound(std::string("Assets\\Metronome\\seikosq50_hi.wav").c_str());
   reservedSounds[static_cast<int>(Sounds::MetronomePartial)] = Mixer::Get().
-    LoadSound(std::string("Instrument\\Metronome\\seikosq50_lo.wav").c_str());
+    LoadSound(std::string("Assets\\Metronome\\seikosq50_lo.wav").c_str());
 
   SetSubdivision(currBeatSubdivision);
   SetBeatsPerMinute(bpm);
