@@ -1,9 +1,3 @@
-/*
- * smixer.c - Very simple audio mixer for SDL
- *
- * (C) David Olofson, 2003, 2006
- */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,25 +7,16 @@
 #include <vector>
 #include <iostream>
 
-/*
- * Maximum number of sample frames that will ever be
- * processed in one go. Audio processing callbacks
- * rely on never getting a 'frames' argument greater
- * than this value.
- */
-#define	SM_MAXFRAGMENT	256
-
-#define	SM_C0		16.3515978312874
-
-#ifndef M_PI
-#define M_PI           3.14159265358979323846
-#endif
+// Upper bounds for callback
+// TODO: Can just expand the buffer ...
+static constexpr uint32	kMaxCallbackSampleFrames = 256;
+static constexpr float kSilenceThresholdIntro = 0.01f;
+static constexpr float kSilenceThresholdOutro = 0.50f;
+// Synth voice
+static constexpr double	kSmC0 = 16.3515978312874;
 
 static sm_control_cb control_callback = NULL;
 static void* control_payload = nullptr;
-
-static constexpr float kSilenceThresholdIntro = 0.01f;
-static constexpr float kSilenceThresholdOutro = 0.50f;
 
 static void flip_endian(Uint8 *data, int length)
 {
@@ -77,17 +62,19 @@ Mixer::Mixer() {
 
 Mixer::~Mixer() {
   SDL_LockAudio();
+
   if (audioDeviceId != 0) {
     SDL_CloseAudioDevice(audioDeviceId);
     audioDeviceId = 0;
   }
-  SDL_UnlockAudio();
 
   for (auto& sound : sounds) {
     delete sound.second;
   }
   sounds.clear();
   voices.clear();
+
+  SDL_UnlockAudio();
 }
 
 void Mixer::ReleaseSound(Mixer::SoundHandle soundHandle) {
@@ -219,7 +206,7 @@ bool Mixer::Init(uint32 audioBufferSize) {
   SDL_AudioSpec as = { 0 };
   int i;
 
-  mixbuf.resize(SM_MAXFRAGMENT * sizeof(Sint32) * 2);
+  mixbuf.resize(kMaxCallbackSampleFrames * sizeof(Sint32) * 2);
 
   if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
   {
@@ -289,7 +276,7 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
     else
     {
       /* Synth voice */
-      double f = SM_C0 * pow(2.0f, sound->pitch / 12.0);
+      double f = kSmC0 * pow(2.0f, sound->pitch / 12.0);
       double ff = M_PI * 2.0f * f / 44100.0f;
       double fm = sound->fm * 44100.0f / f;
       for (s = 0; s < numFrames; ++s)
@@ -337,8 +324,8 @@ void Mixer::AudioCallback(void *ud, Uint8 *stream, int len)
   {
     /* Audio processing */
     int frames = ticksRemaining;
-    if (frames > SM_MAXFRAGMENT)
-      frames = SM_MAXFRAGMENT;
+    if (frames > kMaxCallbackSampleFrames)
+      frames = kMaxCallbackSampleFrames;
     if (frames > len) {
       frames = len;
     }

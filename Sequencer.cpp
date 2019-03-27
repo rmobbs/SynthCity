@@ -58,10 +58,6 @@ Sequencer::Track::~Track() {
   Mixer::Get().ReleaseSound(soundIndex);
 }
 
-void Sequencer::Track::ClearNotes() {
-  data.clear();
-}
-
 void Sequencer::Track::AddNotes(uint32 noteCount, uint8 noteValue) {
   SDL_LockAudio();
   data.resize(data.size() + noteCount, noteValue);
@@ -311,6 +307,8 @@ uint32 Sequencer::GetNextPosition(void) const {
 
 uint32 Sequencer::NextFrame(void)
 {
+  // NOTE: Called from SDL audio callback so SM_LockAudio is in effect
+
   // If nothing to do, wait current subdivision (TODO: See if we can wait _minimal_ subdivision ...
   // need to fix how we're triggering metronome for that)
   if (!isPlaying || !interval || !instrument || !instrument->tracks.size()) {
@@ -329,7 +327,7 @@ uint32 Sequencer::NextFrame(void)
       nextPosition = currPosition + maxBeatSubdivisions / currBeatSubdivision;
     }
     else {
-      nextPosition = currPosition;
+      Stop();
       return CalcInterval(GetSubdivision());
     }
   }
@@ -365,7 +363,7 @@ void Sequencer::SetNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCa
 
 void Sequencer::Clear() {
   SDL_LockAudio();
-  if (instrument != nullptr) {
+  if (instrument) {
     instrument->Clear();
   }
   SDL_UnlockAudio();
@@ -376,8 +374,11 @@ void Sequencer::LoadInstrument(std::string fileName) {
     LoadInstrument(fileName, GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
 
   if (newInstrument) {
+    SDL_LockAudio();
+    Stop();
     delete instrument;
     instrument = newInstrument;
+    SDL_UnlockAudio();
   }
 }
 
@@ -414,8 +415,10 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
 }
 
 Sequencer::~Sequencer() {
+  SDL_LockAudio();
   sm_set_control_cb(nullptr, nullptr);
   delete instrument;
   instrument = nullptr;
   Mixer::TermSingleton();
+  SDL_UnlockAudio();
 }

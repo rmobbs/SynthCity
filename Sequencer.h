@@ -26,7 +26,6 @@ public:
      Track(Track&& other) noexcept; // Necessary for vector.resize ...
     ~Track();
 
-    void ClearNotes();
     void AddNotes(uint32 noteCount, uint8 noteValue = 0);
     void SetNoteCount(uint32 noteCount, uint8 noteValue = 0);
 

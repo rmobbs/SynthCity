@@ -63,6 +63,10 @@ static std::map<int, double> playingTrackFlashTimes[2];
 static std::map<int, double> playingNotesFlashTimes[2];
 static std::mutex mutexInstrument;
 static int32 pendingPlayTrack = -1;
+static WNDPROC oldWindowProc = nullptr;
+static bool wantQuit = false;
+static SDL_SysWMinfo sysWmInfo;
+
 
 static constexpr uint32 kWindowWidth = 800;
 static constexpr uint32 kWindowHeight = 400;
@@ -88,7 +92,7 @@ static constexpr float kPlayTrackFlashDuration = 0.5f;
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
 
-std::unique_ptr<Sequencer> sequencer = nullptr;
+static Sequencer* sequencer = nullptr;
 
 void ImGuiRenderDrawLists(ImDrawData* drawData) {
   // Backup GL state
@@ -254,8 +258,7 @@ void UpdateSdl() {
         }
         break;
       case SDL_QUIT:
-        SDL_Quit();
-        exit(0);
+        wantQuit = true;
         break;
     }
   }
@@ -735,10 +738,6 @@ bool InitGL() {
   return true;
 }
 
-WNDPROC oldWindowProc = nullptr;
-bool wantQuit = false;
-SDL_SysWMinfo sysWmInfo;
-
 LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
   switch (uMsg) {
   case WM_COMMAND:
@@ -797,7 +796,7 @@ bool Init() {
   oldWindowProc = reinterpret_cast<WNDPROC>(GetWindowLong(sysWmInfo.info.win.window, GWL_WNDPROC));
   SetWindowLong(sysWmInfo.info.win.window, GWL_WNDPROC, reinterpret_cast<LONG>(MyWindowProc));
 
-  sequencer = std::make_unique<Sequencer>();
+  sequencer = new Sequencer;
 
   if (!sequencer->Init(kDefaultNumMeasures, kDefaultBeatsPerMeasure,
     kDefaultBpm, TimelineDivisions.back(), kDefaultSubdivisions)) {
@@ -819,7 +818,27 @@ bool Init() {
   return true;
 }
 
+void Term() {
+  ImGui::DestroyContext();
+
+  SDL_LockAudio();
+  delete sequencer;
+  sequencer = nullptr;
+  SDL_UnlockAudio();
+
+  SDL_Quit();
+}
+
+void AtExit() {
+  //_CrtDumpMemoryLeaks();
+}
+
 int main(int argc, char **argv) {
+  atexit(AtExit);
+
+  //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
+  //_CrtSetBreakAlloc(161); 
+
   if (!Init()) {
     return -1;
   }
@@ -831,7 +850,7 @@ int main(int argc, char **argv) {
     MainLoop();
   }
 
-  atexit(SDL_Quit);
+  Term();
 
   return 0;
 }
