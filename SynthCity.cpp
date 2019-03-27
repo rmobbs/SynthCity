@@ -887,9 +887,6 @@ void AtExit() {
 int main(int argc, char **argv) {
   atexit(AtExit);
 
-  HWND hwnd = GetConsoleWindow();
-  ShowWindow(hwnd, 0);
-
   //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
   //_CrtSetBreakAlloc(161); 
 
