@@ -11,6 +11,7 @@
 #include <map>
 #include <mutex>
 #include <algorithm>
+#include <array>
 
 #include "BaseTypes.h"
 #include "Sequencer.h"
@@ -27,12 +28,16 @@
 #include "soil.h"
 
 static SDL_Window* sdlWindow = nullptr;
+static constexpr uint32 kMaxKey = 256;
 
 struct InputState {
   int mouseX = 0;
   int mouseY = 0;
   bool downL = false;
   int scroll = 0;
+  std::string inputText;
+  std::array<uint8, kMaxKey> wasDown;
+  std::array<uint8, kMaxKey> keyDown;
 };
 
 static InputState inputState;
@@ -224,8 +229,17 @@ void UpdateSdl() {
   while (SDL_PollEvent(&sdlEvent)) {
     switch (sdlEvent.type) {
       case SDL_KEYDOWN:
+        if (sdlEvent.key.keysym.sym < kMaxKey) {
+          inputState.keyDown[sdlEvent.key.keysym.sym] = 1;
+        }
         break;
       case SDL_KEYUP:
+        if (sdlEvent.key.keysym.sym < kMaxKey) {
+          inputState.keyDown[sdlEvent.key.keysym.sym] = 0;
+        }
+        break;
+      case SDL_TEXTINPUT:
+        inputState.inputText = sdlEvent.text.text;
         break;
       case SDL_MOUSEMOTION:
         inputState.mouseX = sdlEvent.motion.x;
@@ -605,7 +619,30 @@ void MainLoop() {
   imGuiIo.MouseDown[0] = inputState.downL;
   imGuiIo.MouseDown[1] = false;
   imGuiIo.MouseWheel += static_cast<float>(inputState.scroll) * 0.5f;
+
+  if (inputState.inputText.length()) {
+    imGuiIo.AddInputCharactersUTF8(inputState.inputText.c_str());
+    inputState.inputText.clear();
+  }
   inputState.scroll = 0;
+
+  for (auto k = 0; k < kMaxKey; ++k) {
+    imGuiIo.KeysDown[k] = inputState.keyDown[k] != 0;
+  }
+
+  auto isKeyPress = [=](uint8 keyValue) {
+    return (inputState.keyDown[keyValue] && !inputState.wasDown[keyValue]);
+  };
+
+  // Key events
+  if (isKeyPress(SDLK_SPACE)) {
+    imGuiIo.MouseDown[0] = true;
+  }
+  inputState.wasDown = inputState.keyDown;
+
+  imGuiIo.KeyShift = (SDL_GetModState() & KMOD_SHIFT) != 0;
+  imGuiIo.KeyCtrl = (SDL_GetModState() & KMOD_CTRL) != 0;
+  imGuiIo.KeyAlt = (SDL_GetModState() & KMOD_ALT) != 0;
 
   UpdateImGui();
   
@@ -622,6 +659,20 @@ bool InitImGui() {
   // Basics
   imGuiIo.DeltaTime = 1.0f / 60.0f;
   imGuiIo.IniFilename = nullptr;
+  
+  imGuiIo.KeyMap[ImGuiKey_Tab] = SDLK_TAB;
+  imGuiIo.KeyMap[ImGuiKey_LeftArrow] = SDL_SCANCODE_LEFT;
+  imGuiIo.KeyMap[ImGuiKey_RightArrow] = SDL_SCANCODE_RIGHT;
+  imGuiIo.KeyMap[ImGuiKey_UpArrow] = SDL_SCANCODE_UP;
+  imGuiIo.KeyMap[ImGuiKey_DownArrow] = SDL_SCANCODE_DOWN;
+  imGuiIo.KeyMap[ImGuiKey_PageUp] = SDL_SCANCODE_PAGEUP;
+  imGuiIo.KeyMap[ImGuiKey_PageDown] = SDL_SCANCODE_PAGEDOWN;
+  imGuiIo.KeyMap[ImGuiKey_Home] = SDL_SCANCODE_HOME;
+  imGuiIo.KeyMap[ImGuiKey_End] = SDL_SCANCODE_END;
+  imGuiIo.KeyMap[ImGuiKey_Delete] = SDLK_DELETE;
+  imGuiIo.KeyMap[ImGuiKey_Backspace] = SDLK_BACKSPACE;
+  imGuiIo.KeyMap[ImGuiKey_Enter] = SDLK_RETURN;
+  imGuiIo.KeyMap[ImGuiKey_Escape] = SDLK_ESCAPE;
   imGuiIo.RenderDrawListsFn = ImGuiRenderDrawLists;
 
   return true;
