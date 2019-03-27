@@ -82,7 +82,7 @@ static constexpr float kKeyboardKeyHeight = 20.0f;
 static constexpr uint32 kDefaultBpm = 120;
 static constexpr uint32 kDefaultNumMeasures = 2;
 static constexpr uint32 kDefaultBeatsPerMeasure = 4;
-static constexpr uint32 kDefaultSubdivisions = 2;
+static constexpr uint32 kDefaultSubdivisions = 4;
 static constexpr float kPlayNoteFlashDuration = 0.5f;
 static constexpr float kPlayNoteFlashGrow = 1.0f;
 static constexpr uint32 kPlayNoteFlashColor = 0x0000FFFF;
@@ -90,7 +90,7 @@ static constexpr uint32 kMaxMeasures = 256;
 static constexpr uint32 kMinMeasures = 1;
 static constexpr uint32 kMaxBeatsPerMeasure = 12;
 static constexpr uint32 kMinBeatsPerMeasure = 2;
-static constexpr uint32 kDefaultNoteVelocity = 170;
+static constexpr uint32 kDefaultNoteVelocity = 255;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
 
@@ -886,6 +886,9 @@ void AtExit() {
 
 int main(int argc, char **argv) {
   atexit(AtExit);
+
+  HWND hwnd = GetConsoleWindow();
+  ShowWindow(hwnd, 0);
 
   //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
   //_CrtSetBreakAlloc(161); 
