@@ -61,7 +61,6 @@ static GLuint elementBuffer;
 static GLuint playButtonIconTexture = 0;
 static GLuint stopButtonIconTexture = 0;
 static GLuint pauseButtonIconTexture = 0;
-static int subdivisionComboIndex = 0;
 static int subdivisionCount = 0;
 static double currentTime = 0;
 static std::map<int, double> playingTrackFlashTimes[2];
@@ -539,12 +538,11 @@ void UpdateImGui() {
       // Subdivision
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
-      if (ImGui::BeginCombo("Subdivision", std::to_string(TimelineDivisions[subdivisionComboIndex]).c_str())) {
+      if (ImGui::BeginCombo("Subdivision", std::to_string(sequencer->GetSubdivision()).c_str())) {
         for (size_t s = 0; s < TimelineDivisions.size(); ++s) {
-          bool isSelected = (subdivisionComboIndex == s);
+          bool isSelected = (sequencer->GetSubdivision() == TimelineDivisions[s]);
           if (ImGui::Selectable(std::to_string(TimelineDivisions[s]).c_str(), isSelected)) {
-            subdivisionComboIndex = s;
-            sequencer->SetSubdivision(TimelineDivisions[subdivisionComboIndex]);
+            sequencer->SetSubdivision(TimelineDivisions[s]);
           }
           else {
             ImGui::SetItemDefaultFocus();
