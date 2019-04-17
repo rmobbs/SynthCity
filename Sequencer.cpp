@@ -7,10 +7,22 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <fstream>
 #include "tinyxml2.h"
+#include "rapidjson/rapidjson.h"
+#include "rapidjson/document.h"
 
 static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
+static constexpr uint32 kNoteVelocityAsUint8 = 255;
+static constexpr const char *kInstrumentTag = "Instrument";
+static constexpr const char *kTempoTag = "Tempo";
+static constexpr const char *kMeasuresTag = "Measures";
+static constexpr const char *kBeatsPerMeasureTag = "BeatsPerMeasure";
+static constexpr const char *kNotesTag = "Notes";
+static constexpr const char *kBeatTag = "Beat";
+static constexpr const char *kTrackTag = "Track";
+static constexpr const char *kVelocityTag = "Velocity";
 
 enum class Voices {
   Reserved1,
@@ -204,7 +216,7 @@ Sequencer::Instrument *Sequencer::Instrument::LoadInstrument(std::string fileNam
 ///////////////////////////////////////////////////////////////////////////////
 // Sequencer
 ///////////////////////////////////////////////////////////////////////////////
-void Sequencer::SetTrackNote(uint32 trackIndex, uint32 noteIndex, uint8 noteValue) {
+void Sequencer::SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteVelocity) {
   if (instrument != nullptr) {
     if (trackIndex < instrument->tracks.size()) {
 
@@ -212,7 +224,8 @@ void Sequencer::SetTrackNote(uint32 trackIndex, uint32 noteIndex, uint8 noteValu
       if (noteIndex >= instrument->tracks[trackIndex].data.size()) {
         instrument->tracks[trackIndex].data.resize(noteIndex + 1, 0);
       }
-      instrument->tracks[trackIndex].data[noteIndex] = noteValue;
+      instrument->tracks[trackIndex].data[noteIndex] = 
+        static_cast<uint8>(noteVelocity * kNoteVelocityAsUint8);
       SDL_UnlockAudio();
     }
   }
@@ -356,6 +369,12 @@ uint32 Sequencer::NextFrame(void)
   return interval;
 }
 
+void Sequencer::PlayInstrumentTrack(uint32 instrumentTrack, float noteVelocity) {
+  if (instrument != nullptr) {
+    instrument->PlayTrack(instrumentTrack, static_cast<uint8>(noteVelocity * kNoteVelocityAsUint8));
+  }
+}
+
 void Sequencer::SetNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
   this->notePlayedCallback = notePlayedCallback;
   this->notePlayedPayload = notePlayedPayload;
@@ -369,17 +388,141 @@ void Sequencer::Clear() {
   SDL_UnlockAudio();
 }
 
-void Sequencer::LoadInstrument(std::string fileName) {
+bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
   Instrument *newInstrument = Sequencer::Instrument::
     LoadInstrument(fileName, GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
 
   if (newInstrument) {
-    SDL_LockAudio();
-    Stop();
-    delete instrument;
-    instrument = newInstrument;
-    SDL_UnlockAudio();
+    if (mustMatch.length() != 0 && mustMatch != newInstrument->GetName()) {
+      delete newInstrument;
+    }
+    else {
+      SDL_LockAudio();
+      Stop();
+      delete instrument;
+      instrument = newInstrument;
+      SDL_UnlockAudio();
+      return true;
+    }
   }
+  return false;
+}
+
+void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
+  // Get tempo
+  std::ifstream ifs(fileName);
+
+  if (ifs.bad()) {
+    std::cerr << "Unable to load song from file " << fileName << std::endl;
+    return;
+  }
+
+  std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+  if (!fileData.length()) {
+    std::cerr << "Unable to load song from file " << fileName << std::endl;
+    return;
+  }
+
+  // Create JSON parser
+  rapidjson::Document document;
+  document.Parse(fileData.c_str());
+
+  if (!document.IsObject()) {
+    std::cerr << "Failure parsing JSON in file " << fileName << std::endl;
+    return;
+  }
+
+  // Get instrument
+  if (!document.HasMember(kInstrumentTag)) {
+    std::cerr << "No " << kInstrumentTag << " tag in song file " << fileName << std::endl;
+    return; // TODO: Maybe just load?
+  }
+
+  if (!document[kInstrumentTag].IsString()) {
+    std::cerr << "Invalid " << kInstrumentTag << " tag in song file " << fileName << std::endl;
+    return;
+  }
+
+  std::string instrumentName = document[kInstrumentTag].GetString();
+
+  std::cout << "Song uses instrument " << instrumentName << std::endl;
+
+  if (this->instrument == nullptr || this->instrument->GetName() != instrumentName) {
+    if (!loadInstrumentCallback) {
+      std::cerr << "Current instrument does not match song instrument " << instrumentName << std::endl;
+      return;
+    }
+
+    // Prompt the caller that we need to load an instrument first
+    if (!loadInstrumentCallback(instrumentName)) {
+      // Maybe load?
+      std::cerr << "Unable to load specified instrument " << instrumentName << std::endl;
+      return;
+    }
+  }
+
+  // At this point instrument names match
+
+  // Get tempo
+  if (!document.HasMember(kTempoTag) || !document[kTempoTag].IsUint()) {
+    std::cerr << "Invalid tempo in song file " << fileName << std::endl;
+    return;
+  }
+
+  auto tempo = document[kTempoTag].GetUint();
+  SetBeatsPerMinute(tempo);
+
+  // Get number of measures in song and expand instrument tracks
+  if (!document.HasMember(kMeasuresTag) || !document[kMeasuresTag].IsUint()) {
+    std::cerr << "Invalid number of measures in song file " << fileName << std::endl;
+    return;
+  }
+
+  auto measures = document[kMeasuresTag].GetUint();
+  SetNumMeasures(measures);
+
+  // Get beats per measure
+  if (!document.HasMember(kBeatsPerMeasureTag) || !document[kBeatsPerMeasureTag].IsUint()) {
+    std::cerr << "Invalid number of beats per measure in song file " << fileName << std::endl;
+    return;
+  }
+
+  SetBeatsPerMeasure(document[kBeatsPerMeasureTag].GetUint());
+
+  // Read notes
+  if (!document.HasMember(kNotesTag) || !document[kNotesTag].IsArray()) {
+    std::cerr << "Invalid notes array in song file " << fileName << std::endl;
+    return;
+  }
+
+  const auto& notesArray = document[kNotesTag];
+  for (rapidjson::SizeType noteArrayIndex = 0; noteArrayIndex < notesArray.Size(); ++noteArrayIndex) {
+    const auto& noteEntry = notesArray[noteArrayIndex];
+    if (!noteEntry.HasMember(kBeatTag) || (!noteEntry[kBeatTag].IsFloat() && !noteEntry[kBeatTag].IsUint())) {
+      std::cerr << "Invalid note in notes array!" << std::endl;
+      continue;
+    }
+    auto floatBeatIndex = noteEntry[kBeatTag].GetFloat();
+    auto beatIndex = static_cast<uint32>((std::floorf(floatBeatIndex) - 1.0f) * maxBeatSubdivisions) + 
+      static_cast<uint32>((maxBeatSubdivisions / currBeatSubdivision) * (floatBeatIndex - std::floorf(floatBeatIndex)));
+
+    if (!noteEntry.HasMember(kTrackTag) || !noteEntry[kTrackTag].IsUint()) {
+      std::cerr << "Invalid track in notes array!" << std::endl;
+      continue;
+    }
+    auto trackIndex = noteEntry[kTrackTag].GetUint();
+
+    if (!noteEntry.HasMember(kVelocityTag) || !noteEntry[kVelocityTag].IsFloat()) {
+      std::cerr << "Invalid velocity in notes array!" << std::endl;
+      continue;
+    }
+
+    auto noteVelocity = noteEntry[kVelocityTag].GetFloat();
+    SetTrackNote(trackIndex, beatIndex, noteVelocity);
+  }
+
+  // Profit?
 }
 
 bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision) {

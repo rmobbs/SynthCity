@@ -89,7 +89,7 @@ static constexpr uint32 kMaxMeasures = 256;
 static constexpr uint32 kMinMeasures = 1;
 static constexpr uint32 kMaxBeatsPerMeasure = 12;
 static constexpr uint32 kMinBeatsPerMeasure = 2;
-static constexpr uint32 kDefaultNoteVelocity = 255;
+static constexpr float kDefaultNoteVelocity = 1.0f;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
 
@@ -308,9 +308,7 @@ void UpdateImGui() {
   playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
   if (pendingPlayTrack != -1) {
-    if (instrument != nullptr) {
-      instrument->PlayTrack(pendingPlayTrack, kDefaultNoteVelocity);
-    }
+    sequencer->PlayInstrumentTrack(pendingPlayTrack, kDefaultNoteVelocity);
     pendingPlayTrack = -1;
   }
   SDL_UnlockAudio();
@@ -787,32 +785,64 @@ bool InitGL() {
   return true;
 }
 
+bool LoadInstrument(std::string instrumentName) {
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
+
+  USES_CONVERSION;
+  ofn.lStructSize = sizeof(ofn);
+
+  std::string windowTitle("Open instrument");
+  if (instrumentName.length() != 0) {
+    windowTitle += " \'" + instrumentName + "\'";
+  }
+  ofn.lpstrTitle = A2W(windowTitle.c_str());
+  ofn.hwndOwner = sysWmInfo.info.win.window;
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("XML\0*.xml\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+  if (GetOpenFileName(&ofn)) {
+    std::lock_guard<std::mutex> lockInstrument(mutexInstrument);
+    return sequencer->LoadInstrument(std::string(W2A(szFile)), instrumentName);
+  }
+  return false;
+}
+
 LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
   switch (uMsg) {
-  case WM_COMMAND:
-    switch (LOWORD(wParam)) {
-    case ID_FILE_EXIT:
-      wantQuit = true;
-      return 0;
-    }
-  case ID_FILE_LOADINSTRUMENT:
-    WCHAR szFile[FILENAME_MAX] = { 0 };
-    OPENFILENAME ofn = { 0 };
+    case WM_COMMAND:
+      switch (LOWORD(wParam)) {
+        case ID_FILE_EXIT:
+          wantQuit = true;
+          return 0;
+        case ID_FILE_LOADINSTRUMENT: {
+          LoadInstrument({});
+          return 0;
+        }
+        case ID_FILE_LOADSONG: {
+          WCHAR szFile[FILENAME_MAX] = { 0 };
+          OPENFILENAME ofn = { 0 };
 
-    USES_CONVERSION;
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = sysWmInfo.info.win.window;
-    ofn.lpstrFile = szFile;
-    ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-    ofn.lpstrFilter = _TEXT("XML\0*.xml\0");
-    ofn.nFilterIndex = 0;
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+          USES_CONVERSION;
+          ofn.lStructSize = sizeof(ofn);
+          ofn.lpstrFile = szFile;
+          ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+          ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+          ofn.nFilterIndex = 0;
+          ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileName(&ofn)) {
-      std::lock_guard<std::mutex> lockInstrument(mutexInstrument);
-      sequencer->LoadInstrument(std::string(W2A(szFile)));
-    }
-    return 0;
+          if (GetOpenFileName(&ofn)) {
+            sequencer->LoadSong(std::string(W2A(szFile)), 
+              [](std::string instrumentName) { 
+                return LoadInstrument(instrumentName); 
+            });
+          }
+          return 0;
+        }
+      }
   }
   return oldWindowProc(hWnd, uMsg, wParam, lParam);
 }

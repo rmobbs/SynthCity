@@ -3,6 +3,7 @@
 #include "BaseTypes.h"
 #include <vector>
 #include <string>
+#include <functional>
 
 class Sequencer {
 private:
@@ -123,7 +124,7 @@ public:
     return maxBeatSubdivisions;
   }
 
-  void SetTrackNote(uint32 trackIndex, uint32 noteIndex, uint8 noteValue);
+  void SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteValue);
 
   inline uint32 GetBeatsPerMinute() const {
     return currentBpm;
@@ -143,7 +144,9 @@ public:
   void Play();
   void Pause();
   void Stop();
-  void LoadInstrument(std::string fileName);
+  bool LoadInstrument(std::string fileName, std::string mustMatch);
+
+  void LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback);
 
   inline float GetMinutesPerBeat() const {
     return 1.0f / GetBeatsPerMinute();
@@ -162,6 +165,8 @@ public:
   void SetPosition(uint32 newPosition);
   void SetNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
   uint32 NextFrame(void);
+
+  void PlayInstrumentTrack(uint32 instrumentTrack, float notVelocity);
 
    Sequencer() {}
   ~Sequencer();
