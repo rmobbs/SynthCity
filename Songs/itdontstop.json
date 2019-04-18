@@ -1,8 +1,8 @@
 {
   "Instrument": "Roland TR-808",
   "Tempo": 80,
-  "Measures": 16,
-  "BeatsPerMeasure": 2,
+  "Measures": 1,
+  "BeatsPerMeasure": 4,
   "Notes": [
     { "Beat": 1, "Track":  0, "Velocity": 0.75 },
     { "Beat": 2, "Track":  1, "Velocity": 0.75 },

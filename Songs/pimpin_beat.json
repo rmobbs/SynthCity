@@ -1,0 +1,88 @@
+{
+    "Instrument": "Roland TR-808",
+    "Tempo": 120,
+    "Measures": 2,
+    "BeatsPerMeasure": 4,
+    "Notes": [
+        {
+            "Beat": 1.0,
+            "Track": 0,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.5,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.0,
+            "Track": 1,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.5,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.0,
+            "Track": 0,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.5,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.0,
+            "Track": 1,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.5,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.0,
+            "Track": 0,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.5,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.0,
+            "Track": 1,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.5,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.0,
+            "Track": 0,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.5,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.0,
+            "Track": 1,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.5,
+            "Track": 3,
+            "Velocity": 1.0
+        }
+    ]
+}

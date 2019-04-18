@@ -96,7 +96,7 @@ public:
     return isMetrononeOn;
   }
 
-  inline Instrument* GetInstrument(void) const {
+  inline const Instrument* GetInstrument(void) const {
     return instrument;
   }
 
@@ -146,6 +146,7 @@ public:
   void Stop();
   bool LoadInstrument(std::string fileName, std::string mustMatch);
 
+  bool SaveSong(std::string fileName);
   void LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback);
 
   inline float GetMinutesPerBeat() const {

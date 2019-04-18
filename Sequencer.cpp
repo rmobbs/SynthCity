@@ -8,9 +8,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <fstream>
+#include <sstream>
 #include "tinyxml2.h"
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/prettywriter.h"
 
 static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
@@ -408,8 +411,74 @@ bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
   return false;
 }
 
+bool Sequencer::SaveSong(std::string fileName) {
+  if (!instrument) {
+    std::cerr << "What manner of witchcraft is this" << std::endl;
+    return false;
+  }
+
+  std::ofstream ofs(fileName);
+  if (ofs.bad()) {
+    std::cerr << "Unable to save song to file " << fileName << std::endl;
+    return false;
+  }
+
+  rapidjson::StringBuffer sb;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
+
+  w.StartObject();
+  w.Key(kInstrumentTag);
+  w.String(instrument->GetName().c_str());
+  w.Key(kTempoTag);
+  w.Uint(GetBeatsPerMinute());
+  w.Key(kMeasuresTag);
+  w.Uint(GetNumMeasures());
+  w.Key(kBeatsPerMeasureTag);
+  w.Uint(GetBeatsPerMeasure());
+  
+  w.Key(kNotesTag);
+  w.StartArray();
+
+  // Write notes
+  uint32 wholeBeatIndex = 0;
+  uint32 subdivisionIndex = 0;
+  for (size_t m = 0; m < GetNumMeasures(); ++m) {
+    for (size_t b = 0; b < GetBeatsPerMeasure(); ++b) {
+      for (size_t s = 0; s < GetMaxSubdivisions(); ++s) {
+        for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
+          auto& track = instrument->GetTracks()[trackIndex];
+          auto n = track.GetNotes()[subdivisionIndex];
+          if (n != 0) {
+            float floatBeat = static_cast<float>(wholeBeatIndex) + 1.0f +
+              (static_cast<float>(s) / static_cast<float>(GetMaxSubdivisions()));
+            w.StartObject();
+            w.Key(kBeatTag);
+            w.Double(floatBeat);
+            w.Key(kTrackTag);
+            w.Uint(trackIndex);
+            w.Key(kVelocityTag);
+            w.Double(static_cast<float>(n) / kNoteVelocityAsUint8);
+            w.EndObject();
+          }
+        }
+        ++subdivisionIndex;
+      }
+      ++wholeBeatIndex;
+    }
+  }
+
+  w.EndArray();
+  
+  w.EndObject();
+
+  std::string outputString(sb.GetString());
+  ofs.write(outputString.c_str(), outputString.length());
+  ofs.close();
+
+  return true;
+}
+
 void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
-  // Get tempo
   std::ifstream ifs(fileName);
 
   if (ifs.bad()) {
@@ -479,8 +548,8 @@ void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> 
     return;
   }
 
-  auto measures = document[kMeasuresTag].GetUint();
-  SetNumMeasures(measures);
+  auto numMeasures = document[kMeasuresTag].GetUint();
+  SetNumMeasures(numMeasures);
 
   // Get beats per measure
   if (!document.HasMember(kBeatsPerMeasureTag) || !document[kBeatsPerMeasureTag].IsUint()) {
@@ -488,7 +557,8 @@ void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> 
     return;
   }
 
-  SetBeatsPerMeasure(document[kBeatsPerMeasureTag].GetUint());
+  auto beatsPerMeasure = document[kBeatsPerMeasureTag].GetUint();
+  SetBeatsPerMeasure(beatsPerMeasure);
 
   // Read notes
   if (!document.HasMember(kNotesTag) || !document[kNotesTag].IsArray()) {
@@ -503,9 +573,8 @@ void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> 
       std::cerr << "Invalid note in notes array!" << std::endl;
       continue;
     }
-    auto floatBeatIndex = noteEntry[kBeatTag].GetFloat();
-    auto beatIndex = static_cast<uint32>((std::floorf(floatBeatIndex) - 1.0f) * maxBeatSubdivisions) + 
-      static_cast<uint32>((maxBeatSubdivisions / currBeatSubdivision) * (floatBeatIndex - std::floorf(floatBeatIndex)));
+
+    auto beatIndex = static_cast<uint32>((noteEntry[kBeatTag].GetFloat() - 1.0f) * maxBeatSubdivisions);
 
     if (!noteEntry.HasMember(kTrackTag) || !noteEntry[kTrackTag].IsUint()) {
       std::cerr << "Invalid track in notes array!" << std::endl;

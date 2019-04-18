@@ -12,6 +12,7 @@
 #include <mutex>
 #include <algorithm>
 #include <array>
+#include <string_view>
 
 #include "BaseTypes.h"
 #include "Sequencer.h"
@@ -92,6 +93,7 @@ static constexpr uint32 kMinBeatsPerMeasure = 2;
 static constexpr float kDefaultNoteVelocity = 1.0f;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
+static constexpr std::string_view kJsonTag(".json");
 
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
@@ -839,6 +841,30 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
               [](std::string instrumentName) { 
                 return LoadInstrument(instrumentName); 
             });
+          }
+          return 0;
+        }
+        case ID_FILE_SAVESONG: {
+          if (sequencer->GetInstrument() != nullptr) {
+            WCHAR szFile[FILENAME_MAX] = { 0 };
+            OPENFILENAME ofn = { 0 };
+
+            USES_CONVERSION;
+            ofn.lStructSize = sizeof(ofn);
+            ofn.lpstrFile = szFile;
+            ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+            ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+            ofn.nFilterIndex = 0;
+            ofn.Flags = OFN_OVERWRITEPROMPT;
+
+            if (GetSaveFileName(&ofn)) {
+              std::string fileName(W2A(szFile));
+
+              if (fileName.compare(fileName.length() - kJsonTag.length(), kJsonTag.length(), kJsonTag)) {
+                fileName += kJsonTag;
+              }
+              sequencer->SaveSong(fileName);
+            }
           }
           return 0;
         }
