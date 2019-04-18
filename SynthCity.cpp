@@ -820,10 +820,12 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
         case ID_FILE_EXIT:
           wantQuit = true;
           return 0;
+        case ID_ACCELERATOR_LOAD_INSTRUMENT:
         case ID_FILE_LOADINSTRUMENT: {
           LoadInstrument({});
           return 0;
         }
+        case ID_ACCELERATOR_LOAD_SONG:
         case ID_FILE_LOADSONG: {
           WCHAR szFile[FILENAME_MAX] = { 0 };
           OPENFILENAME ofn = { 0 };
@@ -844,6 +846,7 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
           }
           return 0;
         }
+        case ID_ACCELERATOR_SAVE_SONG:
         case ID_FILE_SAVESONG: {
           if (sequencer->GetInstrument() != nullptr) {
             WCHAR szFile[FILENAME_MAX] = { 0 };
@@ -873,6 +876,8 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
   return oldWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
+static HACCEL hAccel;
+
 bool Init() {
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) < 0) {
     std::cerr << "Failed to init video: " << SDL_GetError() << std::endl;
@@ -897,6 +902,17 @@ bool Init() {
   if (SDL_GetWindowWMInfo(sdlWindow, &sysWmInfo)) {
     SetMenu(sysWmInfo.info.win.window, ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_FILEMENU)));
   }
+
+  hAccel = LoadAccelerators(sysWmInfo.info.
+    win.hinstance, MAKEINTRESOURCE(IDR_ACCELERATOR_FILEMENU));
+  SDL_SetWindowsMessageHook([](void *payload, void *hWnd, unsigned int message, Uint64 wParam, Sint64 lParam) {
+    MSG msg = { 0 };
+    msg.hwnd = reinterpret_cast<HWND>(hWnd);
+    msg.lParam = lParam;
+    msg.message = message;
+    msg.wParam = wParam;
+    TranslateAccelerator(sysWmInfo.info.win.window, hAccel, &msg);
+  }, nullptr);
 
   oldWindowProc = reinterpret_cast<WNDPROC>(GetWindowLong(sysWmInfo.info.win.window, GWL_WNDPROC));
   SetWindowLong(sysWmInfo.info.win.window, GWL_WNDPROC, reinterpret_cast<LONG>(MyWindowProc));
