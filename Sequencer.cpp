@@ -14,6 +14,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h"
+#include "MidiSource.h"
 
 static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
@@ -26,6 +27,9 @@ static constexpr const char *kNotesTag = "Notes";
 static constexpr const char *kBeatTag = "Beat";
 static constexpr const char *kTrackTag = "Track";
 static constexpr const char *kVelocityTag = "Velocity";
+static constexpr std::string_view kMidiTags[] = { ".midi", ".mid" };
+static constexpr std::string_view kJsonTag(".json");
+
 
 enum class Voices {
   Reserved1,
@@ -478,7 +482,23 @@ bool Sequencer::SaveSong(std::string fileName) {
   return true;
 }
 
-void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
+void Sequencer::LoadMidi(std::string fileName) {
+  /*
+  if (!instrument) {
+    std::cerr << "Cannot load MIDI without instrument" << std::endl;
+    return;
+  }
+  */
+
+  MidiSource midiSource;
+  if (!midiSource.openFile(fileName)) {
+    return;
+  }
+
+  std::cout << "howdy" << std::endl;
+}
+
+void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
   std::ifstream ifs(fileName);
 
   if (ifs.bad()) {
@@ -590,8 +610,19 @@ void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> 
     auto noteVelocity = noteEntry[kVelocityTag].GetFloat();
     SetTrackNote(trackIndex, beatIndex, noteVelocity);
   }
+}
 
-  // Profit?
+void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
+  if (fileName.compare(fileName.length() -
+    kJsonTag.length(), kJsonTag.length(), kJsonTag) == 0) {
+    return LoadJson(fileName, loadInstrumentCallback);
+  }
+  for (size_t m = 0; m < _countof(kMidiTags); ++m) {
+    if (fileName.compare(fileName.length() - 
+      kMidiTags[m].length(), kMidiTags[m].length(), kMidiTags[m]) == 0) {
+      return LoadMidi(fileName);
+    }
+  }
 }
 
 bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision) {

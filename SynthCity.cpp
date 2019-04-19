@@ -71,6 +71,7 @@ static int32 pendingPlayTrack = -1;
 static WNDPROC oldWindowProc = nullptr;
 static bool wantQuit = false;
 static SDL_SysWMinfo sysWmInfo;
+static HMENU hMenu;
 
 
 static constexpr uint32 kWindowWidth = 800;
@@ -601,6 +602,15 @@ void UpdateImGui() {
 void MainLoop() {
   UpdateSdl();
 
+  if (sequencer->GetInstrument()) {
+    EnableMenuItem(hMenu, ID_FILE_LOADSONG, MF_ENABLED);
+    EnableMenuItem(hMenu, ID_FILE_SAVESONG, MF_ENABLED);
+  }
+  else {
+    EnableMenuItem(hMenu, ID_FILE_LOADSONG, MF_DISABLED);
+    EnableMenuItem(hMenu, ID_FILE_SAVESONG, MF_DISABLED);
+  }
+
   glClearColor(0.0f, 0.0f, 0.7f, 0);
   glClear(GL_COLOR_BUFFER_BIT);
 
@@ -827,22 +837,25 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
         }
         case ID_ACCELERATOR_LOAD_SONG:
         case ID_FILE_LOADSONG: {
-          WCHAR szFile[FILENAME_MAX] = { 0 };
-          OPENFILENAME ofn = { 0 };
+          //if (sequencer->GetInstrument() != nullptr) 
+          {
+            WCHAR szFile[FILENAME_MAX] = { 0 };
+            OPENFILENAME ofn = { 0 };
 
-          USES_CONVERSION;
-          ofn.lStructSize = sizeof(ofn);
-          ofn.lpstrFile = szFile;
-          ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-          ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
-          ofn.nFilterIndex = 0;
-          ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+            USES_CONVERSION;
+            ofn.lStructSize = sizeof(ofn);
+            ofn.lpstrFile = szFile;
+            ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+            ofn.lpstrFilter = _TEXT("JSON\0*.json\0MIDI\0*.midi;*.mid\0");
+            ofn.nFilterIndex = 0;
+            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-          if (GetOpenFileName(&ofn)) {
-            sequencer->LoadSong(std::string(W2A(szFile)), 
-              [](std::string instrumentName) { 
-                return LoadInstrument(instrumentName); 
-            });
+            if (GetOpenFileName(&ofn)) {
+              sequencer->LoadSong(std::string(W2A(szFile)),
+                [](std::string instrumentName) {
+                return LoadInstrument(instrumentName);
+              });
+            }
           }
           return 0;
         }
@@ -900,7 +913,8 @@ bool Init() {
 
   SDL_VERSION(&sysWmInfo.version);
   if (SDL_GetWindowWMInfo(sdlWindow, &sysWmInfo)) {
-    SetMenu(sysWmInfo.info.win.window, ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_FILEMENU)));
+    hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_FILEMENU));
+    SetMenu(sysWmInfo.info.win.window, hMenu);
   }
 
   hAccel = LoadAccelerators(sysWmInfo.info.

@@ -147,6 +147,8 @@ public:
   bool LoadInstrument(std::string fileName, std::string mustMatch);
 
   bool SaveSong(std::string fileName);
+  void LoadJson(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback);
+  void LoadMidi(std::string fileName);
   void LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback);
 
   inline float GetMinutesPerBeat() const {
