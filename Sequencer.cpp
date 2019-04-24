@@ -15,6 +15,7 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h"
 #include "MidiSource.h"
+#include "logging.h"
 
 static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
@@ -417,13 +418,13 @@ bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
 
 bool Sequencer::SaveSong(std::string fileName) {
   if (!instrument) {
-    std::cerr << "What manner of witchcraft is this" << std::endl;
+    MCLOG(Warn, "Somehow there is no instrument in SaveSong");
     return false;
   }
 
   std::ofstream ofs(fileName);
   if (ofs.bad()) {
-    std::cerr << "Unable to save song to file " << fileName << std::endl;
+    MCLOG(Warn, "Unable to save song to file %s ", fileName.c_str());
     return false;
   }
 
@@ -490,26 +491,39 @@ void Sequencer::LoadMidi(std::string fileName) {
   }
   */
 
+  MCLOG(Info, "Importing MIDI from file \'%s\'", fileName.c_str());
+
   MidiSource midiSource;
   if (!midiSource.openFile(fileName)) {
+    MCLOG(Warn, "Failed to load MIDI file \'%s\'", fileName.c_str());
     return;
   }
 
-  std::cout << "howdy" << std::endl;
+  if (!midiSource.getTrackCount()) {
+    MCLOG(Warn, "Loading MIDI file \'%s\' resulted in no tracks", fileName.c_str());
+    return;
+  }
+
+  if (midiSource.getTrackCount() > 1) {
+    // Have to pick a single track or merge a range of tracks
+
+  }
 }
 
 void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
+  MCLOG(Info, "Loading song from file \'%s\'", fileName.c_str());
+
   std::ifstream ifs(fileName);
 
   if (ifs.bad()) {
-    std::cerr << "Unable to load song from file " << fileName << std::endl;
+    MCLOG(Warn, "Unable to load song from file %s", fileName.c_str());
     return;
   }
 
   std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
   if (!fileData.length()) {
-    std::cerr << "Unable to load song from file " << fileName << std::endl;
+    MCLOG(Warn, "Unable to load song from file %s", fileName.c_str());
     return;
   }
 
@@ -518,19 +532,14 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
   document.Parse(fileData.c_str());
 
   if (!document.IsObject()) {
-    std::cerr << "Failure parsing JSON in file " << fileName << std::endl;
+    MCLOG(Warn, "Failure parsing JSON in file %s", fileName.c_str());
     return;
   }
 
   // Get instrument
-  if (!document.HasMember(kInstrumentTag)) {
-    std::cerr << "No " << kInstrumentTag << " tag in song file " << fileName << std::endl;
+  if (!document.HasMember(kInstrumentTag) || !document[kInstrumentTag].IsString()) {
+    MCLOG(Warn, "Missing/invalid %s tag in song file %s", kInstrumentTag, fileName.c_str());
     return; // TODO: Maybe just load?
-  }
-
-  if (!document[kInstrumentTag].IsString()) {
-    std::cerr << "Invalid " << kInstrumentTag << " tag in song file " << fileName << std::endl;
-    return;
   }
 
   std::string instrumentName = document[kInstrumentTag].GetString();
@@ -539,14 +548,15 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
 
   if (this->instrument == nullptr || this->instrument->GetName() != instrumentName) {
     if (!loadInstrumentCallback) {
-      std::cerr << "Current instrument does not match song instrument " << instrumentName << std::endl;
+      MCLOG(Warn, "Current instrument \'%s\' does not match song instrument \'%s\' and no "
+        "callback was provided to load the correct one", this->instrument->GetName().c_str(), instrumentName.c_str());
       return;
     }
 
     // Prompt the caller that we need to load an instrument first
     if (!loadInstrumentCallback(instrumentName)) {
-      // Maybe load?
-      std::cerr << "Unable to load specified instrument " << instrumentName << std::endl;
+      // TODO: Could offer loading with track truncation
+      MCLOG(Warn, "Unable to load specified instrument %s", instrumentName.c_str());
       return;
     }
   }
@@ -555,7 +565,7 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
 
   // Get tempo
   if (!document.HasMember(kTempoTag) || !document[kTempoTag].IsUint()) {
-    std::cerr << "Invalid tempo in song file " << fileName << std::endl;
+    MCLOG(Warn, "Invalid tempo in song file %s", fileName.c_str());;
     return;
   }
 
@@ -564,7 +574,7 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
 
   // Get number of measures in song and expand instrument tracks
   if (!document.HasMember(kMeasuresTag) || !document[kMeasuresTag].IsUint()) {
-    std::cerr << "Invalid number of measures in song file " << fileName << std::endl;
+    MCLOG(Warn, "Invalid number of measures in song file %s", fileName.c_str());
     return;
   }
 
@@ -573,7 +583,7 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
 
   // Get beats per measure
   if (!document.HasMember(kBeatsPerMeasureTag) || !document[kBeatsPerMeasureTag].IsUint()) {
-    std::cerr << "Invalid number of beats per measure in song file " << fileName << std::endl;
+    MCLOG(Warn, "Invalid number of beats per measure in song file %s", fileName.c_str());
     return;
   }
 
@@ -582,7 +592,7 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
 
   // Read notes
   if (!document.HasMember(kNotesTag) || !document[kNotesTag].IsArray()) {
-    std::cerr << "Invalid notes array in song file " << fileName << std::endl;
+    MCLOG(Warn, "Invalid notes array in song file %s", fileName.c_str());
     return;
   }
 
@@ -590,20 +600,20 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
   for (rapidjson::SizeType noteArrayIndex = 0; noteArrayIndex < notesArray.Size(); ++noteArrayIndex) {
     const auto& noteEntry = notesArray[noteArrayIndex];
     if (!noteEntry.HasMember(kBeatTag) || (!noteEntry[kBeatTag].IsFloat() && !noteEntry[kBeatTag].IsUint())) {
-      std::cerr << "Invalid note in notes array!" << std::endl;
+      MCLOG(Warn, "Invalid note in notes array!");
       continue;
     }
 
     auto beatIndex = static_cast<uint32>((noteEntry[kBeatTag].GetFloat() - 1.0f) * maxBeatSubdivisions);
 
     if (!noteEntry.HasMember(kTrackTag) || !noteEntry[kTrackTag].IsUint()) {
-      std::cerr << "Invalid track in notes array!" << std::endl;
+      MCLOG(Warn, "Invalid track in notes array!");
       continue;
     }
     auto trackIndex = noteEntry[kTrackTag].GetUint();
 
     if (!noteEntry.HasMember(kVelocityTag) || !noteEntry[kVelocityTag].IsFloat()) {
-      std::cerr << "Invalid velocity in notes array!" << std::endl;
+      MCLOG(Warn, "Invalid velocity in notes array!");
       continue;
     }
 

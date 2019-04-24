@@ -16,6 +16,7 @@
 
 #include "BaseTypes.h"
 #include "Sequencer.h"
+#include "Logging.h"
 
 #include "SDL_syswm.h"
 #include <Windows.h>
@@ -42,6 +43,39 @@ struct InputState {
 };
 
 static InputState inputState;
+
+struct OutputWindowState {
+  std::vector<std::string> displayHistory;
+  bool ScrollToBottom = false;
+  bool AutoScroll = true;
+
+  void ClearLog() {
+    displayHistory.clear();
+  }
+
+  void AddLog(const char* fmt, ...)
+  {
+    char buf[1024];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, IM_ARRAYSIZE(buf), fmt, args);
+    buf[IM_ARRAYSIZE(buf) - 1] = 0;
+    va_end(args);
+    this->displayHistory.emplace_back(buf);
+    if (AutoScroll) {
+      ScrollToBottom = true;
+    }
+  }
+
+  void AddLog(const std::string_view& logString) {
+    displayHistory.push_back(std::string(logString));
+    if (AutoScroll) {
+      ScrollToBottom = true;
+    }
+  }
+};
+
+static OutputWindowState outputWindowState;
 
 struct ShaderParams {
   GLint texture;
@@ -74,8 +108,8 @@ static SDL_SysWMinfo sysWmInfo;
 static HMENU hMenu;
 
 
-static constexpr uint32 kWindowWidth = 800;
-static constexpr uint32 kWindowHeight = 400;
+static constexpr uint32 kWindowWidth = 1200;
+static constexpr uint32 kWindowHeight = 800;
 static constexpr uint32 kSwapInterval = 1;
 static constexpr float kFullBeatWidth = 80.0f;
 static constexpr float kKeyboardKeyWidth = 100.0f;
@@ -95,6 +129,8 @@ static constexpr float kDefaultNoteVelocity = 1.0f;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr std::string_view kJsonTag(".json");
+static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
+static constexpr const char *kSynthCityVersion = "0.0.1";
 
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
@@ -316,18 +352,21 @@ void UpdateImGui() {
   }
   SDL_UnlockAudio();
 
-
-
   int windowWidth, windowHeight;
   SDL_GetWindowSize(sdlWindow, &windowWidth, &windowHeight);
-  ImGui::GetIO().DisplaySize = ImVec2((float)windowWidth, (float)windowHeight);
+
+  int outputWindowHeight = windowHeight * kOutputWindowWindowScreenHeightPercentage;
+  int sequencerHeight = windowHeight - outputWindowHeight;
+
+  ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight));
   ImGui::NewFrame();
   ImGui::SetNextWindowPos(ImVec2(0, 0));
-  ImGui::SetWindowSize(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
+  ImGui::SetNextWindowSize(ImVec2(static_cast<float>(windowWidth), static_cast<float>(sequencerHeight)));
 
   ImGui::Begin("Instrument", 
     nullptr, 
-    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+    //ImGuiWindowFlags_NoTitleBar | 
+    ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
   {
     auto& imGuiStyle = ImGui::GetStyle();
     auto oldItemSpacing = imGuiStyle.ItemSpacing;
@@ -525,6 +564,7 @@ void UpdateImGui() {
         numMeasures = std::max(std::min(static_cast<uint32>(numMeasures), kMaxMeasures), kMinMeasures);
         sequencer->SetNumMeasures(numMeasures);
       }
+      ImGui::PopItemWidth();
 
       // Beats per measure
       ImGui::SameLine();
@@ -535,6 +575,7 @@ void UpdateImGui() {
           (beatsPerMeasure), kMaxBeatsPerMeasure), kMinBeatsPerMeasure);
         sequencer->SetBeatsPerMeasure(beatsPerMeasure);
       }
+      ImGui::PopItemWidth();
 
       // Subdivision
       ImGui::SameLine();
@@ -569,6 +610,7 @@ void UpdateImGui() {
       if (ImGui::Checkbox("Loop", &isLooping)) {
         sequencer->SetLooping(isLooping);
       }
+      ImGui::PopItemWidth();
 
       // Metronome
       ImGui::SameLine();
@@ -577,7 +619,10 @@ void UpdateImGui() {
       if (ImGui::Checkbox("Metronome", &isMetronomeOn)) {
         sequencer->EnableMetronome(isMetronomeOn);
       }
+      ImGui::PopItemWidth();
     }
+
+    auto oldCursorPos = ImGui::GetCursorPos();
 
     // Draw the beat demarcation lines
     cursorPosX = beatLabelStartX;
@@ -595,7 +640,74 @@ void UpdateImGui() {
       (sequencer->GetMaxSubdivisions() / sequencer->GetSubdivision()));
     ImGui::SetCursorPos(ImVec2(cursorPosX - 0, beatLabelStartY));
     ImGui::FillRect(ImVec2(1, beatLabelEndY - beatLabelStartY), 0x7FFFFFFF);
+
+    ImGui::SetCursorPos(oldCursorPos);
   }
+  ImGui::End();
+
+  // Output window
+  int outputWindowTop = windowHeight - outputWindowHeight;
+  ImGui::SetNextWindowPos(ImVec2(0, outputWindowTop));
+  ImGui::SetNextWindowSize(ImVec2(windowWidth, outputWindowHeight));
+  ImGui::Begin("Output",
+    nullptr,
+    ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+  {
+    // Options menu
+    if (ImGui::BeginPopup("Options"))
+    {
+      if (ImGui::MenuItem("Clear")) {
+        outputWindowState.ClearLog();
+      }
+      if (ImGui::MenuItem("Scroll to bottom")) {
+        outputWindowState.ScrollToBottom = true;
+      }
+      if (ImGui::Checkbox("Auto-scroll", &outputWindowState.AutoScroll)) {
+        if (outputWindowState.AutoScroll) {
+          outputWindowState.ScrollToBottom = true;
+        }
+      }
+      ImGui::EndPopup();
+    }
+
+    if (ImGui::SmallButton("=")) {
+      ImGui::OpenPopup("Options");
+    }
+    ImGui::Separator();
+
+    ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+    {
+      // OutputWindow stuff
+      ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+
+      for (const auto& historyText : outputWindowState.displayHistory) {
+        if (historyText.length() < 1) {
+          continue;
+        }
+
+        // TODO: rather than parse the string, create an expanded class
+        static const ImVec4 logColors[Logging::Category::Count] = {
+          ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // Info = White
+          ImVec4(0.7f, 0.7f, 0.0f, 1.0f), // Warn = Yellow
+          ImVec4(0.7f, 0.0f, 0.0f, 1.0f), // Error = Red
+          ImVec4(1.0f, 0.0f, 0.0f, 1.0f), // Fatal = Bright Red
+        };
+
+        auto logCategory = static_cast<Logging::Category>(*historyText.c_str() - 1);
+        ImGui::PushStyleColor(ImGuiCol_Text, logColors[logCategory]);
+        ImGui::TextUnformatted(historyText.c_str() + 1);
+        ImGui::PopStyleColor();
+      }
+    }
+    if (outputWindowState.ScrollToBottom) {
+      ImGui::SetScrollY(ImGui::GetScrollMaxY());
+      ImGui::SetScrollHere(1.0f);
+      outputWindowState.ScrollToBottom = false;
+    }
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+  }
+
   ImGui::End();
 }
 
@@ -892,8 +1004,14 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
 static HACCEL hAccel;
 
 bool Init() {
+  Logging::AddResponder([](const std::string_view& logLine) {
+    outputWindowState.AddLog(logLine);
+  });
+
+  MCLOG(Info, "SynthCity %s", kSynthCityVersion);
+
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) < 0) {
-    std::cerr << "Failed to init video: " << SDL_GetError() << std::endl;
+    MCLOG(Fatal, "Failed to init video: %s", SDL_GetError());
     SDL_Quit();
     return false;
   }
@@ -935,7 +1053,7 @@ bool Init() {
 
   if (!sequencer->Init(kDefaultNumMeasures, kDefaultBeatsPerMeasure,
     kDefaultBpm, TimelineDivisions.back(), kDefaultSubdivisions)) {
-    std::cerr << "Unable to initialize mixer" << std::endl;
+    MCLOG(Fatal, "Unable to initialize mixer");
     SDL_Quit();
     return false;
   }
