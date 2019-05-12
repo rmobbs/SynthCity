@@ -484,12 +484,10 @@ bool Sequencer::SaveSong(std::string fileName) {
 }
 
 void Sequencer::LoadMidi(std::string fileName) {
-  /*
   if (!instrument) {
-    std::cerr << "Cannot load MIDI without instrument" << std::endl;
+    MCLOG(Error, "Cannot load MIDI file without a loaded instrument");
     return;
   }
-  */
 
   MCLOG(Info, "Importing MIDI from file \'%s\'", fileName.c_str());
 
@@ -504,13 +502,53 @@ void Sequencer::LoadMidi(std::string fileName) {
     return;
   }
 
-  if (midiSource.getTrackCount() > 1) {
-    // Have to pick a single track or merge a range of tracks
+  if (!midiConversionParamsCallback) {
+    MCLOG(Error, "MIDI file \'%s\' loaded but no callback provided", fileName.c_str());
+    return;
+  }
 
+  MidiConversionParams midiConversionParams;
+  if (midiConversionParamsCallback(midiSource, midiConversionParams)) {
+    MidiTrack midiTrack;
+
+    // TODO: Do this right
+    static constexpr uint32 kMinMidiValue = 21;
+
+    // Yikes
+    uint32 numMeasures = 1;
+    if (midiSource.CombineTracks(midiTrack, midiConversionParams.trackIndices)) {
+      // Ok. We now have all the tracks we want in one track; it is only note-ons;
+      // they are globally and locally time stamped
+      // Now we need to iterate these and add them as notes!
+      this->maxBeatSubdivisions;
+      for (const auto& midiEvent : midiTrack.events) {
+        auto a = static_cast<int>(midiEvent.dataptr[1]);
+        auto b = static_cast<int>(kMinMidiValue);
+        auto trackIndex = (std::max(a, b) - b) % instrument->tracks.size();
+        auto beatsIndex = static_cast<uint32>(static_cast<double>(midiEvent.timeStamp) /
+          static_cast<double>(midiSource.getTimeDivision()) * maxBeatSubdivisions);
+
+        if (!(beatsIndex % maxBeatSubdivisions)) {
+          ++numMeasures;
+        }
+        
+        SetTrackNote(trackIndex, beatsIndex, 1.0f); // Need velocity
+      }
+      SetNumMeasures(20);
+
+      MCLOG(Info, "Successfully loaded MIDI file \'%s\'", fileName.c_str());
+    }
+    else {
+      MCLOG(Error, "Failure while combining MIDI tracks");
+    }
+
+  }
+  else {
+    MCLOG(Error, "Failure while converting MIDI");
   }
 }
 
-void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
+void Sequencer::LoadJson(std::string fileName) {
   MCLOG(Info, "Loading song from file \'%s\'", fileName.c_str());
 
   std::ifstream ifs(fileName);
@@ -622,10 +660,10 @@ void Sequencer::LoadJson(std::string fileName, std::function<bool(std::string)> 
   }
 }
 
-void Sequencer::LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback) {
+void Sequencer::LoadSong(std::string fileName) {
   if (fileName.compare(fileName.length() -
     kJsonTag.length(), kJsonTag.length(), kJsonTag) == 0) {
-    return LoadJson(fileName, loadInstrumentCallback);
+    return LoadJson(fileName);
   }
   for (size_t m = 0; m < _countof(kMidiTags); ++m) {
     if (fileName.compare(fileName.length() - 

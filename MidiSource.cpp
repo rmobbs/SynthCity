@@ -6,6 +6,7 @@
 #include <streambuf>
 #include <map>
 #include <filesystem>
+#include <array>
 
 #include <cassert>
 
@@ -363,8 +364,31 @@ void MidiSource::setNativeTempo(uint32 nativeTempo) {
   this->nativeTempo = nativeTempo;
 }
 
+void MidiSource::HandleMetaEvent(MidiTrack& track, const MidiEvent& metaEvent, uint8* data) {
+  switch (metaEvent.meta.type) {
+    case MidiEvent::MetaType::SetTempo: {
+      double tempo;
+      uint64 beatLengthInUs = static_cast<uint64>
+        ((data[0] << 16) | (data[1] << 8) | (data[2]));
+      tempo = (1000000.0 / static_cast<double>(beatLengthInUs)) * 60.0;
+
+      setNativeTempo(static_cast<uint32>(tempo));
+      break;
+    }
+    case MidiEvent::MetaType::SequenceOrTrackName: {
+      std::vector<char> charBuf(metaEvent.datalen + 1);
+      memcpy(charBuf.data(), data, metaEvent.datalen);
+      charBuf[metaEvent.datalen] = 0;
+      track.name = std::string(charBuf.data());
+      break;
+    }
+  }
+}
+
 bool MidiSource::readTrack(endian_bytestream& ebs, uint32 trackIndex) {
   assert(trackIndex < tracks.size());
+
+  uint64 timeStamp = 0;
 
   MidiTrack& currentTrack = tracks[trackIndex];
 
@@ -402,6 +426,9 @@ bool MidiSource::readTrack(endian_bytestream& ebs, uint32 trackIndex) {
       deltaTime = (deltaTime << 7) | (readByte & 0x7F);
     } while (readByte & 0x80);
 
+    // Global tick
+    timeStamp += deltaTime;
+
     // Next is the event type
     ebs >> readByte;
     if (!ebs.isGood("while reading event type")) {
@@ -414,6 +441,7 @@ bool MidiSource::readTrack(endian_bytestream& ebs, uint32 trackIndex) {
       MidiEvent currentEvent;
 
       currentEvent.timeDelta = deltaTime;
+      currentEvent.timeStamp = timeStamp;
       currentEvent.eventType = eventType->second;
 
       switch (eventType->second) {
@@ -457,16 +485,8 @@ bool MidiSource::readTrack(endian_bytestream& ebs, uint32 trackIndex) {
 
             currentTrack.events.push_back(currentEvent);
 
-            if (currentEvent.meta.type == MidiEvent::MetaType::SetTempo) {
-              uint8* data = currentTrack.eventData.data() + eventDataIndex.back();
-
-              double tempo;
-              uint64 beatLengthInUs = static_cast<uint64>
-                ((data[0] << 16) | (data[1] << 8) | (data[2]));
-              tempo = (1000000.0 / static_cast<double>(beatLengthInUs)) * 60.0;
-
-              setNativeTempo(static_cast<uint32>(tempo));
-            }
+            // Process meta event
+            HandleMetaEvent(currentTrack, currentEvent, currentTrack.eventData.data() + eventDataIndex.back());
           }
           // Otherwise just skip it
           else if (readByte > 0) {
@@ -502,6 +522,7 @@ bool MidiSource::readTrack(endian_bytestream& ebs, uint32 trackIndex) {
       currentTrack.channels.insert(readByte & 0x0F);
 
       currentEvent.timeDelta = deltaTime;
+      currentEvent.timeStamp = timeStamp;
       currentEvent.eventType = MidiEvent::EventType::Message;
 
       // All messages have a byte of status plus at least one byte of data
@@ -650,3 +671,97 @@ bool MidiSource::readTrack(endian_bytestream& ebs, uint32 trackIndex) {
   return true;
 }
 
+bool MidiSource::CombineTracks(MidiTrack& combinedTrack, const std::vector<uint32>& trackIndices) {
+  combinedTrack.index = 0;
+  combinedTrack.messageCount = 0;
+  combinedTrack.metaCount = 0;
+  combinedTrack.name = std::string("<combined>");
+
+  // Build event queues, along with message and meta counts; get first time stamp
+  uint64 prevStamp = UINT64_MAX;
+  std::vector<std::queue<MidiEvent>> trackEventQueues;
+  for (const auto& trackIndex : trackIndices) {
+    auto& eventQueue = trackEventQueues.emplace_back();
+
+    for (const auto& midiEvent : this->tracks[trackIndex].events) {
+      // TODO: More flexible filtering
+      if (midiEvent.eventType == MidiEvent::EventType::Message && midiEvent.message.type == MidiEvent::MessageType::VoiceNoteOn) {
+        eventQueue.push(midiEvent);
+        if (midiEvent.timeStamp < prevStamp) {
+          prevStamp = midiEvent.timeStamp;
+        }
+        ++combinedTrack.messageCount;
+      }
+    }
+  }
+
+  const bool rebaseToZero = true;
+  uint64 baseStamp = 0;
+  if (rebaseToZero) {
+    baseStamp = prevStamp;
+  }
+
+  std::vector<uint32> eventDataIndex;
+
+  // Sort/combine
+  while (prevStamp != UINT64_MAX) {
+    // Get index of queue with first event
+    uint32 minQueue = UINT32_MAX;
+    uint64 minStamp = UINT64_MAX;
+    for (uint32 trackEventQueueIndex = 0; trackEventQueueIndex < trackEventQueues.size(); ++trackEventQueueIndex) {
+      const auto& trackEventQueue = trackEventQueues[trackEventQueueIndex];
+      if (trackEventQueue.empty()) {
+        continue;
+      }
+
+      const auto& topEvent = trackEventQueue.front();
+      if (topEvent.timeStamp < minStamp) {
+        minStamp = topEvent.timeStamp;
+        minQueue = trackEventQueueIndex;
+      }
+    }
+
+    // Localize and insert it
+    if (minQueue != UINT32_MAX) {
+      auto& minEvent = trackEventQueues[minQueue].front();
+      trackEventQueues[minQueue].pop();
+
+      eventDataIndex.push_back(combinedTrack.eventData.size());
+
+      combinedTrack.eventData.resize(combinedTrack.eventData.size() + minEvent.datalen);
+      memcpy(combinedTrack.eventData.data() +
+        eventDataIndex.back(), minEvent.dataptr, minEvent.datalen);
+
+      auto& outEvent = combinedTrack.events.emplace_back();
+
+      outEvent.datalen = minEvent.datalen;
+
+      outEvent.eventType = minEvent.eventType;
+      if (minEvent.eventType == MidiEvent::EventType::Message) {
+        outEvent.message.type = minEvent.message.type;
+      }
+      else {
+        outEvent.meta.type = minEvent.meta.type;
+      }
+
+      outEvent.timeDelta = minEvent.timeDelta - prevStamp;
+      outEvent.timeStamp = minEvent.timeStamp - baseStamp;
+
+      prevStamp = outEvent.timeStamp;
+    }
+    else {
+      break;
+    }
+  }
+
+  // Fixup data pointers
+  auto eventIter = combinedTrack.events.begin();
+  for (const auto& dataIndex : eventDataIndex) {
+    if (dataIndex != -1) {
+      eventIter->dataptr = combinedTrack.eventData.data() + dataIndex;
+    }
+    ++eventIter;
+  }
+
+  return true;
+}

@@ -3,8 +3,8 @@
 #include <stdarg.h>
 
 namespace Logging {
-  uint64 nextResponderId = 0;
-  std::map<uint64, std::function<void(const std::string_view&)>> respondersById;
+  uint32 nextResponderId = 0;
+  std::map<uint32, std::function<void(const std::string_view&)>> respondersById;
 
   void McLog(Category category, const char *fmt, ...) {
     char buf[1024];

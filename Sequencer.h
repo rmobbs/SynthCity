@@ -9,7 +9,18 @@ class Sequencer {
 private:
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
   static constexpr uint32 kDefaultNumMeasures = 4;
+  static constexpr uint32 kMinTempo = 40;
+  static constexpr uint32 kMaxTempo = 220;
 public:
+public:
+  // Loaded MIDI is passed to the host; they interact with the user to determine what
+  // parameters will be used to convert that MIDI to our song format
+  struct MidiConversionParams {
+    uint32 tempo;
+    bool rebaseToFirstNote = false;
+    std::vector<uint32> trackIndices; // Tracks to flatten into single song
+  };
+
   class Track {
   public:
     std::string name;
@@ -85,6 +96,8 @@ private:
   int interval;
   Instrument* instrument = nullptr;
   std::vector<uint32> reservedSounds;
+  std::function<bool(std::string)> loadInstrumentCallback;
+  std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
 
   void PartialNoteCallback();
   void FullNoteCallback(bool isMeasure);
@@ -124,6 +137,14 @@ public:
     return maxBeatSubdivisions;
   }
 
+  inline uint32 GetMinTempo() const {
+    return kMinTempo;
+  }
+
+  inline uint32 GetMaxTempo() const {
+    return kMaxTempo;
+  }
+
   void SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteValue);
 
   inline uint32 GetBeatsPerMinute() const {
@@ -147,9 +168,18 @@ public:
   bool LoadInstrument(std::string fileName, std::string mustMatch);
 
   bool SaveSong(std::string fileName);
-  void LoadJson(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback);
+  void LoadJson(std::string fileName);
   void LoadMidi(std::string fileName);
-  void LoadSong(std::string fileName, std::function<bool(std::string)> loadInstrumentCallback);
+  void LoadSong(std::string fileName);
+
+  inline void SetLoadInstrumentCallback(std::function<bool(std::string)> loadInstrumentCallback) {
+    this->loadInstrumentCallback = loadInstrumentCallback;
+  }
+
+  inline void SetMidiConversionParamsCallback(std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback) {
+    this->midiConversionParamsCallback = midiConversionParamsCallback;
+  }
+
 
   inline float GetMinutesPerBeat() const {
     return 1.0f / GetBeatsPerMinute();

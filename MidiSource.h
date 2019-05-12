@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <set>
+#include <string_view>
 
 struct MidiEvent {
   enum class EventType {
@@ -65,6 +66,7 @@ struct MidiEvent {
   }; 
 
   uint64 timeDelta = 0;
+  uint64 timeStamp = 0;
 
   uchar* dataptr = nullptr;
   uint16 datalen = 0;
@@ -75,6 +77,7 @@ struct MidiTrack {
   std::vector<uchar> eventData;
   std::queue<MidiEvent> sequence;
   std::set<uchar> channels;
+  std::string name;
 
   uint32 index;
   uint32 metaCount = 0;
@@ -137,11 +140,15 @@ protected:
   bool parseChunk(endian_bytestream& ebs, const std::string& expectedChunkId);
   void setNativeTempo(uint32 nativeTempo);
 
+  void HandleMetaEvent(MidiTrack& track, const MidiEvent& metaEvent, uint8* data);
+
 public:
   bool openFile(const std::string& fileName);
   void close();
 
-  inline const std::vector<MidiTrack> getTracks() {
+  bool CombineTracks(MidiTrack& combinedTrack, const std::vector<uint32>& trackIndices);
+
+  inline const std::vector<MidiTrack>& getTracks() const {
     return tracks;
   }
 
@@ -155,6 +162,10 @@ public:
 
   inline uint32 getNativeTempo() const {
     return nativeTempo;
+  }
+
+  inline uint32 getTimeDivision() const {
+    return timeDivision;
   }
 
   MidiSource();

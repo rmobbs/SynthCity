@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <string_view>
+#include "MidiSource.h"
 
 #include "BaseTypes.h"
 #include "Sequencer.h"
@@ -21,6 +22,7 @@
 #include "SDL_syswm.h"
 #include <Windows.h>
 #include <atlbase.h>
+#include <commctrl.h>
 // Stupid Windows
 #undef max
 #undef min
@@ -131,6 +133,7 @@ static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr std::string_view kJsonTag(".json");
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
 static constexpr const char *kSynthCityVersion = "0.0.1";
+static constexpr std::string_view kEmptyTrackName("<unknown>");
 
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
@@ -254,11 +257,169 @@ void ImGuiRenderDrawLists(ImDrawData* drawData) {
   }
 }
 
+std::shared_ptr<WCHAR[]> StringToWChar(const std::string& sourceString) {
+  int bufferlen = ::MultiByteToWideChar(CP_ACP, 0, sourceString.c_str(), sourceString.length(), nullptr, 0);
+  if (bufferlen > 0) {
+    auto stringLen = sourceString.length();
+    
+    std::shared_ptr<WCHAR[]> stringBuf(new WCHAR[stringLen + 1]);
+    ::MultiByteToWideChar(CP_ACP, 0, sourceString.c_str(), stringLen, stringBuf.get(), bufferlen);
+    stringBuf.get()[stringLen] = 0;
+    return stringBuf;
+  }
+  return nullptr;
+}
+
+std::shared_ptr<WCHAR[]> StringToWChar(const std::string_view& sourceString) {
+  int bufferlen = ::MultiByteToWideChar(CP_ACP, 0, sourceString.data(), sourceString.length(), nullptr, 0);
+  if (bufferlen > 0) {
+    auto stringLen = sourceString.length();
+
+    std::shared_ptr<WCHAR[]> stringBuf(new WCHAR[stringLen + 1]);
+    ::MultiByteToWideChar(CP_ACP, 0, sourceString.data(), stringLen, stringBuf.get(), bufferlen);
+    stringBuf.get()[stringLen] = 0;
+    return stringBuf;
+  }
+  return nullptr;
+}
+
+struct MidiPropertiesDialogWorkspace {
+  const MidiSource* currentMidiSource = nullptr;
+  std::vector<std::shared_ptr<WCHAR[]>> treeStrings;
+  std::vector<HTREEITEM> treeItems;
+
+  Sequencer::MidiConversionParams *midiConversionParams;
+};
+
+BOOL CALLBACK MidiPropertiesDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  auto& workspace = *reinterpret_cast<MidiPropertiesDialogWorkspace*>(GetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA));
+  switch (uMsg) {
+    case WM_INITDIALOG: {
+      SetDlgItemInt(hWndDlg, IDC_EDIT_MIDIPROPERTIES_TEMPO, workspace.currentMidiSource->getNativeTempo(), FALSE);
+
+      HWND hWndTrackTree = GetDlgItem(hWndDlg, IDC_TREE_MIDIPROPERTIES_TRACKS);
+      // Dump the track info
+      const auto& midiTracks = workspace.currentMidiSource->getTracks();
+
+      auto logTen = static_cast<uint32>(std::floor(log10(midiTracks.size())));
+      for (int currIndex = 0; currIndex < midiTracks.size(); ++ currIndex) {
+        const auto& midiTrack = midiTracks[currIndex];
+
+        TVITEM tvi = { 0 };
+        TVINSERTSTRUCT tvins;
+        static HTREEITEM hPrevRootItem = NULL;
+        static HTREEITEM hPrevLev2Item = NULL;
+        HTREEITEM hti;
+
+        tvi.mask = TVIF_TEXT | TVS_CHECKBOXES | TVIF_PARAM;
+
+        std::string trackLabel(std::string(logTen - static_cast<uint32>
+          (std::floor(log10(currIndex + 1))), '0') + std::to_string(currIndex + 1) + ": ");
+        if (midiTrack.name.length() > 0) {
+          trackLabel += midiTrack.name;
+        }
+        else {
+          trackLabel += kEmptyTrackName;
+        }
+        workspace.treeStrings.emplace_back(StringToWChar(trackLabel));
+
+        tvi.pszText = workspace.treeStrings.back().get();
+        tvi.cchTextMax = sizeof(tvi.pszText) / sizeof(tvi.pszText[0]);
+        tvi.lParam = static_cast<LPARAM>(currIndex);
+          
+        tvins.item = tvi;
+        tvins.hParent = TVI_ROOT;
+
+        auto hTreeItem = reinterpret_cast<HTREEITEM>
+          (SendMessage(hWndTrackTree, TVM_INSERTITEM, 0, reinterpret_cast<LPARAM>(&tvins)));
+        workspace.treeItems.push_back(hTreeItem);
+      }
+      break;
+    }
+    case WM_COMMAND:
+      switch (LOWORD(wParam)) {
+        case IDOK: {
+          // Pull data
+          workspace.midiConversionParams->tempo =
+            GetDlgItemInt(hWndDlg, IDC_EDIT_MIDIPROPERTIES_TEMPO, nullptr, FALSE);
+
+          // TODO: There has to be some way to do the validation while they're editing
+          workspace.midiConversionParams->tempo = std::max(std::min(workspace.
+            midiConversionParams->tempo, sequencer->GetMaxTempo()), sequencer->GetMinTempo());
+          
+          // Get list of checked entries
+          HWND hWndTrackTree = GetDlgItem(hWndDlg, IDC_TREE_MIDIPROPERTIES_TRACKS);
+          for (uint32 t = 0; t < workspace.currentMidiSource->getTrackCount(); ++t) {
+            if (TreeView_GetCheckState(hWndTrackTree, workspace.treeItems[t])) {
+              workspace.midiConversionParams->trackIndices.push_back(t);
+            }
+          }
+    
+          EndDialog(hWndDlg, wParam);
+          return TRUE;
+        }
+        case IDCANCEL: {
+          EndDialog(hWndDlg, wParam);
+          return TRUE;
+        }
+        default:
+          break;
+      }
+      break;
+    case WM_NOTIFY: {
+      LPNMHDR nmHeader = reinterpret_cast<LPNMHDR>(lParam);
+      switch (LOWORD(wParam)) {
+        case IDC_TREE_MIDIPROPERTIES_TRACKS: {
+          switch (nmHeader->code) {
+            case TVN_SELCHANGED: {
+
+              LPNMTREEVIEW nmTreeView = reinterpret_cast<LPNMTREEVIEW>(lParam);
+
+              // Format info text
+              std::string trackInfo;
+
+              const auto& midiTrack = workspace.currentMidiSource->getTracks()[nmTreeView->itemNew.lParam];
+              trackInfo += "Track contains " + std::to_string(midiTrack.events.size()) + " events (" +
+                std::to_string(midiTrack.metaCount) + " meta, " + std::to_string(midiTrack.messageCount) + " messages.\r\n";
+
+              SetDlgItemText(hWndDlg, IDC_EDIT_MIDIPROPERTIES_TRACKDETAILS, StringToWChar(trackInfo).get());
+              break;
+            }
+          }
+          break;
+        }
+      }
+      break;
+    }
+    case WM_CLOSE:
+      workspace.treeStrings.clear();
+      break;
+    default:
+      break;
+  }
+  return FALSE;
+}
+
 void OnNotePlayed(int trackIndex, int noteLocalIndex, void *payload) {
   // NOTE: Called from the SDL audio thread!
   playingTrackFlashTimes[1][trackIndex] = currentTime;
   playingNotesFlashTimes[1][trackIndex * sequencer->GetNumMeasures() * sequencer->
     GetBeatsPerMeasure() * sequencer->GetMaxSubdivisions() + noteLocalIndex] = currentTime;
+}
+
+bool GetMidiConversionParams(const MidiSource& midiSource, Sequencer::MidiConversionParams& midiConversionParams) {
+  MidiPropertiesDialogWorkspace workspace;
+  workspace.currentMidiSource = &midiSource;
+  workspace.midiConversionParams = &midiConversionParams;
+  SetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA, reinterpret_cast<LONG>(&workspace));
+
+  // Push the dialog
+  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_DIALOG_MIDIPROPERTIES),
+    sysWmInfo.info.win.window, reinterpret_cast<DLGPROC>(MidiPropertiesDialogProc)) == IDOK) {
+    return true;
+  }
+
+  return false;
 }
 
 void UpdateSdl() {
@@ -963,10 +1124,7 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
             ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
             if (GetOpenFileName(&ofn)) {
-              sequencer->LoadSong(std::string(W2A(szFile)),
-                [](std::string instrumentName) {
-                return LoadInstrument(instrumentName);
-              });
+              sequencer->LoadSong(std::string(W2A(szFile)));
             }
           }
           return 0;
@@ -1058,6 +1216,14 @@ bool Init() {
     return false;
   }
 
+  sequencer->SetLoadInstrumentCallback(
+    [](std::string instrumentName) {
+      return LoadInstrument(instrumentName);
+  });
+  sequencer->SetMidiConversionParamsCallback(
+    [](const MidiSource& midiSource, Sequencer::MidiConversionParams& midiConversionParams) {
+    return GetMidiConversionParams(midiSource, midiConversionParams);
+  });
   sequencer->SetNotePlayedCallback(OnNotePlayed, nullptr);
 
   SDL_GL_CreateContext(sdlWindow);
