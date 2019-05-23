@@ -144,7 +144,7 @@ void Sequencer::Instrument::PlayTrack(uint32 trackIndex, uint8 velocity) {
     vel = 0.3f + vel * 0.7f;
   }
   const Track& track = tracks[trackIndex];
-  Mixer::Get().Play(track.voiceIndex, track.soundIndex, vel * track.lvol);
+  Mixer::Get().Play(Mixer::kInvalidVoiceHandle, track.soundIndex, vel * track.lvol);
   SDL_UnlockAudio();
 }
 
@@ -534,6 +534,9 @@ void Sequencer::LoadMidi(std::string fileName) {
         
         SetTrackNote(trackIndex, beatsIndex, 1.0f); // Need velocity
       }
+
+      // Currently capping number of loaded measures as unlimited measures are not properly
+      // clipped in ImGui and the program becomes unusable
       SetNumMeasures(20);
 
       MCLOG(Info, "Successfully loaded MIDI file \'%s\'", fileName.c_str());

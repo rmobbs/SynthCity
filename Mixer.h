@@ -33,16 +33,20 @@ public:
     void Unload();
   };
 
-  class Voice
+  struct Voice
   {
   public:
     Mixer::SoundHandle sound = kInvalidSoundHandle;
+
     int	position = 0;
     // 8:24 fixed point
     int	lvol = 0;
     int	rvol = 0;
     // 16:16 fixed point
     int	decay = 0;
+
+    // Voices can be dedicated ID or created on-the-fly
+    bool autoAllocated = false;
   };
 
 protected:
@@ -70,7 +74,7 @@ public:
   SoundHandle LoadSound(std::string fileName);
   void ReleaseSound(SoundHandle soundHandle);
 
-  VoiceHandle AddVoice();
+  VoiceHandle AddVoice(bool autoDestroy = false);
   void ReleaseVoice(VoiceHandle voiceHandle);
 
   bool Init(uint32 audioBufferSize);

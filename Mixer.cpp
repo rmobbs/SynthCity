@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include "logging.h"
 #include "mixer.h"
 #include "SDL_audio.h"
 #include <vector>
@@ -193,11 +194,17 @@ void Mixer::ApplyInterval(uint32 ticksPerFrame) {
     ticksRemaining = ticksPerFrame;
 }
 
-Mixer::VoiceHandle Mixer::AddVoice() {
+Mixer::VoiceHandle Mixer::AddVoice(bool autoDestroy) {
   SDL_LockAudio();
   Mixer::VoiceHandle currVoiceHandle = nextVoiceHandle++;
-  voices.emplace(currVoiceHandle, Voice());
+
+  Voice voice;
+  voice.autoAllocated = autoDestroy;
+  voices.emplace(currVoiceHandle, voice);
+
   SDL_UnlockAudio();
+
+  MCLOG(Warn, "Voice added; voice count=%d", voices.size());
 
   return currVoiceHandle;
 }
@@ -245,6 +252,9 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
   /* Clear the buffer */
   memset(mixBuffer, 0, numFrames * sizeof(Sint32) * 2);
 
+  // Postpone-delete voices
+  std::vector<VoiceHandle> postponeDelete;
+
   /* For each voice... */
   for (auto& voiceEntry : voices) {
     Mixer::Voice *v = &voiceEntry.second;
@@ -261,7 +271,7 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
         int v1715;
         if (v->position >= sound->length)
         {
-          v->sound = -1;
+          postponeDelete.push_back(voiceEntry.first);
           break;
         }
         v1715 = v->lvol >> 9;
@@ -299,6 +309,10 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
       if (v->rvol < 0)
         v->rvol = 0;
     }
+  }
+
+  for (const auto& voice : postponeDelete) {
+    voices.erase(voice);
   }
 }
 
@@ -349,13 +363,19 @@ void Mixer::AudioCallback(void *ud, Uint8 *stream, int len)
 }
 
 void Mixer::Play(uint32 voiceHandle, uint32 soundHandle, float volume) {
-  auto voiceEntry = voices.find(voiceHandle);
-  if (voiceEntry != voices.end()) {
-    voices[voiceHandle].sound = soundHandle;
-    voices[voiceHandle].position = 0;
+  if (voiceHandle == kInvalidVoiceHandle) {
+    voiceHandle = AddVoice(true);
+  }
+
+  auto voiceMapEntry = voices.find(voiceHandle);
+  if (voiceMapEntry != voices.end()) {
+    auto& voice = voices[voiceHandle];
+
+    voice.sound = soundHandle;
+    voice.position = 0;
     volume *= volume * volume;
-    voices[voiceHandle].lvol = (int)(volume * 16777216.0);
-    voices[voiceHandle].rvol = (int)(volume * 16777216.0);
+    voice.lvol = (int)(volume * 16777216.0);
+    voice.rvol = (int)(volume * 16777216.0);
   }
 }
 
