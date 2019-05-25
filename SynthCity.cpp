@@ -20,7 +20,8 @@
 #include "Logging.h"
 
 #include "SDL_syswm.h"
-#include <Windows.h>
+#include <windows.h>
+#include <windowsx.h> // for GET_X_LPARAM and GET_Y_LPARAM
 #include <atlbase.h>
 #include <commctrl.h>
 // Stupid Windows
@@ -134,6 +135,8 @@ static constexpr std::string_view kJsonTag(".json");
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
 static constexpr const char *kSynthCityVersion = "0.0.1";
 static constexpr std::string_view kEmptyTrackName("<unknown>");
+
+#define SYNTHCITY_WM_MIDIPROPERTIES_TREE_CHECKSTATECHANGED (WM_APP + 1)
 
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
@@ -301,6 +304,7 @@ BOOL CALLBACK MidiPropertiesDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, L
       // Dump the track info
       const auto& midiTracks = workspace.currentMidiSource->getTracks();
 
+      // Nice formatting for numbers < 10
       auto logTen = static_cast<uint32>(std::floor(log10(midiTracks.size())));
       for (int currIndex = 0; currIndex < midiTracks.size(); ++ currIndex) {
         const auto& midiTrack = midiTracks[currIndex];
@@ -368,6 +372,21 @@ BOOL CALLBACK MidiPropertiesDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, L
       break;
     case WM_NOTIFY: {
       LPNMHDR nmHeader = reinterpret_cast<LPNMHDR>(lParam);
+
+      // Windows does not send a message when a user clicks an item in a tree view with TVS_CHECKBOXES style ... !!!
+      if ((nmHeader->code == NM_CLICK) && (nmHeader->idFrom == IDC_TREE_MIDIPROPERTIES_TRACKS)) {
+        auto dwPos = GetMessagePos();
+
+        TVHITTESTINFO hitTestInfo = { 0 };
+        hitTestInfo.pt.x = GET_X_LPARAM(dwPos);
+        hitTestInfo.pt.y = GET_Y_LPARAM(dwPos);
+        MapWindowPoints(HWND_DESKTOP, nmHeader->hwndFrom, &hitTestInfo.pt, 1);
+
+        TreeView_HitTest(nmHeader->hwndFrom, &hitTestInfo);
+        if (TVHT_ONITEMSTATEICON & hitTestInfo.flags) {
+          PostMessage(hWndDlg, SYNTHCITY_WM_MIDIPROPERTIES_TREE_CHECKSTATECHANGED, 0, reinterpret_cast<LPARAM>(hitTestInfo.hItem));
+        }
+      }
       switch (LOWORD(wParam)) {
         case IDC_TREE_MIDIPROPERTIES_TRACKS: {
           switch (nmHeader->code) {
@@ -380,7 +399,7 @@ BOOL CALLBACK MidiPropertiesDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, L
 
               const auto& midiTrack = workspace.currentMidiSource->getTracks()[nmTreeView->itemNew.lParam];
               trackInfo += "Track contains " + std::to_string(midiTrack.events.size()) + " events (" +
-                std::to_string(midiTrack.metaCount) + " meta, " + std::to_string(midiTrack.messageCount) + " messages.\r\n";
+                std::to_string(midiTrack.metaCount) + " meta, " + std::to_string(midiTrack.messageCount) + " message).\r\n";
 
               SetDlgItemText(hWndDlg, IDC_EDIT_MIDIPROPERTIES_TRACKDETAILS, StringToWChar(trackInfo).get());
               break;
@@ -388,6 +407,16 @@ BOOL CALLBACK MidiPropertiesDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, L
           }
           break;
         }
+      }
+      break;
+    }
+    // Check all you want, but select what you check
+    case SYNTHCITY_WM_MIDIPROPERTIES_TREE_CHECKSTATECHANGED: {
+      auto hItemChanged = reinterpret_cast<HTREEITEM>(lParam);
+      HWND hWndTrackTree = GetDlgItem(hWndDlg, IDC_TREE_MIDIPROPERTIES_TRACKS);
+      if (TreeView_GetCheckState(hWndTrackTree, hItemChanged)) {
+        // TODO: If current item is checked already, unify the selection and display
+        TreeView_SelectItem(hWndTrackTree, hItemChanged);
       }
       break;
     }
