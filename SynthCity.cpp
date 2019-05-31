@@ -135,6 +135,8 @@ static constexpr std::string_view kJsonTag(".json");
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
 static constexpr const char *kSynthCityVersion = "0.0.1";
 static constexpr std::string_view kEmptyTrackName("<unknown>");
+static constexpr float kScrollBarWidth = 15.0f;
+static constexpr float kSequencerWindowToolbarHeight = 64.0f;
 
 #define SYNTHCITY_WM_MIDIPROPERTIES_TREE_CHECKSTATECHANGED (WM_APP + 1)
 
@@ -550,13 +552,13 @@ void UpdateImGui() {
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight));
   ImGui::NewFrame();
+
   ImGui::SetNextWindowPos(ImVec2(0, 0));
   ImGui::SetNextWindowSize(ImVec2(static_cast<float>(windowWidth), static_cast<float>(sequencerHeight)));
-
-  ImGui::Begin("Instrument", 
+  ImGui::Begin("Instrument",
     nullptr, 
     //ImGuiWindowFlags_NoTitleBar | 
-    ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
   {
     auto& imGuiStyle = ImGui::GetStyle();
     auto oldItemSpacing = imGuiStyle.ItemSpacing;
@@ -591,128 +593,135 @@ void UpdateImGui() {
     auto beatLabelStartY = ImGui::GetCursorPosY();
 
     // Tracks
-    if (instrument != nullptr) {
-      uint32 noteGlobalIndex = 0;
-      for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++ trackIndex) {
-        auto& track = instrument->GetTracks()[trackIndex];
+    ImGui::BeginChild("##InstrumentScrollingRegion",
+      ImVec2(static_cast<float>(windowWidth) - kScrollBarWidth, static_cast<float>(sequencerHeight) - kSequencerWindowToolbarHeight - beatLabelStartY),
+      false,
+      ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+    {
+      if (instrument != nullptr) {
+        uint32 noteGlobalIndex = 0;
+        for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
+          auto& track = instrument->GetTracks()[trackIndex];
 
-        // Track label and UI button for manual trigger
-        ImVec4 oldColors[ImGuiCol_COUNT];
-        memcpy(oldColors, imGuiStyle.Colors, sizeof(oldColors));
+          // Track label and UI button for manual trigger
+          ImVec4 oldColors[ImGuiCol_COUNT];
+          memcpy(oldColors, imGuiStyle.Colors, sizeof(oldColors));
 
-        uint32 flashColor = kPlayTrackFlashColor;
-        SetImGuiTrackColors(imGuiStyle, track.GetColorScheme(), flashColor);
+          uint32 flashColor = kPlayTrackFlashColor;
+          SetImGuiTrackColors(imGuiStyle, track.GetColorScheme(), flashColor);
 
-        auto prevPos = ImGui::GetCursorPos();
-        if (ImGui::Button(track.GetName().
-          c_str(), ImVec2(kKeyboardKeyWidth, kKeyboardKeyHeight))) {
-          // Do it next frame so we only lock audio once per UI loop
-          pendingPlayTrack = trackIndex;
-        }
-        auto currPos = ImGui::GetCursorPos();
-
-        // If it's playing, flash it
-        float flashPct = 0.0f;
-        {
-          auto flashTime = playingTrackFlashTimes[0].find(trackIndex);
-          if (flashTime != playingTrackFlashTimes[0].end()) {
-            auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayTrackFlashDuration);
-            if (pct >= 1.0f) {
-              playingTrackFlashTimes[0].erase(flashTime);
-            }
-            else {
-              flashPct = 1.0f - pct;
-            }
+          auto prevPos = ImGui::GetCursorPos();
+          if (ImGui::Button(track.GetName().
+            c_str(), ImVec2(kKeyboardKeyWidth, kKeyboardKeyHeight))) {
+            // Do it next frame so we only lock audio once per UI loop
+            pendingPlayTrack = trackIndex;
           }
-        }
+          auto currPos = ImGui::GetCursorPos();
 
-        if (flashPct > 0.0f) {
-          prevPos.x -= kPlayNoteFlashGrow * flashPct;
-          prevPos.y -= kPlayNoteFlashGrow * flashPct;
-
-          ImGui::SetCursorPos(prevPos);
-          ImGui::FillRect(ImVec2(kKeyboardKeyWidth + kPlayNoteFlashGrow * 2.0f * flashPct,
-            kKeyboardKeyHeight + kPlayNoteFlashGrow * 2.0f * flashPct),
-            (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
-          ImGui::SetCursorPos(currPos);
-        }
-
-        memcpy(imGuiStyle.Colors, oldColors, sizeof(oldColors));
-
-        // Beat groups
-        uint32 noteLocalIndex = 0;
-        for (size_t b = 0; b < sequencer->GetNumMeasures() * sequencer->GetBeatsPerMeasure(); ++b) {
-          // Notes
-          for (size_t s = 0; s < sequencer->GetSubdivision(); ++s) {
-            ImGui::SameLine();
-
-            // Lesson learned: labels are required to pair UI with UX
-            auto uniqueLabel(track.GetName() + std::to_string(noteLocalIndex));
-
-            auto trackNote = track.GetNotes()[noteLocalIndex];
-            auto cursorPos = ImGui::GetCursorPos();
-
-            // Toggle notes that are clicked
-            imGuiStyle.ItemSpacing.x = 0.0f;
-            imGuiStyle.ItemSpacing.y = 0.0f;
-            if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote != 0, beatWidth, kKeyboardKeyHeight)) {
-              if (trackNote != 0) {
-                trackNote = 0;
+          // If it's playing, flash it
+          float flashPct = 0.0f;
+          {
+            auto flashTime = playingTrackFlashTimes[0].find(trackIndex);
+            if (flashTime != playingTrackFlashTimes[0].end()) {
+              auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayTrackFlashDuration);
+              if (pct >= 1.0f) {
+                playingTrackFlashTimes[0].erase(flashTime);
               }
               else {
-                trackNote = kDefaultNoteVelocity;
+                flashPct = 1.0f - pct;
+              }
+            }
+          }
+
+          if (flashPct > 0.0f) {
+            prevPos.x -= kPlayNoteFlashGrow * flashPct;
+            prevPos.y -= kPlayNoteFlashGrow * flashPct;
+
+            ImGui::SetCursorPos(prevPos);
+            ImGui::FillRect(ImVec2(kKeyboardKeyWidth + kPlayNoteFlashGrow * 2.0f * flashPct,
+              kKeyboardKeyHeight + kPlayNoteFlashGrow * 2.0f * flashPct),
+              (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
+            ImGui::SetCursorPos(currPos);
+          }
+
+          memcpy(imGuiStyle.Colors, oldColors, sizeof(oldColors));
+
+          // Beat groups
+          uint32 noteLocalIndex = 0;
+          for (size_t b = 0; b < sequencer->GetNumMeasures() * sequencer->GetBeatsPerMeasure(); ++b) {
+            // Notes
+            for (size_t s = 0; s < sequencer->GetSubdivision(); ++s) {
+              ImGui::SameLine();
+
+              // Lesson learned: labels are required to pair UI with UX
+              auto uniqueLabel(track.GetName() + std::to_string(noteLocalIndex));
+
+              auto trackNote = track.GetNotes()[noteLocalIndex];
+              auto cursorPos = ImGui::GetCursorPos();
+
+              // Toggle notes that are clicked
+              imGuiStyle.ItemSpacing.x = 0.0f;
+              imGuiStyle.ItemSpacing.y = 0.0f;
+              if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote != 0, beatWidth, kKeyboardKeyHeight)) {
+                if (trackNote != 0) {
+                  trackNote = 0;
+                }
+                else {
+                  trackNote = kDefaultNoteVelocity;
+                }
+
+                // Can only set notes via the sequencer
+                sequencer->SetTrackNote(trackIndex, noteLocalIndex, trackNote);
               }
 
-              // Can only set notes via the sequencer
-              sequencer->SetTrackNote(trackIndex, noteLocalIndex, trackNote);
-            }
+              // Draw filled note
+              if (trackNote != 0) {
+                auto currentPos = ImGui::GetCursorPos();
 
-            // Draw filled note
-            if (trackNote != 0) {
-              auto currentPos = ImGui::GetCursorPos();
+                ImGui::SetCursorPos(cursorPos);
+                ImGui::FillRect(ImVec2(beatWidth, kKeyboardKeyHeight), 0xFFFFFFFF);
 
-              ImGui::SetCursorPos(cursorPos);
-              ImGui::FillRect(ImVec2(beatWidth, kKeyboardKeyHeight), 0xFFFFFFFF);
-
-              // If it's playing, flash it
-              float flashPct = 0.0f;
-              {
-                auto flashTime = playingNotesFlashTimes[0].find(noteGlobalIndex);
-                if (flashTime != playingNotesFlashTimes[0].end()) {
-                  auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayNoteFlashDuration);
-                  if (pct >= 1.0f) {
-                    playingNotesFlashTimes[0].erase(flashTime);
-                  }
-                  else {
-                    flashPct = 1.0f - pct;
+                // If it's playing, flash it
+                float flashPct = 0.0f;
+                {
+                  auto flashTime = playingNotesFlashTimes[0].find(noteGlobalIndex);
+                  if (flashTime != playingNotesFlashTimes[0].end()) {
+                    auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayNoteFlashDuration);
+                    if (pct >= 1.0f) {
+                      playingNotesFlashTimes[0].erase(flashTime);
+                    }
+                    else {
+                      flashPct = 1.0f - pct;
+                    }
                   }
                 }
+
+                if (flashPct > 0.0f) {
+                  auto flashCursorPos = cursorPos;
+
+                  flashCursorPos.x -= kPlayNoteFlashGrow * flashPct;
+                  flashCursorPos.y -= kPlayNoteFlashGrow * flashPct;
+
+                  ImGui::SetCursorPos(flashCursorPos);
+                  ImGui::FillRect(ImVec2(beatWidth + kPlayNoteFlashGrow * 2.0f * flashPct,
+                    kKeyboardKeyHeight + kPlayNoteFlashGrow * 2.0f * flashPct),
+                    (static_cast<uint32>(flashPct * 255.0f) << 24) | kPlayNoteFlashColor);
+                }
+
+                ImGui::SetCursorPos(currentPos);
               }
 
-              if (flashPct > 0.0f) {
-                auto flashCursorPos = cursorPos;
-
-                flashCursorPos.x -= kPlayNoteFlashGrow * flashPct;
-                flashCursorPos.y -= kPlayNoteFlashGrow * flashPct;
-
-                ImGui::SetCursorPos(flashCursorPos);
-                ImGui::FillRect(ImVec2(beatWidth + kPlayNoteFlashGrow * 2.0f * flashPct,
-                  kKeyboardKeyHeight + kPlayNoteFlashGrow * 2.0f * flashPct),
-                  (static_cast<uint32>(flashPct * 255.0f) << 24) | kPlayNoteFlashColor);
-              }
-
-              ImGui::SetCursorPos(currentPos);
+              noteLocalIndex += sequencer->GetMaxSubdivisions() / sequencer->GetSubdivision();
+              noteGlobalIndex += sequencer->GetMaxSubdivisions() / sequencer->GetSubdivision();
             }
-
-            noteLocalIndex += sequencer->GetMaxSubdivisions() / sequencer->GetSubdivision();
-            noteGlobalIndex += sequencer->GetMaxSubdivisions() / sequencer->GetSubdivision();
           }
-        }
 
-        // Reset old X spacing to offset from keyboard key
-        imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
+          // Reset old X spacing to offset from keyboard key
+          imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
+        }
       }
     }
+    ImGui::EndChild();
 
     imGuiStyle.ItemSpacing = oldItemSpacing;
 
