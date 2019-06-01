@@ -1129,7 +1129,12 @@ bool LoadInstrument(std::string instrumentName) {
 
   if (GetOpenFileName(&ofn)) {
     std::lock_guard<std::mutex> lockInstrument(mutexInstrument);
-    return sequencer->LoadInstrument(std::string(W2A(szFile)), instrumentName);
+    if (sequencer->LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
+      ::DestroyMenu(hMenu);
+      hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_FILEINSTRUMENTMENU));
+      SetMenu(sysWmInfo.info.win.window, hMenu);
+      return true;
+    }
   }
   return false;
 }
@@ -1189,6 +1194,12 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
               }
               sequencer->SaveSong(fileName);
             }
+          }
+          return 0;
+        }
+        case ID_INSTRUMENT_ADDVOICE: {
+          if (sequencer->GetInstrument() != nullptr) {
+            // Ugh we need another dialog ...
           }
           return 0;
         }
