@@ -7,12 +7,12 @@
 #include "SDL_audio.h"
 #include <vector>
 #include <iostream>
+#include "WavSound.h"
+#include "SynthSound.h"
 
 // Upper bounds for callback
 // TODO: Can just expand the buffer ...
 static constexpr uint32	kMaxCallbackSampleFrames = 256;
-static constexpr float kSilenceThresholdIntro = 0.01f;
-static constexpr float kSilenceThresholdOutro = 0.50f;
 // Synth voice
 static constexpr double	kSmC0 = 16.3515978312874;
 
@@ -36,21 +36,6 @@ void sm_set_control_cb(sm_control_cb cb, void* payload)
   control_callback = cb;
   control_payload = payload;
   //ticksRemaining = 0;
-  SDL_UnlockAudio();
-}
-
-void Mixer::Sound::Unload() {
-  SDL_LockAudio();
-  if (data)
-  {
-    if (length) {
-      SDL_FreeWAV(data);
-    }
-    else {
-      free(data);
-    }
-    data = nullptr;
-  }
   SDL_UnlockAudio();
 }
 
@@ -95,83 +80,22 @@ void Mixer::ReleaseSound(Mixer::SoundHandle soundHandle) {
 
 Mixer::SoundHandle Mixer::LoadSound(std::string fileName) {
   // TODO: Hash filenames and use them for a library
-  Sound sound;
 
-  SDL_AudioSpec spec;
-  if (SDL_LoadWAV(fileName.c_str(), &spec, &sound.data, &sound.length) == nullptr)
-  {
-    //SDL_UnlockAudio();
+  WavSound* wavSound = new WavSound(fileName);
+  if (wavSound == nullptr) {
     return kInvalidSoundHandle;
   }
 
-  if (spec.freq != 44100) {
-    std::cerr << "Warning: file " << fileName << " is " << spec.freq << "kHz, not 44.1kHz" << std::endl;
+  if (wavSound->getFrequency() != kDefaultFrequency) {
+    MCLOG(Warn, "Mixer::LoadSound: %s has a frequency of %f kHz "
+      "but will be played back at %f kHz", fileName.c_str(),
+      static_cast<float>(wavSound->getFrequency()) / 1000.0f,
+      static_cast<float>(kDefaultFrequency) / 1000.0f);
   }
-
-  if (spec.channels != 1)
-  {
-    std::cerr << "File " << fileName << " has " <<
-      std::to_string(spec.channels) << " channels; only mono sounds are supported" << std::endl;
-    return kInvalidSoundHandle;
-  }
-
-  switch (spec.format)
-  {
-  case AUDIO_S16LSB:
-  case AUDIO_S16MSB:
-    if (spec.format != AUDIO_S16SYS) {
-      int i;
-      for (i = 0; i < sound.length; i += 2)
-      {
-        int x = sound.data[i];
-        sound.data[i] = sound.data[i + 1];
-        sound.data[i + 1] = x;
-      }
-    }
-    break;
-  default:
-    std::cerr << "File " << fileName << " has sample format " <<
-      std::to_string(spec.format) << "; this is unsupported " << std::endl;
-    return kInvalidSoundHandle;
-  }
-
-  sound.filename = fileName;
-  sound.channels = 1;
-  sound.readbuf = sound.data;
-
-  // Skip any inaudible intro ...
-  // TODO: this should really be a pre-processing step
-  auto frameSize = sizeof(uint16) * sound.channels;
-  auto audibleOffset = sound.readbuf;
-  auto audibleLength = static_cast<int32>(sound.length);
-  while (audibleLength > 0) {
-    int32 sum = 0;
-    for (int c = 0; c < sound.channels; ++c) {
-      sum += reinterpret_cast<int16*>(audibleOffset)[c];
-    }
-
-    if ((static_cast<float>(sum) / SHRT_MAX) > kSilenceThresholdIntro) {
-      break;
-    }
-
-    audibleOffset += frameSize;
-    audibleLength -= frameSize;
-  }
-
-  if (audibleLength > 0) {
-    sound.readbuf = audibleOffset;
-    sound.length = audibleLength;
-  }
-  else {
-    std::cerr << "Sound " << fileName << " is totally inaudible by current metric; not trimming" << std::endl;
-  }
-
-  // Length is in bytes, we're counting 16-bit samples
-  sound.length /= 2;
 
   SDL_LockAudio();
   SoundHandle currSoundHandle = nextSoundHandle++;
-  sounds.emplace(currSoundHandle, new Sound(std::move(sound)));
+  sounds.emplace(currSoundHandle, wavSound);
   SDL_UnlockAudio();
 
   return currSoundHandle;
@@ -222,7 +146,7 @@ bool Mixer::Init(uint32 audioBufferSize) {
     return false;
   }
 
-  as.freq = 44100;
+  as.freq = Mixer::kDefaultFrequency;
   as.format = AUDIO_S16SYS;
   as.channels = 2;
   as.samples = audioBufferSize;
@@ -248,66 +172,39 @@ bool Mixer::Init(uint32 audioBufferSize) {
 }
 
 void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
-  int vi, s;
+  int vi;
   /* Clear the buffer */
   memset(mixBuffer, 0, numFrames * sizeof(Sint32) * 2);
 
   // Postpone-delete voices
   std::vector<VoiceHandle> postponeDelete;
 
-  /* For each voice... */
+  // Active voices
   for (auto& voiceEntry : voices) {
-    Mixer::Voice *v = &voiceEntry.second;
-    Mixer::Sound *sound;
+    Voice *v = &voiceEntry.second;
+    Sound *sound;
+
     if (v->sound == Mixer::kInvalidSoundHandle)
       continue;
+
     sound = Mixer::Get().sounds[v->sound];
-    if (sound->length)
+
+    for (uint32 s = 0; s < numFrames; ++s)
     {
-      /* Sampled waveform */
-      int16 *d = (int16 *)sound->readbuf;;
-      for (s = 0; s < numFrames; ++s)
-      {
-        int v1715;
-        if (v->position >= sound->length)
-        {
-          postponeDelete.push_back(voiceEntry.first);
-          break;
-        }
-        v1715 = v->lvol >> 9;
-        mixBuffer[s * 2] += d[v->position] * v1715 >> 7;
-        v1715 = v->rvol >> 9;
-        mixBuffer[s * 2 + 1] += d[v->position] * v1715 >> 7;
-        v->lvol -= (v->lvol >> 8) * v->decay >> 8;
-        v->rvol -= (v->rvol >> 8) * v->decay >> 8;
-        ++v->position;
+      uint16 samples[2] = { 32767, 32767}; // Stereo
+
+      if (sound->getSamplesForFrame(samples, 2, v->position) != 2) {
+        postponeDelete.push_back(voiceEntry.first);
+        break;
       }
-    }
-    else
-    {
-      /* Synth voice */
-      double f = kSmC0 * pow(2.0f, sound->pitch / 12.0);
-      double ff = M_PI * 2.0f * f / 44100.0f;
-      double fm = sound->fm * 44100.0f / f;
-      for (s = 0; s < numFrames; ++s)
-      {
-        int v1715;
-        float mod = sin(v->position * ff) * fm;
-        int w = sin((v->position + mod) * ff) * 32767.0f;
-        v1715 = v->lvol >> 9;
-        mixBuffer[s * 2] += w * v1715 >> 7;
-        v1715 = v->rvol >> 9;
-        mixBuffer[s * 2 + 1] += w * v1715 >> 7;
-        v->lvol -= (v->lvol >> 8) * v->decay >> 8;
-        v->rvol -= (v->rvol >> 8) * v->decay >> 8;
-        ++v->position;
-      }
-      v->lvol -= 16;
-      if (v->lvol < 0)
-        v->lvol = 0;
-      v->rvol -= 16;
-      if (v->rvol < 0)
-        v->rvol = 0;
+
+      mixBuffer[s * 2 + 0] += samples[0] * (v->lvol >> 9) >> 7;
+      mixBuffer[s * 2 + 1] += samples[1] * (v->rvol >> 9) >> 7;
+
+      v->lvol -= (v->lvol >> 8) * v->decay >> 8;
+      v->rvol -= (v->rvol >> 8) * v->decay >> 8;
+      
+      ++v->position;
     }
   }
 

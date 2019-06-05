@@ -9,29 +9,15 @@
 typedef unsigned (*sm_control_cb)(void* payload);
 void sm_set_control_cb(sm_control_cb cb, void* payload);
 
+class Sound;
+
 class Mixer {
 public:
   using SoundHandle = uint32;
   using VoiceHandle = uint32;
   static constexpr SoundHandle kInvalidSoundHandle = 0xFFFFFFFF;
   static constexpr VoiceHandle kInvalidVoiceHandle = 0xFFFFFFFF;
-
-  class Sound
-  {
-  public:
-    std::string filename;
-    Uint8	*data = nullptr;
-    Uint8 *readbuf = nullptr;
-    Uint32	length = 0;
-    Uint8 channels = 0;
-    float	decay = 0.0f;
-
-    // These are for synth, should be separated
-    float	pitch = 0.0f;		/* Pitch (60.0 <==> middle C) */
-    float	fm = 0.0f;		/* Synth FM depth */
-
-    void Unload();
-  };
+  static constexpr uint32 kDefaultFrequency = 44100;
 
   struct Voice
   {
