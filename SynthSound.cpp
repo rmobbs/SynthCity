@@ -2,8 +2,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-SinusSynthSound::SinusSynthSound(const std::string& soundName, uint32 frequency, uint32 samplerFrequency)
-  : SynthSound(soundName, frequency) {
+SinusSynthSound::SinusSynthSound(const std::string& soundName, uint32 samplerFrequency, uint32 frequency)
+  : SynthSound(soundName, samplerFrequency, frequency) {
   this->radstep = static_cast<float>((2.0 * M_PI * frequency) / static_cast<double>(samplerFrequency));
 }
 
