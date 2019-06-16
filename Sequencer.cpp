@@ -43,6 +43,12 @@ enum class Sounds {
   Count,
 };
 
+/* static */
+Sequencer& Sequencer::get() {
+  static Sequencer theSequencer;
+  return theSequencer;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Sequencer::Track
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,7 +247,7 @@ void Sequencer::SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteVelo
 
 uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
   if (currentBpm > 0 && beatSubdivision > 0) {
-    return static_cast<uint32>(44100.0 / currentBpm * 60.0 / static_cast<float>(beatSubdivision));
+    return static_cast<uint32>(Mixer::kDefaultFrequency / currentBpm * 60.0 / static_cast<float>(beatSubdivision));
   }
   return 0;
 }

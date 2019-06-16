@@ -203,5 +203,7 @@ public:
 
    Sequencer() {}
   ~Sequencer();
+
+  static Sequencer& get();
 };
 

@@ -72,7 +72,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\3rdParty\SDL2\include;..\3rdParty\glew;..\3rdParty\imgui;..\3rdParty\rapidjson</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\3rdParty\SDL2\include;..\3rdParty\glew;..\3rdParty\glm;..\3rdParty\imgui;..\3rdParty\rapidjson</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;..\3rdParty\SDL2\lib\x86;..\3rdParty\soil\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -80,7 +80,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\3rdParty\SDL2\include;..\3rdParty\glew;..\3rdParty\imgui;..\3rdParty\rapidjson</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\3rdParty\SDL2\include;..\3rdParty\glew;..\3rdParty\glm;..\3rdParty\imgui;..\3rdParty\rapidjson</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;..\3rdParty\SDL2\lib\x86;..\3rdParty\soil\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -177,14 +177,21 @@
     <ClInclude Include="..\3rdParty\imgui\stb_textedit.h" />
     <ClInclude Include="..\3rdParty\imgui\stb_truetype.h" />
     <ClInclude Include="BaseTypes.h" />
+    <ClInclude Include="ComposerView.h" />
     <ClInclude Include="EnumIterator.h" />
+    <ClInclude Include="GlobalRenderData.h" />
+    <ClInclude Include="InputState.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="MidiSource.h" />
+    <ClInclude Include="OddsAndEnds.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Renderable.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sequencer.h" />
     <ClInclude Include="Mixer.h" />
+    <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Sound.h" />
+    <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
     <ClInclude Include="tinyxml2.h" />
     <ClInclude Include="WavSound.h" />
@@ -194,10 +201,16 @@
     <ClCompile Include="..\3rdParty\imgui\imgui.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="ComposerView.cpp" />
+    <ClCompile Include="GlobalRenderData.cpp" />
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="MidiSource.cpp" />
+    <ClCompile Include="OddsAndEnds.cpp" />
+    <ClCompile Include="Renderable.cpp" />
     <ClCompile Include="Sequencer.cpp" />
     <ClCompile Include="Mixer.cpp" />
+    <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="SpriteRenderable.cpp" />
     <ClCompile Include="SynthCity.cpp" />
     <ClCompile Include="SynthSound.cpp" />
     <ClCompile Include="tinyxml2.cpp" />

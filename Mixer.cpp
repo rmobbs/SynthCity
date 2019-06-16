@@ -48,6 +48,7 @@ Mixer::Mixer() {
 
 Mixer::~Mixer() {
   SDL_LockAudio();
+  MCLOG(Warn, "In ~Mixer and audio thread is supposedly locked");
 
   if (audioDeviceId != 0) {
     SDL_CloseAudioDevice(audioDeviceId);
@@ -81,6 +82,7 @@ void Mixer::ReleaseSound(Mixer::SoundHandle soundHandle) {
 Mixer::SoundHandle Mixer::LoadSound(std::string fileName) {
   // TODO: Hash filenames and use them for a library
 
+#if 1
   WavSound* wavSound = new WavSound(fileName);
   if (wavSound == nullptr) {
     return kInvalidSoundHandle;
@@ -92,6 +94,9 @@ Mixer::SoundHandle Mixer::LoadSound(std::string fileName) {
       static_cast<float>(wavSound->getFrequency()) / 1000.0f,
       static_cast<float>(kDefaultFrequency) / 1000.0f);
   }
+#else
+  SinusSynthSound* wavSound = new SinusSynthSound(fileName, kDefaultFrequency, 1000);
+#endif
 
   SDL_LockAudio();
   SoundHandle currSoundHandle = nextSoundHandle++;
@@ -191,7 +196,7 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
 
     for (uint32 s = 0; s < numFrames; ++s)
     {
-      uint16 samples[2] = { 32767, 32767}; // Stereo
+      uint16 samples[2] = { 0 }; // Stereo
 
       if (sound->getSamplesForFrame(samples, 2, v->position) != 2) {
         postponeDelete.push_back(voiceEntry.first);
