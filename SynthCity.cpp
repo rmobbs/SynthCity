@@ -24,6 +24,7 @@
 #include "Renderable.h"
 #include "ComposerView.h"
 #include "InputState.h"
+#include "SynthSound.h"
 
 static ComposerView* currentView = nullptr;
 
@@ -78,7 +79,7 @@ struct MidiPropertiesDialogWorkspace {
 };
 
 BOOL CALLBACK MidiPropertiesDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  auto& sequencer = Sequencer::get();
+  auto& sequencer = Sequencer::Get();
 
   auto& workspace = *reinterpret_cast<MidiPropertiesDialogWorkspace*>(GetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA));
   switch (uMsg) {
@@ -221,8 +222,90 @@ bool GetMidiConversionParams(const MidiSource& midiSource, Sequencer::MidiConver
   SetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA, reinterpret_cast<LONG>(&workspace));
 
   // Push the dialog
-  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_DIALOG_MIDIPROPERTIES),
+  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_MIDIPROPERTIES),
     sysWmInfo.info.win.window, reinterpret_cast<DLGPROC>(MidiPropertiesDialogProc)) == IDOK) {
+    return true;
+  }
+
+  return false;
+}
+
+struct AddSynthVoiceWorkspace {
+  const SynthSoundInfo* selectedSoundInfo = nullptr;
+};
+
+BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  auto& sequencer = Sequencer::Get();
+  auto& workspace = *reinterpret_cast<AddSynthVoiceWorkspace*>(GetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA));
+
+  switch (uMsg) {
+    case WM_INITDIALOG: {
+      // Add all synth voices to the combo
+      HWND hWndCombo = GetDlgItem(hWndDlg, IDC_COMBO_ADDSYNTHVOICEPRESET);
+
+      const auto& synthSoundInfoMap = SynthSoundInfoFactory::GetInfoMap();
+      for (const auto& synthSoundInfo : synthSoundInfoMap) {
+        // Add to combo box
+        SendMessage(hWndCombo, CB_ADDSTRING, 0,
+          reinterpret_cast<LPARAM>(StringToWChar(synthSoundInfo.second.name).get()));
+      }
+
+      break;
+    }
+    case WM_COMMAND:
+      if (HIWORD(wParam) == CBN_SELCHANGE) {
+        const auto& synthSoundInfoMap = SynthSoundInfoFactory::GetInfoMap();
+
+        int itemIndex = SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
+        if (itemIndex < synthSoundInfoMap.size()) {
+          auto itemIter = synthSoundInfoMap.begin();
+          std::advance(itemIter, itemIndex);
+
+          workspace.selectedSoundInfo = &itemIter->second;
+
+          // Update properties display
+        }
+      }
+      else {
+        switch (LOWORD(wParam)) {
+          case IDOK: {
+            // Pull data
+
+            EndDialog(hWndDlg, wParam);
+            return TRUE;
+          }
+          case IDCANCEL: {
+            EndDialog(hWndDlg, wParam);
+            return TRUE;
+          }
+          default:
+            break;
+          }
+          break;
+      }
+    case WM_CLOSE:
+      break;
+    default:
+      break;
+  }
+  return FALSE;
+}
+
+bool AddSynthVoiceDialog() { //const MidiSource& midiSource, Sequencer::MidiConversionParams& midiConversionParams) {
+  AddSynthVoiceWorkspace workspace;
+  // Pass data
+  SetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA, reinterpret_cast<LONG>(&workspace));
+
+  // Push the dialog
+  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_INSTRUMENT_ADDSYNTHVOICE),
+    sysWmInfo.info.win.window, reinterpret_cast<DLGPROC>(AddSynthVoiceDialogProc)) == IDOK) {
+    if (workspace.selectedSoundInfo != nullptr) {
+      MCLOG(Info, "You selected synth sound %s", workspace.selectedSoundInfo->name.c_str());
+
+      // Instantiate
+
+      // Add to instrument
+    }
     return true;
   }
 
@@ -289,12 +372,16 @@ void UpdateSdl() {
 void MainLoop() {
   UpdateSdl();
 
-  auto& sequencer = Sequencer::get();
+  auto& sequencer = Sequencer::Get();
   if (sequencer.GetInstrument()) {
+    EnableMenuItem(hMenu, ID_FILE_SAVEINSTRUMENT, MF_ENABLED);
+    EnableMenuItem(hMenu, ID_FILE_NEWSONG, MF_ENABLED);
     EnableMenuItem(hMenu, ID_FILE_LOADSONG, MF_ENABLED);
     EnableMenuItem(hMenu, ID_FILE_SAVESONG, MF_ENABLED);
   }
   else {
+    EnableMenuItem(hMenu, ID_FILE_SAVEINSTRUMENT, MF_DISABLED);
+    EnableMenuItem(hMenu, ID_FILE_NEWSONG, MF_DISABLED);
     EnableMenuItem(hMenu, ID_FILE_LOADSONG, MF_DISABLED);
     EnableMenuItem(hMenu, ID_FILE_SAVESONG, MF_DISABLED);
   }
@@ -417,7 +504,6 @@ bool InitGL() {
       })
   );
 
-  // Load shader programs
   GlobalRenderData::get().addShaderProgram(std::string("ImGuiProgram"),
     ShaderProgram(std::string("ImGuiProgram"),
       std::string("Shaders\\proj_pos2_uv_diffuse.vert"),
@@ -461,9 +547,9 @@ bool LoadInstrument(std::string instrumentName) {
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   if (GetOpenFileName(&ofn)) {
-    if (Sequencer::get().LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
+    if (Sequencer::Get().LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
       ::DestroyMenu(hMenu);
-      hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_FILEINSTRUMENTMENU));
+      hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_MENU_FILEINSTRUMENT));
       SetMenu(sysWmInfo.info.win.window, hMenu);
       return true;
     }
@@ -499,14 +585,14 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
             ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
             if (GetOpenFileName(&ofn)) {
-              Sequencer::get().LoadSong(std::string(W2A(szFile)));
+              Sequencer::Get().LoadSong(std::string(W2A(szFile)));
             }
           }
           return 0;
         }
         case ID_ACCELERATOR_SAVE_SONG:
         case ID_FILE_SAVESONG: {
-          if (Sequencer::get().GetInstrument() != nullptr) {
+          if (Sequencer::Get().GetInstrument() != nullptr) {
             WCHAR szFile[FILENAME_MAX] = { 0 };
             OPENFILENAME ofn = { 0 };
 
@@ -524,14 +610,16 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
               if (fileName.compare(fileName.length() - kJsonTag.length(), kJsonTag.length(), kJsonTag)) {
                 fileName += kJsonTag;
               }
-              Sequencer::get().SaveSong(fileName);
+              Sequencer::Get().SaveSong(fileName);
             }
           }
           return 0;
         }
         case ID_INSTRUMENT_ADDVOICE: {
-          if (Sequencer::get().GetInstrument() != nullptr) {
-            // Ugh we need another dialog ...
+          if (Sequencer::Get().GetInstrument() != nullptr) {
+            if (AddSynthVoiceDialog()) {
+
+            }
           }
           return 0;
         }
@@ -547,7 +635,7 @@ bool Init() {
     OutputDebugString(StringToWChar(logLine).get());
   });
 
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE) < 0) {
+  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     MCLOG(Fatal, "Failed to init video: %s", SDL_GetError());
     SDL_Quit();
     return false;
@@ -568,7 +656,7 @@ bool Init() {
 
   SDL_VERSION(&sysWmInfo.version);
   if (SDL_GetWindowWMInfo(sdlWindow, &sysWmInfo)) {
-    hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_FILEMENU));
+    hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_MENU_FILE));
     SetMenu(sysWmInfo.info.win.window, hMenu);
   }
 
@@ -593,7 +681,7 @@ bool Init() {
   InitImGui();
 
   // Instantiate and initialize sequencer
-  auto& sequencer = Sequencer::get();
+  auto& sequencer = Sequencer::Get();
   if (!sequencer.Init(kDefaultNumMeasures, kDefaultBeatsPerMeasure,
     kDefaultBpm, TimelineDivisions.back(), kDefaultSubdivisions)) {
     MCLOG(Fatal, "Unable to initialize mixer");
@@ -627,14 +715,14 @@ void Term() {
 }
 
 void AtExit() {
-  //_CrtDumpMemoryLeaks();
+  _CrtDumpMemoryLeaks();
 }
 
 int main(int argc, char **argv) {
   atexit(AtExit);
 
-  //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
-  //_CrtSetBreakAlloc(161); 
+  _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
+  //_CrtSetBreakAlloc(548); 
 
   if (!Init()) {
     return -1;

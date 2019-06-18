@@ -177,6 +177,7 @@
     <ClInclude Include="..\3rdParty\imgui\stb_textedit.h" />
     <ClInclude Include="..\3rdParty\imgui\stb_truetype.h" />
     <ClInclude Include="BaseTypes.h" />
+    <ClInclude Include="ClassFactory.h" />
     <ClInclude Include="ComposerView.h" />
     <ClInclude Include="EnumIterator.h" />
     <ClInclude Include="GlobalRenderData.h" />
@@ -201,6 +202,7 @@
     <ClCompile Include="..\3rdParty\imgui\imgui.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="ClassFactory.cpp" />
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />
     <ClCompile Include="logging.cpp" />

@@ -44,7 +44,7 @@ enum class Sounds {
 };
 
 /* static */
-Sequencer& Sequencer::get() {
+Sequencer& Sequencer::Get() {
   static Sequencer theSequencer;
   return theSequencer;
 }

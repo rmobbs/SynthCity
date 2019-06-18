@@ -224,7 +224,7 @@ void ComposerView::ImGuiRenderable::SetTrackColors(std::string colorScheme, uint
 }
 
 void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
-  auto& sequencer = Sequencer::get();
+  auto& sequencer = Sequencer::Get();
 
   // Lock the instrument for the duration
   //std::lock_guard<std::mutex> lockInstrument(mutexInstrument);

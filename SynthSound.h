@@ -1,8 +1,18 @@
 #pragma once
 
 #include "Sound.h"
+#include "ClassFactory.h"
 
-// Interim class for synthesized sounds for eventual common functionality
+struct SynthSoundInfo {
+  DECLARE_CLASS_INFO;
+
+  std::string description;
+};
+
+DECLARE_CLASS_FACTORY(SynthSoundInfoFactory, SynthSoundInfo);
+
+#define REGISTER_SYNTH_SOUND(...) FACTORY_REGISTER(SynthSoundInfoFactory, SynthSoundInfo, SynthSoundInfo(__VA_ARGS__))
+
 class SynthSound : public Sound {
 private:
   uint32 frequency = 0;
@@ -21,7 +31,9 @@ class SinusSynthSound : public SynthSound {
 private:
   float radians = 0;
   float radstep = 0;
+
 public:
-  SinusSynthSound(const std::string& soundName, uint32 samplerFrequency, uint32 frequency);
+  
+  SinusSynthSound(uint32 samplerFrequency, uint32 frequency);
   uint8 getSamplesForFrame(uint16* samples, uint8 channels, uint32 frame) override;
 };
