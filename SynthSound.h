@@ -36,5 +36,5 @@ private:
 public:
   
   SinusSynthSound(uint32 samplerFrequency, uint32 frequency, uint32 duration);
-  uint8 getSamplesForFrame(uint16* samples, uint8 channels, uint32 frame) override;
+  uint8 getSamplesForFrame(int16* samples, uint8 channels, uint32 frame) override;
 };

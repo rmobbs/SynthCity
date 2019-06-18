@@ -42,6 +42,7 @@ WavSound::WavSound(const std::string& soundName)
   auto frameSize = sizeof(uint16) * spec.channels;
   auto audibleOffset = 0;
   auto audibleLength = length;
+
   while (audibleLength > 0) {
     int32 sum = 0;
     for (int c = 0; c < spec.channels; ++c) {
@@ -69,8 +70,8 @@ WavSound::WavSound(const std::string& soundName)
   SDL_FreeWAV(data);
 }
 
-uint8 WavSound::getSamplesForFrame(uint16* samples, uint8 channels, uint32 frame) {
-  const uint32 frameSize = sizeof(uint16) * this->channels;
+uint8 WavSound::getSamplesForFrame(int16* samples, uint8 channels, uint32 frame) {
+  const uint32 frameSize = sizeof(int16) * this->channels;
 
   // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
   // by the size of our frame

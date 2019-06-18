@@ -8,7 +8,7 @@ SinusSynthSound::SinusSynthSound(uint32 samplerFrequency, uint32 frequency, uint
   this->radstep = static_cast<float>((2.0 * M_PI * frequency) / static_cast<double>(samplerFrequency));
 }
 
-uint8 SinusSynthSound::getSamplesForFrame(uint16* samples, uint8 channels, uint32 frame) {
+uint8 SinusSynthSound::getSamplesForFrame(int16* samples, uint8 channels, uint32 frame) {
   if (frame < beatLength) {
     this->radians += this->radstep; // * speed
     while (this->radians > (2.0 * M_PI)) {

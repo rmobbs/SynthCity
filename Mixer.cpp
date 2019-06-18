@@ -9,6 +9,7 @@
 #include <iostream>
 #include "WavSound.h"
 #include "SynthSound.h"
+#include <algorithm>
 
 // Upper bounds for callback
 // TODO: Can just expand the buffer ...
@@ -195,9 +196,9 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
 
     for (uint32 s = 0; s < numFrames; ++s)
     {
-      uint16 samples[2] = { 0 }; // Stereo
+      int16 samples[2] = { 0 }; // Stereo
 
-      if (sound->getSamplesForFrame(samples, 2, v->position) != 2) {
+      if (sound->getSamplesForFrame(samples, 2, v->position) != 2 || (v->lvol <= 0 && v->rvol <= 0)) {
         postponeDelete.push_back(voiceEntry.first);
         break;
       }
@@ -214,6 +215,15 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
 
   for (const auto& voice : postponeDelete) {
     voices.erase(voice);
+  }
+
+  auto ClipFrame = [](int32* mixBuffer, uint32 index) {
+    mixBuffer[index] = std::max(std::min(mixBuffer[index], 0x7FFFFF), -0x800000);
+  };
+
+  for (uint32 s = 0; s < numFrames; ++s) {
+    ClipFrame(mixBuffer, s * 2 + 0);
+    ClipFrame(mixBuffer, s * 2 + 1);
   }
 }
 
