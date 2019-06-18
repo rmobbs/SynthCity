@@ -25,6 +25,7 @@
 #include "ComposerView.h"
 #include "InputState.h"
 #include "SynthSound.h"
+#include "Mixer.h"
 
 static ComposerView* currentView = nullptr;
 
@@ -54,6 +55,7 @@ static constexpr uint32 kDefaultBeatsPerMeasure = 4;
 static constexpr uint32 kDefaultSubdivisions = 4;
 static constexpr uint32 kDefaultBpm = 120;
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
+static constexpr std::string_view kDefaultNewTrackName("NewTrack");
 
 static double currentTime = 0;
 static WNDPROC oldWindowProc = nullptr;
@@ -232,6 +234,9 @@ bool GetMidiConversionParams(const MidiSource& midiSource, Sequencer::MidiConver
 
 struct AddSynthVoiceWorkspace {
   const SynthSoundInfo* selectedSoundInfo = nullptr;
+  std::string voiceName;
+  uint32 frequency = 0;
+  uint32 duration = 0;
 };
 
 BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -240,6 +245,38 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
 
   switch (uMsg) {
     case WM_INITDIALOG: {
+      auto instrument = Sequencer::Get().GetInstrument();
+
+      // Pick an available name
+      std::string defaultName(kDefaultNewTrackName);
+      for (;;) {
+        int nameSuffix = 0;
+
+        auto& tracks = instrument->GetTracks();
+
+        int index;
+        for (index = 0; index < tracks.size(); ++index) {
+          if (tracks[index].GetName() == defaultName) {
+            break;
+          }
+        }
+
+        if (index >= tracks.size()) {
+          break;
+        }
+
+        defaultName = std::string(kDefaultNewTrackName) + std::to_string(++nameSuffix);
+      }
+
+      SetDlgItemText(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_NAME, StringToWChar(defaultName).get());
+
+      // Set default duration
+      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_NUMERATOR, 1, FALSE);
+      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_DENOMINATOR, 4, FALSE);
+
+      // Set default frequency
+      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_FREQUENCY, 1000, FALSE);
+
       // Add all synth voices to the combo
       HWND hWndCombo = GetDlgItem(hWndDlg, IDC_COMBO_ADDSYNTHVOICEPRESET);
 
@@ -248,6 +285,12 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
         // Add to combo box
         SendMessage(hWndCombo, CB_ADDSTRING, 0,
           reinterpret_cast<LPARAM>(StringToWChar(synthSoundInfo.second.name).get()));
+      }
+
+      // Choose the default
+      SendMessage(hWndCombo, CB_SETCURSEL, 0, 0);
+      if (synthSoundInfoMap.size()) {
+        workspace.selectedSoundInfo = &synthSoundInfoMap.begin()->second;
       }
 
       break;
@@ -270,6 +313,29 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
         switch (LOWORD(wParam)) {
           case IDOK: {
             // Pull data
+            workspace.frequency =
+              GetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_FREQUENCY, nullptr, FALSE);
+            
+            WCHAR voiceName[256];
+            GetDlgItemText(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_NAME, voiceName, _countof(voiceName));
+            USES_CONVERSION;
+            workspace.voiceName = std::string(W2A(voiceName));
+
+            INT num = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_NUMERATOR, nullptr, FALSE);
+            INT den = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_DENOMINATOR, nullptr, FALSE);
+            auto& sequencer = Sequencer::Get();
+
+            if (den > sequencer.GetMaxSubdivisions()) {
+              den = sequencer.GetMaxSubdivisions();
+            }
+            if (den < 1) {
+              den = 1;
+            }
+
+            auto& mixer = Mixer::Get();
+
+            workspace.duration = ((float)num / (float)den) * 
+              (Mixer::kDefaultFrequency / Mixer::kDefaultChannels);
 
             EndDialog(hWndDlg, wParam);
             return TRUE;
@@ -303,6 +369,8 @@ bool AddSynthVoiceDialog() { //const MidiSource& midiSource, Sequencer::MidiConv
       MCLOG(Info, "You selected synth sound %s", workspace.selectedSoundInfo->name.c_str());
 
       // Instantiate
+      Sequencer::Get().GetInstrument()->AddTrack(workspace.voiceName, "Need color scheme",
+        new SinusSynthSound(Mixer::kDefaultFrequency, workspace.frequency, workspace.duration));
 
       // Add to instrument
     }

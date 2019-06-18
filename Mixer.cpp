@@ -82,7 +82,6 @@ void Mixer::ReleaseSound(Mixer::SoundHandle soundHandle) {
 Mixer::SoundHandle Mixer::LoadSound(std::string fileName) {
   // TODO: Hash filenames and use them for a library
 
-#if 1
   WavSound* wavSound = new WavSound(fileName);
   if (wavSound == nullptr) {
     return kInvalidSoundHandle;
@@ -94,13 +93,13 @@ Mixer::SoundHandle Mixer::LoadSound(std::string fileName) {
       static_cast<float>(wavSound->getFrequency()) / 1000.0f,
       static_cast<float>(kDefaultFrequency) / 1000.0f);
   }
-#else
-  SinusSynthSound* wavSound = new SinusSynthSound(fileName, kDefaultFrequency, 1000);
-#endif
+  return AddSound(wavSound);
+}
 
+Mixer::SoundHandle Mixer::AddSound(Sound* sound) {
   SDL_LockAudio();
   SoundHandle currSoundHandle = nextSoundHandle++;
-  sounds.emplace(currSoundHandle, wavSound);
+  sounds.emplace(currSoundHandle, sound);
   SDL_UnlockAudio();
 
   return currSoundHandle;

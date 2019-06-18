@@ -16,6 +16,7 @@
 #include "rapidjson/prettywriter.h"
 #include "MidiSource.h"
 #include "logging.h"
+#include "SynthSound.h"
 
 static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
@@ -127,6 +128,24 @@ void Sequencer::Instrument::SetNoteCount(uint32 numNotes) {
 
 void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorScheme, std::string fileName) {
   auto soundIndex = Mixer::Get().LoadSound(fileName);
+  if (soundIndex != -1) {
+    auto trackIndex = tracks.size();
+    tracks.resize(trackIndex + 1);
+
+    auto voiceIndex = Mixer::Get().AddVoice();
+
+    tracks[trackIndex].name = voiceName;
+    tracks[trackIndex].colorScheme = colorScheme;
+    tracks[trackIndex].soundIndex = soundIndex;
+    tracks[trackIndex].voiceIndex = voiceIndex;
+
+    // TODO: Do we always want to do this?
+    tracks[trackIndex].AddNotes(numNotes, 0);
+  }
+}
+
+void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorScheme, SynthSound* synthSound) {
+  auto soundIndex = Mixer::Get().AddSound(synthSound);
   if (soundIndex != -1) {
     auto trackIndex = tracks.size();
     tracks.resize(trackIndex + 1);

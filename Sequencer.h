@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 
+class SynthSound;
 class Sequencer {
 private:
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
@@ -59,6 +60,7 @@ public:
     uint32 numNotes;
 
     void AddTrack(std::string voiceName, std::string colorScheme, std::string fileName);
+    void AddTrack(std::string voiceName, std::string colorScheme, SynthSound* synthSound);
     void ClearNotes();
     void Clear();
     void PlayTrack(uint32 trackIndex, uint8 velocity);
@@ -109,7 +111,7 @@ public:
     return isMetrononeOn;
   }
 
-  inline const Instrument* GetInstrument(void) const {
+  inline Instrument* GetInstrument(void) {
     return instrument;
   }
 

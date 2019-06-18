@@ -18,6 +18,7 @@ public:
   static constexpr SoundHandle kInvalidSoundHandle = 0xFFFFFFFF;
   static constexpr VoiceHandle kInvalidVoiceHandle = 0xFFFFFFFF;
   static constexpr uint32 kDefaultFrequency = 44100;
+  static constexpr uint32 kDefaultChannels = 2;
 
   struct Voice
   {
@@ -58,6 +59,7 @@ public:
   }
 
   SoundHandle LoadSound(std::string fileName);
+  SoundHandle AddSound(Sound* sound);
   void ReleaseSound(SoundHandle soundHandle);
 
   VoiceHandle AddVoice(bool autoDestroy = false);
