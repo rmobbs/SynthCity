@@ -201,7 +201,9 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
       float samples[2] = { 0 }; // Stereo
 
       if (sound->getSamplesForFrame(samples, 2, v->position) != 2 || (v->lvol <= 0 && v->rvol <= 0)) {
-        postponeDelete.push_back(voiceEntry.first);
+        if (v->autoAllocated) {
+          postponeDelete.push_back(voiceEntry.first);
+        }
         break;
       }
 
