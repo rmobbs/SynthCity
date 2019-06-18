@@ -184,6 +184,7 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
   // Postpone-delete voices
   std::vector<VoiceHandle> postponeDelete;
 
+  // Convert float voice values to int16, and normalize
   float mul = SHRT_MAX / static_cast<float>(voices.size());
 
   // Active voices

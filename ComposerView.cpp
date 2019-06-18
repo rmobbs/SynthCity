@@ -349,7 +349,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
               ImGui::SameLine();
 
               // Lesson learned: labels are required to pair UI with UX
-              auto uniqueLabel(track.GetName() + std::to_string(noteLocalIndex));
+              auto uniqueLabel(track.GetName() + std::string("#") + std::to_string(noteLocalIndex));
 
               auto trackNote = track.GetNotes()[noteLocalIndex];
               auto cursorPos = ImGui::GetCursorPos();
