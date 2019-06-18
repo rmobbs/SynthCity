@@ -11,7 +11,7 @@ protected:
 public:
   WavSound(const std::string& soundName);
 
-  uint8 getSamplesForFrame(int16* samples, uint8 channels, uint32 frame) override;
+  uint8 getSamplesForFrame(float* samples, uint8 channels, uint32 frame) override;
 
   uint32 getFrequency() const {
     return frequency;

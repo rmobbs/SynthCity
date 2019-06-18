@@ -184,6 +184,8 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
   // Postpone-delete voices
   std::vector<VoiceHandle> postponeDelete;
 
+  float mul = SHRT_MAX / static_cast<float>(voices.size());
+
   // Active voices
   for (auto& voiceEntry : voices) {
     Voice *v = &voiceEntry.second;
@@ -196,15 +198,15 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
 
     for (uint32 s = 0; s < numFrames; ++s)
     {
-      int16 samples[2] = { 0 }; // Stereo
+      float samples[2] = { 0 }; // Stereo
 
       if (sound->getSamplesForFrame(samples, 2, v->position) != 2 || (v->lvol <= 0 && v->rvol <= 0)) {
         postponeDelete.push_back(voiceEntry.first);
         break;
       }
 
-      mixBuffer[s * 2 + 0] += samples[0] * (v->lvol >> 9) >> 7;
-      mixBuffer[s * 2 + 1] += samples[1] * (v->rvol >> 9) >> 7;
+      mixBuffer[s * 2 + 0] += static_cast<int16>(samples[0] * mul) * (v->lvol >> 9) >> 7;
+      mixBuffer[s * 2 + 1] += static_cast<int16>(samples[1] * mul) * (v->rvol >> 9) >> 7;
 
       v->lvol -= (v->lvol >> 8) * v->decay >> 8;
       v->rvol -= (v->rvol >> 8) * v->decay >> 8;

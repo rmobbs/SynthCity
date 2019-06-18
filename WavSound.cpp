@@ -70,7 +70,7 @@ WavSound::WavSound(const std::string& soundName)
   SDL_FreeWAV(data);
 }
 
-uint8 WavSound::getSamplesForFrame(int16* samples, uint8 channels, uint32 frame) {
+uint8 WavSound::getSamplesForFrame(float* samples, uint8 channels, uint32 frame) {
   const uint32 frameSize = sizeof(int16) * this->channels;
 
   // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
@@ -80,8 +80,8 @@ uint8 WavSound::getSamplesForFrame(int16* samples, uint8 channels, uint32 frame)
   }
 
   for (uint8 channel = 0; channel < channels; ++channel) {
-    samples[channel] = reinterpret_cast<int16*>(this->
-      data.data() + frame * frameSize)[channel % this->channels];
+    samples[channel] = static_cast<float>(reinterpret_cast<int16*>(this->
+      data.data() + frame * frameSize)[channel % this->channels]) / static_cast<float>(SHRT_MAX);
   }
 
   return channels;
