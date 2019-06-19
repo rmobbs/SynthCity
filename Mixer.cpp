@@ -10,11 +10,15 @@
 #include "WavSound.h"
 #include "SynthSound.h"
 #include <algorithm>
+#include "OddsAndEnds.h"
+#include <windows.h>
+#undef min
+#undef max
 
 // Upper bounds for callback
 // TODO: Can just expand the buffer ...
 static constexpr uint32	kMaxCallbackSampleFrames = 256;
-static constexpr uint32 kMaxSimultaneousVoices = 16;
+static constexpr uint32 kMaxSimultaneousVoices = 8;
 
 // Synth voice
 static constexpr double	kSmC0 = 16.3515978312874;
@@ -156,43 +160,44 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
   memset(mixBuffer, 0, numFrames * sizeof(Sint32) * 2);
 
   // Postpone-delete voices
-  std::vector<VoiceHandle> postponeDelete;
+  std::vector<std::vector<Voice>::iterator> postponeDelete;
 
   // Convert float voice values to int16, and normalize
   float mul = SHRT_MAX / static_cast<float>(kMaxSimultaneousVoices);
 
   // Active voices
-  for (auto& voiceEntry : voices) {
-    Voice *v = &voiceEntry.second;
-    Sound *sound;
+  uint32 i = 0;
+  uint32 n = voices.size();
+  while (i < n) {
+    Voice *v = &voices[i];
+    Sound *s = Mixer::Get().sounds[v->sound];
 
-    if (v->sound == Mixer::kInvalidSoundHandle)
-      continue;
-
-    sound = Mixer::Get().sounds[v->sound];
-
-    for (uint32 s = 0; s < numFrames; ++s)
-    {
+    for (uint32 f = 0; f < numFrames; ++f) {
       float samples[2] = { 0 }; // Stereo
 
-      if (sound->getSamplesForFrame(samples, 2, v->position) != 2 || (v->lvol <= 0 && v->rvol <= 0)) {
-        postponeDelete.push_back(voiceEntry.first);
+      if (s->getSamplesForFrame(samples, 2, v->position) != 2 || (v->lvol <= 0 && v->rvol <= 0)) {
+        v->sound = kInvalidSoundHandle;
         break;
       }
 
-      mixBuffer[s * 2 + 0] += static_cast<int16>(samples[0] * mul) * (v->lvol >> 9) >> 7;
-      mixBuffer[s * 2 + 1] += static_cast<int16>(samples[1] * mul) * (v->rvol >> 9) >> 7;
+      mixBuffer[f * 2 + 0] += static_cast<int16>(samples[0] * mul) * (v->lvol >> 9) >> 7;
+      mixBuffer[f * 2 + 1] += static_cast<int16>(samples[1] * mul) * (v->rvol >> 9) >> 7;
 
       v->lvol -= (v->lvol >> 8) * v->decay >> 8;
       v->rvol -= (v->rvol >> 8) * v->decay >> 8;
       
       ++v->position;
     }
+
+    if (v->sound != kInvalidSoundHandle) {
+      ++i;
+    }
+    else {
+      voices[i] = voices[--n];
+    }
   }
 
-  for (const auto& voice : postponeDelete) {
-    voices.erase(voice);
-  }
+  voices.resize(n);
 
   auto ClipFrame = [](int32* mixBuffer, uint32 index) {
     mixBuffer[index] = std::max(std::min(mixBuffer[index], 0x7FFFFF), -0x800000);
@@ -253,23 +258,29 @@ void Mixer::AudioCallback(void *ud, Uint8 *stream, int len)
 void Mixer::Play(uint32 soundHandle, float volume) {
   SDL_LockAudio();
 
-  VoiceHandle voiceHandle = nextVoiceHandle++;
+  if (voices.size() >= kMaxSimultaneousVoices) {
+    MCLOG(Error, "Currently playing max voices; sound dropped");
+  }
+  else {
+    Voice voice;
+    voice.sound = soundHandle;
+    voice.position = 0;
 
-  Voice voice;
-  voice.sound = soundHandle;
-  voice.position = 0;
+    // When mixed our sample will be divided by the max simultaneous voices,
+    // so make sure we get full volume
+    volume *= static_cast<float>(kMaxSimultaneousVoices);
+    voice.lvol = (int)(volume * 16777216.0);
+    voice.rvol = (int)(volume * 16777216.0);
+    
+    float decay = 0.2f;
+    decay *= decay;
+    decay *= 0.00001f;
+    voice.decay = (int)(decay * 16777216.0);
 
-  // When mixed our sample will be divided by the max simultaneous voices,
-  // so make sure we get full volume
-  volume *= static_cast<float>(kMaxSimultaneousVoices);
-  voice.lvol = (int)(volume * 16777216.0);
-  voice.rvol = (int)(volume * 16777216.0);
-
-  voices.emplace(voiceHandle, voice);
+    voices.emplace_back(voice);
+  }
 
   SDL_UnlockAudio();
-
-  MCLOG(Warn, "Voice added; voice count=%d", voices.size());
 }
 
 /* static */

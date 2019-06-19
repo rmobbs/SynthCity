@@ -12,6 +12,7 @@
 #include "SDL.h"
 #include "GlobalRenderData.h"
 #include "ShaderProgram.h"
+#include "Mixer.h"
 
 static constexpr float kFullBeatWidth = 80.0f;
 static constexpr float kKeyboardKeyWidth = 100.0f;
@@ -569,6 +570,8 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     if (ImGui::SmallButton("=")) {
       ImGui::OpenPopup("Options");
     }
+    ImGui::SameLine();
+    ImGui::Text("Voices: %d", Mixer::Get().GetNumActiveVoices());
     ImGui::Separator();
 
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);

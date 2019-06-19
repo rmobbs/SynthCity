@@ -14,15 +14,12 @@ class Sound;
 class Mixer {
 public:
   using SoundHandle = uint32;
-  using VoiceHandle = uint32;
   static constexpr SoundHandle kInvalidSoundHandle = 0xFFFFFFFF;
-  static constexpr VoiceHandle kInvalidVoiceHandle = 0xFFFFFFFF;
   static constexpr uint32 kDefaultFrequency = 44100;
   static constexpr uint32 kDefaultChannels = 2;
-
+protected:
   struct Voice
   {
-  public:
     Mixer::SoundHandle sound = kInvalidSoundHandle;
 
     int	position = 0;
@@ -33,7 +30,6 @@ public:
     int	decay = 0;
   };
 
-protected:
   static Mixer* singleton;
   SDL_AudioSpec audiospec;
   int ticksPerFrame = 0;
@@ -45,14 +41,18 @@ protected:
 
 public:
   SoundHandle nextSoundHandle = 0;
-  VoiceHandle nextVoiceHandle = 0;
   void AudioCallback(void *ud, Uint8 *stream, int len);
   void MixVoices(int32* mixBuffer, uint32 numFrames);
-  std::map<VoiceHandle, Voice> voices;
+  std::vector<Voice> voices;
   std::map<SoundHandle, Sound*> sounds;
 
   static Mixer& Get(void) {
     return *singleton;
+  }
+
+  inline uint32 GetNumActiveVoices() const {
+    // THIS NEEDS TO BE THREAD SAFE
+    return voices.size();
   }
 
   SoundHandle LoadSound(std::string fileName);
