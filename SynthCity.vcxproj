@@ -212,6 +212,7 @@
     <ClCompile Include="Sequencer.cpp" />
     <ClCompile Include="Mixer.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="Sound.cpp" />
     <ClCompile Include="SpriteRenderable.cpp" />
     <ClCompile Include="SynthCity.cpp" />
     <ClCompile Include="SynthSound.cpp" />

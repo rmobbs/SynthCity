@@ -70,7 +70,9 @@ WavSound::WavSound(const std::string& soundName)
   SDL_FreeWAV(data);
 }
 
-uint8 WavSound::getSamplesForFrame(float* samples, uint8 channels, uint32 frame) {
+uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) {
+  // Could eventually use the sound state for ADSR ...
+
   const uint32 frameSize = sizeof(int16) * this->channels;
 
   // Recall that the data buffer is uint8s, so to get the number of frames, divide its size

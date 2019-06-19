@@ -28,13 +28,15 @@ public:
   }
 };
 
-class SinusSynthSound : public SynthSound {
-private:
+class SinusSynthVoice : public Voice {
+public:
   float radians = 0;
   float radstep = 0;
-
+};
+class SinusSynthSound : public SynthSound {
 public:
   
   SinusSynthSound(uint32 samplerFrequency, uint32 frequency, uint32 duration);
-  uint8 getSamplesForFrame(float* samples, uint8 channels, uint32 frame) override;
+  Voice* CreateVoice() override;
+  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) override;
 };

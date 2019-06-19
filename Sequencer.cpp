@@ -70,7 +70,7 @@ Sequencer::Track::Track(Track&& other) noexcept {
   this->skip = other.skip;
   other.skip = 0;
   this->soundIndex = other.soundIndex;
-  other.soundIndex = Mixer::kInvalidSoundHandle;
+  other.soundIndex = kInvalidSoundHandle;
 }
 
 Sequencer::Track::~Track() {

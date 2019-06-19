@@ -4,6 +4,23 @@
 
 #include <string>
 
+using SoundHandle = uint32;
+static constexpr SoundHandle kInvalidSoundHandle = 0xFFFFFFFF;
+
+// Voice is a playing instance of a sound
+class Voice {
+public:
+  SoundHandle sound = kInvalidSoundHandle;
+
+  int	position = 0;
+  // 8:24 fixed point
+  int	lvol = 0;
+  int	rvol = 0;
+  // 16:16 fixed point
+  int	decay = 0;
+};
+
+// Sound is the invariant class; it stores the data/algorithm for generating a sound
 class Sound {
 protected:
   std::string name;
@@ -13,6 +30,8 @@ public:
     : name(name) {
   }
 
-  // This is uint16 only because of how the mixer is implemented ... need to look into a more generic method
-  virtual uint8 getSamplesForFrame(float* samples, uint8 channels, uint32 frame) = 0;
+  virtual Voice* CreateVoice();
+  virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) = 0;
 };
+
+
