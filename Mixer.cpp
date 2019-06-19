@@ -211,6 +211,9 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
       delete voices[v];
     }
     voices.resize(n);
+
+    // So people can query this without locking
+    numActiveVoices.store(n);
   }
 }
 

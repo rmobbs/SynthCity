@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <atomic>
 #include "Sound.h"
 
 typedef unsigned (*sm_control_cb)(void* payload);
@@ -21,6 +22,7 @@ protected:
   int ticksRemaining = 0;
   SDL_AudioDeviceID audioDeviceId = 0;
   std::vector<uint8> mixbuf;
+  std::atomic<uint32> numActiveVoices;
 
   void WriteOutput(Sint32 *input, int16 *output, int frames);
 
@@ -36,8 +38,7 @@ public:
   }
 
   inline uint32 GetNumActiveVoices() const {
-    // THIS NEEDS TO BE THREAD SAFE
-    return voices.size();
+    return numActiveVoices.load();
   }
 
   SoundHandle LoadSound(std::string fileName);
