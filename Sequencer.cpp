@@ -33,11 +33,6 @@ static constexpr std::string_view kMidiTags[] = { ".midi", ".mid" };
 static constexpr std::string_view kJsonTag(".json");
 
 
-enum class Voices {
-  Reserved1,
-  ReservedCount,
-};
-
 enum class Sounds {
   MetronomeFull,
   MetronomePartial,
@@ -76,12 +71,9 @@ Sequencer::Track::Track(Track&& other) noexcept {
   other.skip = 0;
   this->soundIndex = other.soundIndex;
   other.soundIndex = Mixer::kInvalidSoundHandle;
-  this->voiceIndex = other.voiceIndex;
-  other.voiceIndex = Mixer::kInvalidVoiceHandle;
 }
 
 Sequencer::Track::~Track() {
-  Mixer::Get().ReleaseVoice(voiceIndex);
   Mixer::Get().ReleaseSound(soundIndex);
 }
 
@@ -132,12 +124,9 @@ void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorSch
     auto trackIndex = tracks.size();
     tracks.resize(trackIndex + 1);
 
-    auto voiceIndex = Mixer::Get().AddVoice();
-
     tracks[trackIndex].name = voiceName;
     tracks[trackIndex].colorScheme = colorScheme;
     tracks[trackIndex].soundIndex = soundIndex;
-    tracks[trackIndex].voiceIndex = voiceIndex;
 
     // TODO: Do we always want to do this?
     tracks[trackIndex].AddNotes(numNotes, 0);
@@ -150,12 +139,9 @@ void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorSch
     auto trackIndex = tracks.size();
     tracks.resize(trackIndex + 1);
 
-    auto voiceIndex = Mixer::Get().AddVoice();
-
     tracks[trackIndex].name = voiceName;
     tracks[trackIndex].colorScheme = colorScheme;
     tracks[trackIndex].soundIndex = soundIndex;
-    tracks[trackIndex].voiceIndex = voiceIndex;
 
     // TODO: Do we always want to do this?
     tracks[trackIndex].AddNotes(numNotes, 0);
@@ -169,7 +155,7 @@ void Sequencer::Instrument::PlayTrack(uint32 trackIndex, uint8 velocity) {
     vel = 0.3f + vel * 0.7f;
   }
   const Track& track = tracks[trackIndex];
-  Mixer::Get().Play(Mixer::kInvalidVoiceHandle, track.soundIndex, vel * track.lvol);
+  Mixer::Get().Play(track.soundIndex, vel * track.lvol);
   SDL_UnlockAudio();
 }
 
@@ -295,7 +281,7 @@ void Sequencer::FullNoteCallback(bool isMeasure) {
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(Sounds::MetronomeFull);
     }
-    Mixer::Get().Play(static_cast<uint32>(Voices::Reserved1), reservedSounds[metronomeSound], kMetronomeVolume);
+    Mixer::Get().Play(reservedSounds[metronomeSound], kMetronomeVolume);
   }
 }
 
@@ -714,9 +700,6 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   sm_set_control_cb([](void* payload) {
     return reinterpret_cast<Sequencer*>(payload)->NextFrame();
   }, reinterpret_cast<void*>(this));
-
-  // Create the reserved voice
-  Mixer::Get().AddVoice();
 
   // Load the reserved sounds
   reservedSounds.resize(static_cast<int>(Sounds::Count));

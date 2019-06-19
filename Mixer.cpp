@@ -14,6 +14,8 @@
 // Upper bounds for callback
 // TODO: Can just expand the buffer ...
 static constexpr uint32	kMaxCallbackSampleFrames = 256;
+static constexpr uint32 kMaxSimultaneousVoices = 16;
+
 // Synth voice
 static constexpr double	kSmC0 = 16.3515978312874;
 
@@ -49,7 +51,6 @@ Mixer::Mixer() {
 
 Mixer::~Mixer() {
   SDL_LockAudio();
-  MCLOG(Warn, "In ~Mixer and audio thread is supposedly locked");
 
   if (audioDeviceId != 0) {
     SDL_CloseAudioDevice(audioDeviceId);
@@ -106,36 +107,9 @@ Mixer::SoundHandle Mixer::AddSound(Sound* sound) {
   return currSoundHandle;
 }
 
-void Mixer::ReleaseVoice(VoiceHandle voiceHandle) {
-  if (voiceHandle != kInvalidVoiceHandle) {
-    SDL_LockAudio();
-
-    auto voiceEntry = voices.find(voiceHandle);
-    if (voiceEntry != voices.end()) {
-      voices.erase(voiceEntry);
-    }
-    SDL_UnlockAudio();
-  }
-}
-
 void Mixer::ApplyInterval(uint32 ticksPerFrame) {
   if (ticksRemaining > ticksPerFrame)
     ticksRemaining = ticksPerFrame;
-}
-
-Mixer::VoiceHandle Mixer::AddVoice(bool autoDestroy) {
-  SDL_LockAudio();
-  Mixer::VoiceHandle currVoiceHandle = nextVoiceHandle++;
-
-  Voice voice;
-  voice.autoAllocated = autoDestroy;
-  voices.emplace(currVoiceHandle, voice);
-
-  SDL_UnlockAudio();
-
-  MCLOG(Warn, "Voice added; voice count=%d", voices.size());
-
-  return currVoiceHandle;
 }
 
 bool Mixer::Init(uint32 audioBufferSize) {
@@ -185,7 +159,7 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
   std::vector<VoiceHandle> postponeDelete;
 
   // Convert float voice values to int16, and normalize
-  float mul = SHRT_MAX / static_cast<float>(voices.size());
+  float mul = SHRT_MAX / static_cast<float>(kMaxSimultaneousVoices);
 
   // Active voices
   for (auto& voiceEntry : voices) {
@@ -202,9 +176,7 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
       float samples[2] = { 0 }; // Stereo
 
       if (sound->getSamplesForFrame(samples, 2, v->position) != 2 || (v->lvol <= 0 && v->rvol <= 0)) {
-        if (v->autoAllocated) {
-          postponeDelete.push_back(voiceEntry.first);
-        }
+        postponeDelete.push_back(voiceEntry.first);
         break;
       }
 
@@ -278,21 +250,26 @@ void Mixer::AudioCallback(void *ud, Uint8 *stream, int len)
   }
 }
 
-void Mixer::Play(uint32 voiceHandle, uint32 soundHandle, float volume) {
-  if (voiceHandle == kInvalidVoiceHandle) {
-    voiceHandle = AddVoice(true);
-  }
+void Mixer::Play(uint32 soundHandle, float volume) {
+  SDL_LockAudio();
 
-  auto voiceMapEntry = voices.find(voiceHandle);
-  if (voiceMapEntry != voices.end()) {
-    auto& voice = voices[voiceHandle];
+  VoiceHandle voiceHandle = nextVoiceHandle++;
 
-    voice.sound = soundHandle;
-    voice.position = 0;
-    volume *= volume * volume;
-    voice.lvol = (int)(volume * 16777216.0);
-    voice.rvol = (int)(volume * 16777216.0);
-  }
+  Voice voice;
+  voice.sound = soundHandle;
+  voice.position = 0;
+
+  // When mixed our sample will be divided by the max simultaneous voices,
+  // so make sure we get full volume
+  volume *= static_cast<float>(kMaxSimultaneousVoices);
+  voice.lvol = (int)(volume * 16777216.0);
+  voice.rvol = (int)(volume * 16777216.0);
+
+  voices.emplace(voiceHandle, voice);
+
+  SDL_UnlockAudio();
+
+  MCLOG(Warn, "Voice added; voice count=%d", voices.size());
 }
 
 /* static */

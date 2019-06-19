@@ -31,9 +31,6 @@ public:
     int	rvol = 0;
     // 16:16 fixed point
     int	decay = 0;
-
-    // Voices can be dedicated ID or created on-the-fly
-    bool autoAllocated = false;
   };
 
 protected:
@@ -62,11 +59,8 @@ public:
   SoundHandle AddSound(Sound* sound);
   void ReleaseSound(SoundHandle soundHandle);
 
-  VoiceHandle AddVoice(bool autoDestroy = false);
-  void ReleaseVoice(VoiceHandle voiceHandle);
-
   bool Init(uint32 audioBufferSize);
-  void Play(uint32 voiceHandle, uint32 soundHandle, float volume);
+  void Play(uint32 soundHandle, float volume);
   void ApplyInterval(uint32 interval);
 
   static bool InitSingleton(uint32 audioBufferSize);
