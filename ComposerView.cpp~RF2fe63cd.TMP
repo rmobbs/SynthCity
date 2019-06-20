@@ -519,14 +519,6 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
           sequencer.EnableMetronome(isMetronomeOn);
         }
         ImGui::PopItemWidth();
-
-        // Master volume
-        ImGui::SameLine();
-        ImGui::PushItemWidth(100);
-        float masterVolume = sequencer.GetMasterVolume();
-        if (ImGui::SliderFloat("Master", &masterVolume, 0.0f, 1.0f)) {
-          sequencer.SetMasterVolume(masterVolume);
-        }
       }
 
       auto oldCursorPos = ImGui::GetCursorPos();

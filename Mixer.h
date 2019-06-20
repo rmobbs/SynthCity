@@ -15,11 +15,13 @@ class Mixer {
 public:
   static constexpr uint32 kDefaultFrequency = 44100;
   static constexpr uint32 kDefaultChannels = 2;
+  static constexpr float kDefaultMasterVolume = 0.7f;
 protected:
   static Mixer* singleton;
   SDL_AudioSpec audiospec;
   int ticksPerFrame = 0;
   int ticksRemaining = 0;
+  float masterVolume = kDefaultMasterVolume;
   SDL_AudioDeviceID audioDeviceId = 0;
   std::vector<float> mixbuf;
   std::atomic<uint32> numActiveVoices;
@@ -40,6 +42,11 @@ public:
   inline uint32 GetNumActiveVoices() const {
     return numActiveVoices.load();
   }
+
+  inline float GetMasterVolume() const {
+    return masterVolume;
+  }
+  void SetMasterVolume(float masterVolume);
 
   SoundHandle LoadSound(std::string fileName);
   SoundHandle AddSound(Sound* sound);

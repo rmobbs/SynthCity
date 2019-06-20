@@ -73,6 +73,10 @@ Mixer::~Mixer() {
   SDL_UnlockAudio();
 }
 
+void Mixer::SetMasterVolume(float masterVolume) {
+  this->masterVolume = masterVolume;
+}
+
 void Mixer::ReleaseSound(SoundHandle soundHandle) {
   if (soundHandle != kInvalidSoundHandle) {
     SDL_LockAudio();
@@ -164,7 +168,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
 
   if (voices.size() > 0) {
 
-    static constexpr float kMasterVolume = 0.7f;
+    static constexpr float kPeakVolumeRatio = 0.7f;
     static constexpr float kVolumeEpsilon = 0.01f;
 
     // Mix active voices
@@ -182,8 +186,8 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
           break;
         }
 
-        mixBuffer[f * 2 + 0] += samples[0] * kMasterVolume * v->lvol;
-        mixBuffer[f * 2 + 1] += samples[1] * kMasterVolume * v->rvol;
+        mixBuffer[f * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio * v->lvol;
+        mixBuffer[f * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio * v->rvol;
 
         v->lvol -= v->lvol * v->decay;
         v->rvol -= v->rvol * v->decay;

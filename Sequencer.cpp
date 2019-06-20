@@ -329,6 +329,11 @@ void Sequencer::SetLooping(bool looping) {
   SDL_UnlockAudio();
 }
 
+void Sequencer::SetMasterVolume(float masterVolume) {
+  this->masterVolume = masterVolume;
+  Mixer::Get().SetMasterVolume(masterVolume);
+}
+
 uint32 Sequencer::GetPosition(void) const {
   return currPosition;
 }

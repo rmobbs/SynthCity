@@ -12,6 +12,7 @@ private:
   static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kMaxTempo = 220;
+  static constexpr float kDefaultMasterVolume = 0.7f;
 public:
 public:
   // Loaded MIDI is passed to the host; they interact with the user to determine what
@@ -88,6 +89,7 @@ private:
   uint32 maxBeatSubdivisions;
   uint32 currBeatSubdivision;
   uint32 currentBpm = 120;
+  float masterVolume = kDefaultMasterVolume;
   bool isPlaying = false;
   bool isMetrononeOn = false;
   bool isLooping = true;
@@ -163,6 +165,11 @@ public:
   }
 
   void SetLooping(bool looping);
+
+  inline float GetMasterVolume() const {
+    return masterVolume;
+  }
+  void SetMasterVolume(float masterVolume);
 
   void Play();
   void Pause();

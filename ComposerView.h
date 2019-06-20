@@ -47,6 +47,7 @@ protected:
   GLuint stopButtonIconTexture = 0;
   GLuint pauseButtonIconTexture = 0;
   uint32 logResponderId = UINT32_MAX;
+  bool wasConsoleOpen = true;
   ImGuiRenderable imGuiRenderable;
 
   std::map<int, double> playingTrackFlashTimes[2];
