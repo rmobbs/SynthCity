@@ -29,6 +29,9 @@ public:
   Sound(const std::string& name)
     : name(name) {
   }
+  virtual ~Sound() {
+
+  }
 
   virtual Voice* CreateVoice();
   virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) = 0;

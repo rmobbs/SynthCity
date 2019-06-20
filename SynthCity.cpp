@@ -782,15 +782,10 @@ void Term() {
   SDL_Quit();
 }
 
-void AtExit() {
-  _CrtDumpMemoryLeaks();
-}
-
 int main(int argc, char **argv) {
-  atexit(AtExit);
 
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
-  //_CrtSetBreakAlloc(548); 
+  //_CrtSetBreakAlloc(397);
 
   if (!Init()) {
     return -1;
