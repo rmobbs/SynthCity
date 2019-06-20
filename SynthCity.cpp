@@ -370,7 +370,7 @@ bool AddSynthVoiceDialog() { //const MidiSource& midiSource, Sequencer::MidiConv
 
       // Instantiate
       Sequencer::Get().GetInstrument()->AddTrack(workspace.voiceName, "Need color scheme",
-        new SinusSynthSound(Mixer::kDefaultFrequency, workspace.frequency, workspace.duration));
+        new SineSynthSound(Mixer::kDefaultFrequency, workspace.frequency, workspace.duration));
 
       // Add to instrument
     }

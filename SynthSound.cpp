@@ -2,20 +2,20 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-REGISTER_SYNTH_SOUND({ "SinusSynthSound", "Sine wave" });
-SinusSynthSound::SinusSynthSound(uint32 samplerFrequency, uint32 frequency, uint32 duration)
+REGISTER_SYNTH_SOUND({ "SineSynthSound", "Sine wave" });
+SineSynthSound::SineSynthSound(uint32 samplerFrequency, uint32 frequency, uint32 duration)
   : SynthSound("SineSynthSound", samplerFrequency, frequency, duration) {
 }
 
-Voice* SinusSynthSound::CreateVoice() {
-  SinusSynthVoice* voice = new SinusSynthVoice;
+Voice* SineSynthSound::CreateVoice() {
+  SineSynthVoice* voice = new SineSynthVoice;
   voice->radstep = static_cast<float>((2.0 * M_PI * frequency) / static_cast<double>(samplerFrequency));
   return voice;
 }
 
-uint8 SinusSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voiceGeneric) {
+uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voiceGeneric) {
   if (frame < beatLength) {
-    SinusSynthVoice* voice = static_cast<SinusSynthVoice*>(voiceGeneric);
+    SineSynthVoice* voice = static_cast<SineSynthVoice*>(voiceGeneric);
 
     voice->radians += voice->radstep; // * speed
     while (voice->radians > (2.0 * M_PI)) {

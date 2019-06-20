@@ -1,0 +1,323 @@
+{
+    "Instrument": "49-Key Piano",
+    "Tempo": 120,
+    "Measures": 2,
+    "BeatsPerMeasure": 4,
+    "Notes": [
+        {
+            "Beat": 1.0,
+            "Track": 0,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.0,
+            "Track": 1,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.25,
+            "Track": 2,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.25,
+            "Track": 3,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.5,
+            "Track": 4,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.5,
+            "Track": 5,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.75,
+            "Track": 6,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 1.75,
+            "Track": 7,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.0,
+            "Track": 8,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.0,
+            "Track": 9,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.25,
+            "Track": 10,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.25,
+            "Track": 11,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.5,
+            "Track": 12,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.5,
+            "Track": 13,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.75,
+            "Track": 14,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 2.75,
+            "Track": 15,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.0,
+            "Track": 16,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.0,
+            "Track": 17,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.25,
+            "Track": 18,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.25,
+            "Track": 19,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.5,
+            "Track": 20,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.5,
+            "Track": 21,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.75,
+            "Track": 22,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 3.75,
+            "Track": 23,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.0,
+            "Track": 24,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.0,
+            "Track": 25,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.25,
+            "Track": 26,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.25,
+            "Track": 27,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.5,
+            "Track": 28,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.5,
+            "Track": 29,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.75,
+            "Track": 30,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 4.75,
+            "Track": 31,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.0,
+            "Track": 32,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.0,
+            "Track": 33,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.25,
+            "Track": 34,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.25,
+            "Track": 35,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.5,
+            "Track": 36,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.5,
+            "Track": 37,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.75,
+            "Track": 38,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 5.75,
+            "Track": 39,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.0,
+            "Track": 40,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.0,
+            "Track": 41,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.25,
+            "Track": 42,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.25,
+            "Track": 43,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.5,
+            "Track": 44,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.5,
+            "Track": 45,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.75,
+            "Track": 46,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 6.75,
+            "Track": 47,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.0,
+            "Track": 48,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.25,
+            "Track": 46,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.25,
+            "Track": 47,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.5,
+            "Track": 44,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.5,
+            "Track": 45,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.75,
+            "Track": 42,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 7.75,
+            "Track": 43,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.0,
+            "Track": 40,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.0,
+            "Track": 41,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.25,
+            "Track": 38,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.25,
+            "Track": 39,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.5,
+            "Track": 36,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.5,
+            "Track": 37,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.75,
+            "Track": 34,
+            "Velocity": 1.0
+        },
+        {
+            "Beat": 8.75,
+            "Track": 35,
+            "Velocity": 1.0
+        }
+    ]
+}
