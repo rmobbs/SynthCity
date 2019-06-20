@@ -18,7 +18,7 @@
 // Upper bounds for callback
 // TODO: Can just expand the buffer ...
 static constexpr uint32	kMaxCallbackSampleFrames = 256;
-static constexpr uint32 kMaxSimultaneousVoices = 8;
+static constexpr uint32 kMaxSimultaneousVoices = 64;
 
 // Synth voice
 static constexpr double	kSmC0 = 16.3515978312874;
@@ -157,16 +157,15 @@ bool Mixer::Init(uint32 audioBufferSize) {
   return true;
 }
 
-void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
+void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
   int vi;
   // Clear the buffer
-  memset(mixBuffer, 0, numFrames * sizeof(int32) * 2);
+  memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
 
   if (voices.size() > 0) {
 
     static constexpr float kMasterVolume = 0.7f;
-
-    float mul = static_cast<float>(SHRT_MAX) * kMasterVolume;
+    static constexpr float kVolumeEpsilon = 0.01f;
 
     // Mix active voices
     uint32 i = 0;
@@ -178,16 +177,16 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
       for (uint32 f = 0; f < numFrames; ++f) {
         float samples[2] = { 0 }; // Stereo
 
-        if (s->GetSamplesForFrame(samples, 2, v->position, v) != 2 || (v->lvol <= 0 && v->rvol <= 0)) {
+        if (s->GetSamplesForFrame(samples, 2, v->position, v) != 2 || (v->lvol <= kVolumeEpsilon && v->rvol <= kVolumeEpsilon)) {
           v->sound = kInvalidSoundHandle;
           break;
         }
 
-        mixBuffer[f * 2 + 0] += static_cast<int16>(samples[0] * mul) * (v->lvol >> 9) >> 7;
-        mixBuffer[f * 2 + 1] += static_cast<int16>(samples[1] * mul) * (v->rvol >> 9) >> 7;
+        mixBuffer[f * 2 + 0] += samples[0] * kMasterVolume * v->lvol;
+        mixBuffer[f * 2 + 1] += samples[1] * kMasterVolume * v->rvol;
 
-        v->lvol -= (v->lvol >> 8) * v->decay >> 8;
-        v->rvol -= (v->rvol >> 8) * v->decay >> 8;
+        v->lvol -= v->lvol * v->decay;
+        v->rvol -= v->rvol * v->decay;
 
         ++v->position;
       }
@@ -202,8 +201,8 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
 
     // Clip so we don't distort
     for (uint32 f = 0; f < numFrames; ++f) {
-      mixBuffer[f * 2 + 0] = std::max(std::min(mixBuffer[f * 2 + 0], 0x7FFFFF), -0x800000);
-      mixBuffer[f * 2 + 1] = std::max(std::min(mixBuffer[f * 2 + 1], 0x7FFFFF), -0x800000);
+      mixBuffer[f * 2 + 0] = std::max(std::min(mixBuffer[f * 2 + 0], 0.7f), -0.7f);
+      mixBuffer[f * 2 + 1] = std::max(std::min(mixBuffer[f * 2 + 1], 0.7f), -0.7f);
     };
 
     // Delete expired voices
@@ -217,16 +216,15 @@ void Mixer::MixVoices(int32* mixBuffer, uint32 numFrames) {
   }
 }
 
-/* Convert from 8:24 (32 bit) to 16 bit (stereo) */
-void Mixer::WriteOutput(Sint32 *input, int16 *output, int frames)
+void Mixer::WriteOutput(float *input, int16 *output, int frames)
 {
   int i = 0;
   frames *= 2;	/* Stereo! */
   while (i < frames)
   {
-    output[i] = input[i] >> 8;
+    output[i] = input[i] * SHRT_MAX;
     ++i;
-    output[i] = input[i] >> 8;
+    output[i] = input[i] * SHRT_MAX;;
     ++i;
   }
 }
@@ -244,8 +242,8 @@ void Mixer::AudioCallback(void *ud, Uint8 *stream, int len)
     if (frames > len) {
       frames = len;
     }
-    MixVoices(reinterpret_cast<int32*>(mixbuf.data()), frames);
-    WriteOutput(reinterpret_cast<int32*>(mixbuf.data()), (int16 *)stream, frames);
+    MixVoices(mixbuf.data(), frames);
+    WriteOutput(mixbuf.data(), (int16 *)stream, frames);
     stream += frames * sizeof(int16) * 2;
     len -= frames;
 
@@ -274,13 +272,10 @@ void Mixer::Play(uint32 soundHandle, float volume) {
 
     voice->sound = soundHandle;
 
-    voice->lvol = (int)(volume * 16777216.0);
-    voice->rvol = (int)(volume * 16777216.0);
+    voice->lvol = 0.5f;// (int)(volume * 16777216.0);
+    voice->rvol = 0.5f;// (int)(volume * 16777216.0);
     
-    float decay = 0.2f;
-    decay *= decay;
-    decay *= 0.00001f;
-    voice->decay = 6;// (int)(decay * 16777216.0);
+    voice->decay = 0.00002f;// (int)(decay * 16777216.0);
 
     voices.push_back(voice);
   }

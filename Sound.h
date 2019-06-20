@@ -14,10 +14,10 @@ public:
 
   int	position = 0;
   // 8:24 fixed point
-  int	lvol = 0;
-  int	rvol = 0;
+  float	lvol = 0;
+  float	rvol = 0;
   // 16:16 fixed point
-  int	decay = 0;
+  float	decay = 0;
 };
 
 // Sound is the invariant class; it stores the data/algorithm for generating a sound

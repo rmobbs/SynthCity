@@ -21,15 +21,15 @@ protected:
   int ticksPerFrame = 0;
   int ticksRemaining = 0;
   SDL_AudioDeviceID audioDeviceId = 0;
-  std::vector<uint8> mixbuf;
+  std::vector<float> mixbuf;
   std::atomic<uint32> numActiveVoices;
 
-  void WriteOutput(Sint32 *input, int16 *output, int frames);
+  void WriteOutput(float *input, int16 *output, int frames);
 
 public:
   SoundHandle nextSoundHandle = 0;
   void AudioCallback(void *ud, Uint8 *stream, int len);
-  void MixVoices(int32* mixBuffer, uint32 numFrames);
+  void MixVoices(float* mixBuffer, uint32 numFrames);
   std::vector<Voice*> voices;
   std::map<SoundHandle, Sound*> sounds;
 
