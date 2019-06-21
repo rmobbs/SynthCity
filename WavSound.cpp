@@ -83,6 +83,15 @@ bool WavSound::SerializeRead(const ReadSerializer& serializer) {
     return false;
   }
 
+  // Decay
+  if (!d.HasMember(kDecayTag) || !d[kDecayTag].IsDouble()) {
+    MCLOG(Warn, "Missing/invalid decay tag; decay will be 0");
+    decay = 0.0f;
+  }
+  else {
+    decay = d[kDecayTag].GetDouble();
+  }
+
   return true;
 }
 
@@ -147,6 +156,6 @@ bool WavSound::LoadWav(const std::string& fileName) {
 
 Voice* WavSound::CreateVoice() {
   Voice* voice = new Voice;
-  voice->decay = decay;
+  voice->decay = decay * 0.0001f;
   return voice;
 }
