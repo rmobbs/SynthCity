@@ -14,7 +14,7 @@ protected:
   bool LoadWav(const std::string& fileName);
 
 public:
-  WavSound();
+  WavSound(const ReadSerializer& serializer);
   WavSound(const std::string& soundName);
 
   uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) override;

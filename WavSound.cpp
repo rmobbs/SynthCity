@@ -12,9 +12,13 @@ static constexpr float kSilenceThresholdOutro = 0.50f;
 static constexpr const char* kFileNameTag("filename");
 static constexpr const char* kDecayTag("decay");
 
-WavSound::WavSound() 
+WavSound::WavSound(const ReadSerializer& serializer) 
   : Sound("<fixme>") {
-
+  if (!SerializeRead(serializer)) {
+    std::string strError("WavSound: Unable to serialize (read)");
+    MCLOG(Error, strError.c_str());
+    throw std::runtime_error(strError);
+  }
 }
 
 WavSound::WavSound(const std::string& soundName)

@@ -96,9 +96,10 @@ Sequencer::Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
 
 }
 
-Sequencer::Instrument::Instrument(const ReadSerializer& r) {
+Sequencer::Instrument::Instrument(const ReadSerializer& r, uint32 numNotes)
+  : numNotes(numNotes) {
   if (!SerializeRead(r)) {
-    std::string strError("SpriteRenderable: Unable to serialize instrument");
+    std::string strError("Instrument: Unable to serialize (read)");
     MCLOG(Error, strError.c_str());
     throw std::runtime_error(strError);
   }
@@ -164,13 +165,11 @@ bool Sequencer::Instrument::SerializeRead(const ReadSerializer& serializer) {
       // Take the first one for now
       const auto& soundsEntry = soundsArray[0];
 
-      // And again we need a factory ...
-      WavSound* wavSound = new WavSound;
-      if (wavSound->SerializeRead({ soundsEntry })) {
-        AddTrack(trackName, colorScheme, wavSound);
+      try {
+        // And again we need a factory ...
+        AddTrack(trackName, colorScheme, new WavSound({ soundsEntry }));
       }
-      else {
-        MCLOG(Warn, "Error when serializing sound");
+      catch (...) {
       }
     }
     else {
@@ -339,11 +338,12 @@ Sequencer::Instrument* Sequencer::Instrument::LoadInstrument(std::string fileNam
     return nullptr;
   }
 
-  Instrument* newInstrument = new Instrument("<serialized", numNotes);// Instrument({ document });
-  if (!newInstrument->SerializeRead({ document })) {
-    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
-    delete newInstrument;
-    newInstrument = nullptr;
+  Instrument* newInstrument = nullptr;
+  try {
+    newInstrument = new Instrument({ document }, numNotes);
+  }
+  catch (...) {
+
   }
   return newInstrument;
 }

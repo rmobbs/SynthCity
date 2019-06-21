@@ -69,7 +69,7 @@ public:
     void SetNoteCount(uint32 numNotes);
     bool SaveInstrument(std::string fileName);
 
-     Instrument(const ReadSerializer& r);
+     Instrument(const ReadSerializer& r, uint32 numNotes);
      Instrument(std::string instrumentName, uint32 numNotes);
     ~Instrument();
 
