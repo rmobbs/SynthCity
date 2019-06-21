@@ -279,8 +279,6 @@ void Mixer::Play(uint32 soundHandle, float volume) {
     voice->lvol = volume;
     voice->rvol = volume;
     
-    voice->decay = 0.00004f;// (int)(decay * 16777216.0);
-
     voices.push_back(voice);
   }
 

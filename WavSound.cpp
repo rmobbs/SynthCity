@@ -5,36 +5,108 @@
 
 #include "SDL_audio.h"
 
+#include "SerializeImpl.h"
+
 static constexpr float kSilenceThresholdIntro = 0.01f;
 static constexpr float kSilenceThresholdOutro = 0.50f;
+static constexpr const char* kFileNameTag("filename");
+static constexpr const char* kDecayTag("decay");
+
+WavSound::WavSound() 
+  : Sound("<fixme>") {
+
+}
 
 WavSound::WavSound(const std::string& soundName)
   : Sound(soundName) {
 
+  // Fixme
+  if (!LoadWav(soundName)) {
+    throw std::runtime_error("Unable to load Wav file");
+  }
+
+}
+
+uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) {
+  // Could eventually use the sound state for ADSR ...
+
+  const uint32 frameSize = sizeof(int16) * this->channels;
+
+  // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
+  // by the size of our frame
+  if (frame >= this->data.size() / frameSize) {
+    return 0;
+  }
+
+  for (uint8 channel = 0; channel < channels; ++channel) {
+    samples[channel] = static_cast<float>(reinterpret_cast<int16*>(this->
+      data.data() + frame * frameSize)[channel % this->channels]) / static_cast<float>(SHRT_MAX);
+  }
+
+  return channels;
+}
+
+bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
+  auto& w = serializer.w;
+
+  w.StartObject();
+
+  // File tag:string
+  w.Key(kFileNameTag);
+  w.String(fileName.c_str());
+
+  // Volume tag:string
+
+  // Mute tag:boolean
+
+  // Solo tag:boolean
+
+  // Decay tag:string
+  w.Key(kDecayTag);
+  w.Double(decay);
+
+  w.EndObject();
+
+  return true;
+}
+
+bool WavSound::SerializeRead(const ReadSerializer& serializer) {
+  auto& d = serializer.d;
+
+  // File
+  if (!d.HasMember(kFileNameTag) || !d[kFileNameTag].IsString()) {
+    MCLOG(Warn, "Missing/invalid filename tag");
+    return false;
+  }
+
+  if (!LoadWav(d[kFileNameTag].GetString())) {
+    return false;
+  }
+
+  return true;
+}
+
+bool WavSound::LoadWav(const std::string& fileName) {
   SDL_AudioSpec spec;
   uint8* data = nullptr;
   uint32 length = 0;
 
-  if (SDL_LoadWAV(soundName.c_str(), &spec, &data, &length) == nullptr) {
-    std::string strError = "WavSound: SDL_LoadWAV failed for " + soundName;
-    MCLOG(Error, strError.c_str());
-    throw std::runtime_error(strError);
+  if (SDL_LoadWAV(fileName.c_str(), &spec, &data, &length) == nullptr) {
+    MCLOG(Error, "WavSound: SDL_LoadWAV failed for %s", fileName.c_str());
+    return false;
   }
 
   // TODO: FIX THIS
   if (spec.channels != 1) {
-    std::string strError = "WavSound: " + soundName + " has " +
-      std::to_string(spec.channels) + " channels. Only mono WAV files are currently supported";
-    MCLOG(Error, strError.c_str());
-    throw std::runtime_error(strError);
+    MCLOG(Error, "WavSound: %s has %d channels. Only mono "
+      "WAV files are currently supported", fileName.c_str(), spec.channels);
+    return false;
   }
 
   // TODO: Support more formats
   if (spec.format != AUDIO_S16SYS) {
-    std::string strError = "WavSound: " + soundName +
-      " has an unsupported format " + std::to_string(spec.format);
-    MCLOG(Error, strError.c_str());
-    throw std::runtime_error(strError);
+    MCLOG(Error, "WavSound: %s has an unsupported format %d", fileName.c_str(), spec.format);
+    return false;
   }
 
   // Skip any inaudible intro ...
@@ -58,7 +130,8 @@ WavSound::WavSound(const std::string& soundName)
   }
 
   if (audibleLength <= 0) {
-    MCLOG(Warn, "WavSound: %s is entirely inaudible by the current metric - not trimming", soundName.c_str());
+    MCLOG(Warn, "WavSound: %s is entirely inaudible by "
+      "the current metric - not trimming", fileName.c_str());
     audibleOffset = 0;
     audibleLength = length;
   }
@@ -68,23 +141,12 @@ WavSound::WavSound(const std::string& soundName)
   this->data.assign(data + audibleOffset, data + audibleLength);
 
   SDL_FreeWAV(data);
+
+  return true;
 }
 
-uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) {
-  // Could eventually use the sound state for ADSR ...
-
-  const uint32 frameSize = sizeof(int16) * this->channels;
-
-  // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
-  // by the size of our frame
-  if (frame >= this->data.size() / frameSize) {
-    return 0;
-  }
-
-  for (uint8 channel = 0; channel < channels; ++channel) {
-    samples[channel] = static_cast<float>(reinterpret_cast<int16*>(this->
-      data.data() + frame * frameSize)[channel % this->channels]) / static_cast<float>(SHRT_MAX);
-  }
-
-  return channels;
+Voice* WavSound::CreateVoice() {
+  Voice* voice = new Voice;
+  voice->decay = decay;
+  return voice;
 }

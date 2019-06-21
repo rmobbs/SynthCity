@@ -56,6 +56,15 @@ public:
   void Play(uint32 soundHandle, float volume);
   void ApplyInterval(uint32 interval);
 
+  Sound* GetSound(SoundHandle soundHandle) const {
+    // Gotta combine these classes dude
+    auto sound = sounds.find(soundHandle);
+    if (sound != sounds.end()) {
+      return sound->second;
+    }
+    return nullptr;
+  }
+
   static bool InitSingleton(uint32 audioBufferSize);
   static void TermSingleton();
 

@@ -17,7 +17,7 @@ class SynthSound : public Sound {
 protected:
   uint32 samplerFrequency = 0;
   uint32 frequency = 0;
-  float beatLength = 0;
+  uint32 beatLength = 0;
 public:
   SynthSound(const std::string& name, uint32 samplerFrequency, uint32 frequency, uint32 duration)
     : Sound(name)
@@ -26,6 +26,9 @@ public:
     , beatLength(duration) {
 
   }
+
+  bool SerializeWrite(const WriteSerializer& serializer) override;
+  bool SerializeRead(const ReadSerializer& serializer) override;
 };
 
 class SineSynthVoice : public Voice {

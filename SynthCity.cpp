@@ -610,17 +610,38 @@ bool LoadInstrument(std::string instrumentName) {
   ofn.hwndOwner = sysWmInfo.info.win.window;
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-  ofn.lpstrFilter = _TEXT("XML\0*.xml\0");
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
   ofn.nFilterIndex = 0;
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   if (GetOpenFileName(&ofn)) {
     if (Sequencer::Get().LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
-      ::DestroyMenu(hMenu);
-      hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_MENU_FILEINSTRUMENT));
-      SetMenu(sysWmInfo.info.win.window, hMenu);
+      ::EnableMenuItem(hMenu, reinterpret_cast<UINT>(::GetSubMenu(hMenu, 1)), MF_ENABLED);
       return true;
     }
+  }
+  return false;
+}
+
+bool SaveInstrument() {
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
+
+  USES_CONVERSION;
+  ofn.lStructSize = sizeof(ofn);
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_OVERWRITEPROMPT;
+
+  if (GetSaveFileName(&ofn)) {
+    std::string fileName(W2A(szFile));
+
+    if (fileName.compare(fileName.length() - kJsonTag.length(), kJsonTag.length(), kJsonTag)) {
+      fileName += kJsonTag;
+    }
+    Sequencer::Get().GetInstrument()->SaveInstrument(fileName);
   }
   return false;
 }
@@ -632,9 +653,19 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
         case ID_FILE_EXIT:
           wantQuit = true;
           return 0;
+        case ID_FILE_NEWINSTRUMENT: {
+          if (Sequencer::Get().NewInstrument()) {
+            ::EnableMenuItem(hMenu, reinterpret_cast<UINT>(::GetSubMenu(hMenu, 1)), MF_ENABLED);
+          }
+          return 0;
+        }
         case ID_ACCELERATOR_LOAD_INSTRUMENT:
         case ID_FILE_LOADINSTRUMENT: {
           LoadInstrument({});
+          return 0;
+        }
+        case ID_FILE_SAVEINSTRUMENT: {
+          SaveInstrument();
           return 0;
         }
         case ID_ACCELERATOR_LOAD_SONG:
@@ -724,8 +755,9 @@ bool Init() {
 
   SDL_VERSION(&sysWmInfo.version);
   if (SDL_GetWindowWMInfo(sdlWindow, &sysWmInfo)) {
-    hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_MENU_FILE));
-    SetMenu(sysWmInfo.info.win.window, hMenu);
+    hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_MENU_FILEINSTRUMENT));
+    ::SetMenu(sysWmInfo.info.win.window, hMenu);
+    ::EnableMenuItem(hMenu, reinterpret_cast<UINT>(::GetSubMenu(hMenu, 1)), MF_GRAYED | MF_DISABLED);
   }
 
   hAccel = LoadAccelerators(sysWmInfo.info.

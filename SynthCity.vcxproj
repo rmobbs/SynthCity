@@ -190,11 +190,12 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sequencer.h" />
     <ClInclude Include="Mixer.h" />
+    <ClInclude Include="SerializeFwd.h" />
+    <ClInclude Include="SerializeImpl.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
-    <ClInclude Include="tinyxml2.h" />
     <ClInclude Include="WavSound.h" />
   </ItemGroup>
   <ItemGroup>
@@ -216,7 +217,6 @@
     <ClCompile Include="SpriteRenderable.cpp" />
     <ClCompile Include="SynthCity.cpp" />
     <ClCompile Include="SynthSound.cpp" />
-    <ClCompile Include="tinyxml2.cpp" />
     <ClCompile Include="WavSound.cpp" />
   </ItemGroup>
   <ItemGroup>

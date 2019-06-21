@@ -242,11 +242,11 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   }
   SDL_UnlockAudio();
 
-  int outputWindowHeight = canvasSize.y * kOutputWindowWindowScreenHeightPercentage;
+  int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
   if (!wasConsoleOpen) {
     outputWindowHeight = 20;
   }
-  int sequencerHeight = canvasSize.y - outputWindowHeight;
+  int32 sequencerHeight = static_cast<int32>(canvasSize.y - outputWindowHeight);
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
@@ -262,11 +262,11 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
       auto& imGuiStyle = ImGui::GetStyle();
       auto oldItemSpacing = imGuiStyle.ItemSpacing;
 
-      if (instrument != nullptr) {
-        ImGui::Text("Instrument: %s", instrument->GetName().c_str());
-      }
-      else {
-        ImGui::Text("Instrument: None");
+      std::string instrumentName("Instrument");
+      char newName[256] = { 0 };
+      strcpy(newName, instrument->GetName().c_str());
+      if (ImGui::InputText(instrumentName.c_str(), newName, _countof(newName) - 1)) {
+        instrument->SetName(std::string(newName));
       }
 
       ImGui::NewLine();
@@ -554,9 +554,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   }
 
   // Output window
-  int outputWindowTop = canvasSize.y - outputWindowHeight;
-  ImGui::SetNextWindowPos(ImVec2(0, outputWindowTop));
-  ImGui::SetNextWindowSize(ImVec2(canvasSize.x, outputWindowHeight));
+  int32 outputWindowTop = static_cast<int32>(canvasSize.y - outputWindowHeight);
+  ImGui::SetNextWindowPos(ImVec2(0, static_cast<float>(outputWindowTop)));
+  ImGui::SetNextWindowSize(ImVec2(canvasSize.x, static_cast<float>(outputWindowHeight)));
   wasConsoleOpen = ImGui::Begin("Output",
     nullptr,
     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);

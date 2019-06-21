@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BaseTypes.h"
+#include "SerializeFwd.h"
 
 #include <string>
 
@@ -33,8 +34,15 @@ public:
 
   }
 
-  virtual Voice* CreateVoice();
+  inline const std::string& GetName() const {
+    return name;
+  }
+
+  virtual Voice* CreateVoice() = 0;
   virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) = 0;
+
+  virtual bool SerializeWrite(const WriteSerializer& serializer) = 0;
+  virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
 };
 
 

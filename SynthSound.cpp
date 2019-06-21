@@ -1,6 +1,16 @@
 #include "SynthSound.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include "SerializeImpl.h"
+
+bool SynthSound::SerializeWrite(const WriteSerializer& serializer) {
+  return false;
+}
+
+bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
+  return false;
+}
+
 
 REGISTER_SYNTH_SOUND({ "SineSynthSound", "Sine wave" });
 SineSynthSound::SineSynthSound(uint32 samplerFrequency, uint32 frequency, uint32 duration)

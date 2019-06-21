@@ -1,0 +1,766 @@
+{
+    "version": "0.0.6",
+    "name": "76-Key Piano",
+    "tracks": [
+        {
+            "name": "G7",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.G7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Gb7",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Gb7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "F7",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.F7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "E7",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.E7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Eb7",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Eb7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "D7",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.D7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Db7",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Db7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "C7",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.C7.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "B6",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.B6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Bb6",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Bb6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "A6",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.A6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Ab6",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Ab6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "G6",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.G6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Gb6",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Gb6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "F6",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.F6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "E6",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.E6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Eb6",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Eb6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "D6",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.D6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Db6",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Db6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "C6",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.C6.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "B5",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.B5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Bb5",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Bb5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "A5",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.A5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Ab5",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Ab5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "G5",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.G5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Gb5",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Gb5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "F5",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.F5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "E5",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.E5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Eb5",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Eb5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "D5",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.D5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Db5",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Db5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "C5",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.C5.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "B4",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.B4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Bb4",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Bb4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "A4",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.A4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Ab4",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Ab4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "G4",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.G4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Gb4",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Gb4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "F4",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.F4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "E4",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.E4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Eb4",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Eb4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "D4",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.D4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Db4",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Db4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "C4",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.C4.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "B3",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.B3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Bb3",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Bb3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "A3",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.A3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Ab3",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Ab3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "G3",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.G3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Gb3",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Gb3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "F3",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.F3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "E3",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.E3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Eb3",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Eb3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "D3",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.D3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Db3",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Db3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "C3",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.C3.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "B2",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.B2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Bb2",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Bb2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "A2",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.A2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Ab2",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Ab2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "G2",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.G2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Gb2",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Gb2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "F2",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.F2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "E2",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.E2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Eb2",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Eb2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "D2",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.D2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Db2",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Db2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "C2",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.C2.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "B1",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.B1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Bb1",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Bb1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "A1",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.A1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Ab1",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Ab1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "G1",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.G1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "Gb1",
+            "colorscheme": "Piano:Black",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.Gb1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "F1",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.F1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        },
+        {
+            "name": "E1",
+            "colorscheme": "Piano:White",
+            "sounds": [
+                {
+                    "filename": "Wavs\\Piano.ff.E1.wav",
+                    "decay": 0.4000000059604645
+                }
+            ]
+        }
+    ]
+}

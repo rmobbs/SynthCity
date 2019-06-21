@@ -4,8 +4,9 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include "SerializeFwd.h"
 
-class SynthSound;
+class Sound;
 class Sequencer {
 private:
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
@@ -61,24 +62,30 @@ public:
     uint32 numNotes;
 
     void AddTrack(std::string voiceName, std::string colorScheme, std::string fileName);
-    void AddTrack(std::string voiceName, std::string colorScheme, SynthSound* synthSound);
+    void AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound);
     void ClearNotes();
     void Clear();
     void PlayTrack(uint32 trackIndex, uint8 velocity);
     void SetNoteCount(uint32 numNotes);
+    bool SaveInstrument(std::string fileName);
 
+     Instrument(const ReadSerializer& r);
      Instrument(std::string instrumentName, uint32 numNotes);
     ~Instrument();
 
     std::string GetName(void) const {
       return name;
     }
+    void SetName(const std::string& name);
 
     inline const std::vector<Track> &GetTracks(void) const {
       return tracks;
     }
 
     static Instrument* LoadInstrument(std::string fileName, uint32 numNotes);
+
+    bool SerializeRead(const ReadSerializer& serializer);
+    bool SerializeWrite(const WriteSerializer& serializer);
   };
 
   typedef void(*NotePlayedCallback)(int trackIndex, int noteIndex, void* payload);
@@ -207,6 +214,7 @@ public:
   void SetPosition(uint32 newPosition);
   void SetNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
   uint32 NextFrame(void);
+  bool NewInstrument();
 
   void PlayInstrumentTrack(uint32 instrumentTrack, float notVelocity);
 

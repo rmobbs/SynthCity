@@ -9,14 +9,11 @@
 #include <stdio.h>
 #include <fstream>
 #include <sstream>
-#include "tinyxml2.h"
-#include "rapidjson/rapidjson.h"
-#include "rapidjson/document.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/prettywriter.h"
 #include "MidiSource.h"
 #include "logging.h"
 #include "SynthSound.h"
+#include "SerializeImpl.h"
+#include "WavSound.h"
 
 static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
@@ -31,6 +28,7 @@ static constexpr const char *kTrackTag = "Track";
 static constexpr const char *kVelocityTag = "Velocity";
 static constexpr std::string_view kMidiTags[] = { ".midi", ".mid" };
 static constexpr std::string_view kJsonTag(".json");
+static constexpr std::string_view kNewInstrumentDefaultName("New Instrument");
 
 
 enum class Sounds {
@@ -98,6 +96,142 @@ Sequencer::Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
 
 }
 
+Sequencer::Instrument::Instrument(const ReadSerializer& r) {
+  if (!SerializeRead(r)) {
+    std::string strError("SpriteRenderable: Unable to serialize instrument");
+    MCLOG(Error, strError.c_str());
+    throw std::runtime_error(strError);
+  }
+}
+
+static constexpr const char* kVersionTag("version");
+static constexpr const char* kVersionString("0.0.6");
+static constexpr const char* kNameTag("name");
+static constexpr const char* kTracksTag("tracks");
+static constexpr const char* kColorSchemeTag("colorscheme");
+static constexpr const char* kSoundsTag("sounds");
+
+bool Sequencer::Instrument::SerializeRead(const ReadSerializer& serializer) {
+  auto& d = serializer.d;
+
+  // Version
+  if (!d.HasMember(kVersionTag) || !d[kVersionTag].IsString()) {
+    MCLOG(Warn, "Missing/invalid version tag in instrument file");
+    return false;
+  }
+  std::string version = d[kVersionTag].GetString();
+  
+  // TODO: Check version
+
+  // Name
+  if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
+    MCLOG(Warn, "Missing/invalid name tag in instrument file");
+    return false;
+  }
+  SetName(d[kNameTag].GetString());
+
+  // Tracks
+  if (!d.HasMember(kTracksTag) || !d[kTracksTag].IsArray()) {
+    MCLOG(Warn, "Invalid tracks array in instrument file");
+    return false;
+  }
+
+  const auto& tracksArray = d[kTracksTag];
+  for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
+    const auto& trackEntry = tracksArray[trackArrayIndex];
+
+    if (!trackEntry.HasMember(kNameTag) || !trackEntry[kNameTag].IsString()) {
+      MCLOG(Warn, "Invalid track in tracks array!");
+      continue;
+    }
+    auto trackName = trackEntry[kNameTag].GetString();
+
+    if (!trackEntry.HasMember(kColorSchemeTag) || !trackEntry[kColorSchemeTag].IsString()) {
+      MCLOG(Warn, "Invalid track in tracks array!");
+      continue;
+    }
+    auto colorScheme = trackEntry[kColorSchemeTag].GetString();
+
+    // Sounds
+    if (!trackEntry.HasMember(kSoundsTag) || !trackEntry[kSoundsTag].IsArray()) {
+      MCLOG(Warn, "Invalid sounds array in track");
+      return false;
+    }
+
+    const auto& soundsArray = trackEntry[kSoundsTag];
+
+    if (soundsArray.Size()) {
+      // Take the first one for now
+      const auto& soundsEntry = soundsArray[0];
+
+      // And again we need a factory ...
+      WavSound* wavSound = new WavSound;
+      if (wavSound->SerializeRead({ soundsEntry })) {
+        AddTrack(trackName, colorScheme, wavSound);
+      }
+      else {
+        MCLOG(Warn, "Error when serializing sound");
+      }
+    }
+    else {
+      MCLOG(Warn, "Empty sounds array in track");
+    }
+  }
+
+  return true;
+}
+
+bool Sequencer::Instrument::SerializeWrite(const WriteSerializer& serializer) {
+  auto& w = serializer.w;
+
+  w.StartObject();
+
+  // Version tag:string
+  w.Key(kVersionTag);
+  w.String(kVersionString);
+
+  // Name tag:string
+  w.Key(kNameTag);
+  w.String(name.c_str());
+
+  // Tracks tag:array_start
+  w.Key(kTracksTag);
+  w.StartArray();
+
+  // Tracks
+  for (uint32 trackIndex = 0; trackIndex < tracks.size(); ++trackIndex) {
+    auto& track = tracks[trackIndex];
+
+    w.StartObject();
+
+    // Name tag:string
+    w.Key(kNameTag);
+    w.String(track.name.c_str());
+
+    // Color scheme tag:string
+    w.Key(kColorSchemeTag);
+    w.String(track.colorScheme.c_str());
+
+    // TODO: Eventually handle dynamics (piano, forte, etc.). For right now
+    // we'll only have one sound per track.
+    w.Key(kSoundsTag);
+    w.StartArray();
+
+    Sound* sound = Mixer::Get().GetSound(track.soundIndex);
+    if (sound != nullptr) {
+      sound->SerializeWrite({ w });
+    }
+    w.EndArray();
+
+    w.EndObject();
+  }
+
+  w.EndArray();
+  w.EndObject();
+
+  return true;
+}
+
 Sequencer::Instrument::~Instrument() {
   Clear();
 }
@@ -133,7 +267,7 @@ void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorSch
   }
 }
 
-void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorScheme, SynthSound* synthSound) {
+void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound) {
   auto soundIndex = Mixer::Get().AddSound(synthSound);
   if (soundIndex != -1) {
     auto trackIndex = tracks.size();
@@ -159,77 +293,63 @@ void Sequencer::Instrument::PlayTrack(uint32 trackIndex, uint8 velocity) {
   SDL_UnlockAudio();
 }
 
+bool Sequencer::Instrument::SaveInstrument(std::string fileName) {
+  std::ofstream ofs(fileName);
+  if (ofs.bad()) {
+    MCLOG(Warn, "Unable to save instrument to file %s ", fileName.c_str());
+    return false;
+  }
+
+  rapidjson::StringBuffer sb;
+  rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
+
+  if (SerializeWrite({ w })) {
+    std::string outputString(sb.GetString());
+    ofs.write(outputString.c_str(), outputString.length());
+    ofs.close();
+    return true;
+  }
+  return false;
+}
+
 /* static */
-Sequencer::Instrument *Sequencer::Instrument::LoadInstrument(std::string fileName, uint32 numNotes) {
-  tinyxml2::XMLDocument doc;
-  auto parseError = doc.LoadFile(fileName.c_str());
-  if (parseError != tinyxml2::XML_SUCCESS) {
+Sequencer::Instrument* Sequencer::Instrument::LoadInstrument(std::string fileName, uint32 numNotes) {
+  MCLOG(Info, "Loading instrument from file \'%s\'", fileName.c_str());
+
+  std::ifstream ifs(fileName);
+
+  if (ifs.bad()) {
+    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
     return nullptr;
   }
 
-  // <SynthCityInstrument ...>
-  auto instrumentNode = doc.FirstChildElement("SynthCityInstrument");
-  if (!instrumentNode) {
-    // log error
-    return nullptr;
-  }
-  const char* instrumentName = nullptr;
-  parseError = instrumentNode->QueryStringAttribute("Name", &instrumentName);
+  std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
-  int version = 0;
-  parseError = instrumentNode->QueryIntAttribute("Version", &version);
-  if (parseError != tinyxml2::XML_SUCCESS) {
-    // log error
+  if (!fileData.length()) {
+    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
     return nullptr;
   }
 
-  // TODO: Check version
+  // Create JSON parser
+  rapidjson::Document document;
+  document.Parse(fileData.c_str());
 
-  // <Voices>
-  auto voicesNode = instrumentNode->FirstChildElement("Voices");
-  if (!voicesNode) {
-    // log error
+  if (!document.IsObject()) {
+    MCLOG(Warn, "Failure parsing JSON in file %s", fileName.c_str());
     return nullptr;
   }
 
-  Instrument* newInstrument = new Instrument(instrumentName, numNotes);
-  for (auto voiceNode = voicesNode->FirstChildElement("Voice"); voiceNode; voiceNode = voiceNode->NextSiblingElement("Voice")) {
-    const char *voiceName = nullptr;
-    voiceNode->QueryStringAttribute("Name", &voiceName);
-    if (!voiceName || !strlen(voiceName)) {
-      // log error
-      continue;
-    }
-
-    const char *colorScheme = nullptr;
-    voiceNode->QueryStringAttribute("ColorScheme", &colorScheme);
-
-    auto wavsNode = voiceNode->FirstChildElement("Wavs");
-    if (!wavsNode) {
-      // TODO: synth
-      continue;
-    }
-
-    std::vector<const char*> wavFiles;
-    for (auto wavNode = wavsNode->FirstChildElement("Wav"); wavNode; wavNode = wavNode->NextSiblingElement("Wav")) {
-      // TODO: Wav dynamic
-      const char* fileName = nullptr;
-      wavNode->QueryStringAttribute("File", &fileName);
-      if (!fileName || !strlen(fileName)) {
-        continue;
-      }
-      wavFiles.push_back(fileName);
-    }
-
-    if (!wavFiles.size()) {
-      // log error
-      continue;
-    }
-
-    newInstrument->AddTrack(voiceName, colorScheme, wavFiles[0]);
+  Instrument* newInstrument = new Instrument("<serialized", numNotes);// Instrument({ document });
+  if (!newInstrument->SerializeRead({ document })) {
+    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
+    delete newInstrument;
+    newInstrument = nullptr;
   }
-
   return newInstrument;
+}
+
+void Sequencer::Instrument::SetName(const std::string& name) {
+  this->name = name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -410,6 +530,20 @@ void Sequencer::Clear() {
     instrument->Clear();
   }
   SDL_UnlockAudio();
+}
+
+bool Sequencer::NewInstrument() {
+  Instrument* newInstrument = new Sequencer::Instrument(std::string(kNewInstrumentDefaultName),
+    GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
+  if (newInstrument) {
+    SDL_LockAudio();
+    Stop();
+    delete instrument;
+    instrument = newInstrument;
+    SDL_UnlockAudio();
+    return true;
+  }
+  return false;
 }
 
 bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
