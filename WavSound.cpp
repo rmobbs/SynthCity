@@ -12,19 +12,18 @@ static constexpr float kSilenceThresholdOutro = 0.50f;
 static constexpr const char* kFileNameTag("filename");
 static constexpr const char* kDecayTag("decay");
 
+REGISTER_SOUND(WavSound, "Sound from WAV file");
 WavSound::WavSound(const ReadSerializer& serializer) 
-  : Sound("<fixme>") {
+: Sound("WavSound") {
   if (!SerializeRead(serializer)) {
-    std::string strError("WavSound: Unable to serialize (read)");
-    MCLOG(Error, strError.c_str());
-    throw std::runtime_error(strError);
+    throw std::runtime_error("WavSound: Unable to serialize (read)");
   }
 }
 
 WavSound::WavSound(const std::string& soundName)
-  : Sound(soundName) {
+: Sound("WavSound") {
 
-  // Fixme
+  // TODO: Fix the variable name
   if (!LoadWav(soundName)) {
     throw std::runtime_error("Unable to load Wav file");
   }
@@ -53,8 +52,6 @@ uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame,
 bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
 
-  w.StartObject();
-
   // File tag:string
   w.Key(kFileNameTag);
   w.String(fileName.c_str());
@@ -69,31 +66,29 @@ bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
   w.Key(kDecayTag);
   w.Double(decay);
 
-  w.EndObject();
-
   return true;
 }
 
 bool WavSound::SerializeRead(const ReadSerializer& serializer) {
-  auto& d = serializer.d;
+  auto& r = serializer.d;
 
   // File
-  if (!d.HasMember(kFileNameTag) || !d[kFileNameTag].IsString()) {
+  if (!r.HasMember(kFileNameTag) || !r[kFileNameTag].IsString()) {
     MCLOG(Warn, "Missing/invalid filename tag");
     return false;
   }
 
-  if (!LoadWav(d[kFileNameTag].GetString())) {
+  if (!LoadWav(r[kFileNameTag].GetString())) {
     return false;
   }
 
   // Decay
-  if (!d.HasMember(kDecayTag) || !d[kDecayTag].IsDouble()) {
+  if (!r.HasMember(kDecayTag) || !r[kDecayTag].IsDouble()) {
     MCLOG(Warn, "Missing/invalid decay tag; decay will be 0");
     decay = 0.0f;
   }
   else {
-    decay = d[kDecayTag].GetDouble();
+    decay = r[kDecayTag].GetDouble();
   }
 
   return true;
@@ -111,14 +106,14 @@ bool WavSound::LoadWav(const std::string& fileName) {
 
   // TODO: FIX THIS
   if (spec.channels != 1) {
-    MCLOG(Error, "WavSound: %s has %d channels. Only mono "
+    MCLOG(Error, "WavSound: %s has %r channels. Only mono "
       "WAV files are currently supported", fileName.c_str(), spec.channels);
     return false;
   }
 
   // TODO: Support more formats
   if (spec.format != AUDIO_S16SYS) {
-    MCLOG(Error, "WavSound: %s has an unsupported format %d", fileName.c_str(), spec.format);
+    MCLOG(Error, "WavSound: %s has an unsupported format %r", fileName.c_str(), spec.format);
     return false;
   }
 
@@ -154,6 +149,8 @@ bool WavSound::LoadWav(const std::string& fileName) {
   this->data.assign(data + audibleOffset, data + audibleLength);
 
   SDL_FreeWAV(data);
+
+  this->fileName = fileName;
 
   return true;
 }

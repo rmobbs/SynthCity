@@ -111,13 +111,14 @@ static constexpr const char* kNameTag("name");
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
+static constexpr const char* kClassTag("class");
 
 bool Sequencer::Instrument::SerializeRead(const ReadSerializer& serializer) {
   auto& d = serializer.d;
 
   // Version
   if (!d.HasMember(kVersionTag) || !d[kVersionTag].IsString()) {
-    MCLOG(Warn, "Missing/invalid version tag in instrument file");
+    MCLOG(Error, "Missing/invalid version tag in instrument file");
     return false;
   }
   std::string version = d[kVersionTag].GetString();
@@ -126,14 +127,14 @@ bool Sequencer::Instrument::SerializeRead(const ReadSerializer& serializer) {
 
   // Name
   if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
-    MCLOG(Warn, "Missing/invalid name tag in instrument file");
+    MCLOG(Error, "Missing/invalid name tag in instrument file");
     return false;
   }
   SetName(d[kNameTag].GetString());
 
   // Tracks
   if (!d.HasMember(kTracksTag) || !d[kTracksTag].IsArray()) {
-    MCLOG(Warn, "Invalid tracks array in instrument file");
+    MCLOG(Error, "Invalid tracks array in instrument file");
     return false;
   }
 
@@ -142,20 +143,19 @@ bool Sequencer::Instrument::SerializeRead(const ReadSerializer& serializer) {
     const auto& trackEntry = tracksArray[trackArrayIndex];
 
     if (!trackEntry.HasMember(kNameTag) || !trackEntry[kNameTag].IsString()) {
-      MCLOG(Warn, "Invalid track in tracks array!");
+      MCLOG(Error, "Invalid track in tracks array!");
       continue;
     }
     auto trackName = trackEntry[kNameTag].GetString();
 
-    if (!trackEntry.HasMember(kColorSchemeTag) || !trackEntry[kColorSchemeTag].IsString()) {
-      MCLOG(Warn, "Invalid track in tracks array!");
-      continue;
+    std::string colorScheme;
+    if (trackEntry.HasMember(kColorSchemeTag) && trackEntry[kColorSchemeTag].IsString()) {
+      colorScheme = trackEntry[kColorSchemeTag].GetString();
     }
-    auto colorScheme = trackEntry[kColorSchemeTag].GetString();
 
     // Sounds
     if (!trackEntry.HasMember(kSoundsTag) || !trackEntry[kSoundsTag].IsArray()) {
-      MCLOG(Warn, "Invalid sounds array in track");
+      MCLOG(Error, "Invalid sounds array in track");
       return false;
     }
 
@@ -165,9 +165,23 @@ bool Sequencer::Instrument::SerializeRead(const ReadSerializer& serializer) {
       // Take the first one for now
       const auto& soundsEntry = soundsArray[0];
 
+      // Get factory
+      if (!soundsEntry.HasMember(kClassTag) || !soundsEntry[kClassTag].IsString()) {
+        MCLOG(Error, "No class tag for sound");
+        return false;
+      }
+      std::string className(soundsEntry[kClassTag].GetString());
+
+      const auto& soundInfoMap = SoundFactory::GetInfoMap();
+      const auto& soundInfo = soundInfoMap.find(className);
+      if (soundInfo == soundInfoMap.end()) {
+        MCLOG(Error, "Invalid class tag for sound");
+        return false;
+      }
+
       try {
-        // And again we need a factory ...
-        AddTrack(trackName, colorScheme, new WavSound({ soundsEntry }));
+        AddTrack(trackName, colorScheme,
+          soundInfo->second.createSerialized({ soundsEntry }));
       }
       catch (...) {
       }
@@ -208,8 +222,10 @@ bool Sequencer::Instrument::SerializeWrite(const WriteSerializer& serializer) {
     w.String(track.name.c_str());
 
     // Color scheme tag:string
-    w.Key(kColorSchemeTag);
-    w.String(track.colorScheme.c_str());
+    if (track.colorScheme.length()) {
+      w.Key(kColorSchemeTag);
+      w.String(track.colorScheme.c_str());
+    }
 
     // TODO: Eventually handle dynamics (piano, forte, etc.). For right now
     // we'll only have one sound per track.
@@ -218,8 +234,17 @@ bool Sequencer::Instrument::SerializeWrite(const WriteSerializer& serializer) {
 
     Sound* sound = Mixer::Get().GetSound(track.soundIndex);
     if (sound != nullptr) {
+      w.StartObject();
+
+      // Class tag:string
+      w.Key(kClassTag);
+      w.String(sound->GetClassName());
+
       sound->SerializeWrite({ w });
+
+      w.EndObject();
     }
+
     w.EndArray();
 
     w.EndObject();

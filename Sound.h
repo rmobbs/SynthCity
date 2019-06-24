@@ -2,6 +2,7 @@
 
 #include "BaseTypes.h"
 #include "SerializeFwd.h"
+#include "ClassFactory.h"
 
 #include <string>
 
@@ -14,10 +15,8 @@ public:
   SoundHandle sound = kInvalidSoundHandle;
 
   int	position = 0;
-  // 8:24 fixed point
   float	lvol = 0;
   float	rvol = 0;
-  // 16:16 fixed point
   float	decay = 0;
 };
 
@@ -27,6 +26,8 @@ protected:
   std::string name;
 
 public:
+  DECLARE_FACTORY_CLASS(Sound);
+
   Sound(const std::string& name)
     : name(name) {
   }
@@ -45,4 +46,6 @@ public:
   virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
 };
 
-
+DECLARE_CLASS_FACTORY(SoundFactory, Sound);
+#define REGISTER_SOUND(SoundClass, SoundDesc) \
+  REGISTER_FACTORY_CLASS(SoundFactory, SoundClass, typeid(SoundClass).hash_code(), SoundDesc)

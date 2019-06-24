@@ -7,6 +7,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.G7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -17,6 +18,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Gb7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -27,6 +29,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.F7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -37,6 +40,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.E7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -47,6 +51,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Eb7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -57,6 +62,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.D7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -67,6 +73,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Db7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -77,6 +84,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.C7.wav",
                     "decay": 0.4000000059604645
                 }
@@ -87,6 +95,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.B6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -97,6 +106,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Bb6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -107,6 +117,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.A6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -117,6 +128,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Ab6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -127,6 +139,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.G6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -137,6 +150,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Gb6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -147,6 +161,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.F6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -157,6 +172,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.E6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -167,6 +183,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Eb6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -177,6 +194,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.D6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -187,6 +205,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Db6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -197,6 +216,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.C6.wav",
                     "decay": 0.4000000059604645
                 }
@@ -207,6 +227,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.B5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -217,6 +238,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Bb5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -227,6 +249,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.A5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -237,6 +260,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Ab5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -247,6 +271,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.G5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -257,6 +282,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Gb5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -267,6 +293,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.F5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -277,6 +304,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.E5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -287,6 +315,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Eb5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -297,6 +326,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.D5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -307,6 +337,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Db5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -317,6 +348,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.C5.wav",
                     "decay": 0.4000000059604645
                 }
@@ -327,6 +359,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.B4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -337,6 +370,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Bb4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -347,6 +381,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.A4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -357,6 +392,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Ab4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -367,6 +403,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.G4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -377,6 +414,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Gb4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -387,6 +425,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.F4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -397,6 +436,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.E4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -407,6 +447,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Eb4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -417,6 +458,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.D4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -427,6 +469,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Db4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -437,6 +480,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.C4.wav",
                     "decay": 0.4000000059604645
                 }
@@ -447,6 +491,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.B3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -457,6 +502,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Bb3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -467,6 +513,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.A3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -477,6 +524,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Ab3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -487,6 +535,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.G3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -497,6 +546,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Gb3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -507,6 +557,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.F3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -517,6 +568,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.E3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -527,6 +579,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Eb3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -537,6 +590,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.D3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -547,6 +601,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Db3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -557,6 +612,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.C3.wav",
                     "decay": 0.4000000059604645
                 }
@@ -567,6 +623,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.B2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -577,6 +634,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Bb2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -587,6 +645,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.A2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -597,6 +656,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Ab2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -607,6 +667,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.G2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -617,6 +678,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Gb2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -627,6 +689,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.F2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -637,6 +700,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.E2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -647,6 +711,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Eb2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -657,6 +722,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.D2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -667,6 +733,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Db2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -677,6 +744,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.C2.wav",
                     "decay": 0.4000000059604645
                 }
@@ -687,6 +755,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.B1.wav",
                     "decay": 0.4000000059604645
                 }
@@ -697,6 +766,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Bb1.wav",
                     "decay": 0.4000000059604645
                 }
@@ -707,6 +777,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.A1.wav",
                     "decay": 0.4000000059604645
                 }
@@ -717,6 +788,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Ab1.wav",
                     "decay": 0.4000000059604645
                 }
@@ -727,6 +799,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.G1.wav",
                     "decay": 0.4000000059604645
                 }
@@ -737,6 +810,7 @@
             "colorscheme": "Piano:Black",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.Gb1.wav",
                     "decay": 0.4000000059604645
                 }
@@ -747,6 +821,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.F1.wav",
                     "decay": 0.4000000059604645
                 }
@@ -757,6 +832,7 @@
             "colorscheme": "Piano:White",
             "sounds": [
                 {
+                    "class": "WavSound",
                     "filename": "Wavs\\Piano.ff.E1.wav",
                     "decay": 0.4000000059604645
                 }

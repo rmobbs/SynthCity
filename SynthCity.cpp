@@ -26,6 +26,7 @@
 #include "InputState.h"
 #include "SynthSound.h"
 #include "Mixer.h"
+#include "SerializeImpl.h"
 
 static ComposerView* currentView = nullptr;
 
@@ -233,10 +234,18 @@ bool GetMidiConversionParams(const MidiSource& midiSource, Sequencer::MidiConver
 }
 
 struct AddSynthVoiceWorkspace {
-  const SynthSoundInfo* selectedSoundInfo = nullptr;
-  std::string voiceName;
-  uint32 frequency = 0;
-  uint32 duration = 0;
+  // Combo box contents
+  std::vector<const SoundFactory::ClassInformation*> comboBoxEntries;
+
+  // Factory entry
+  const SoundFactory::ClassInformation* selectedSoundInfo = nullptr;
+
+  // Name
+  std::string trackName;
+  std::string colorScheme;
+
+  // Serialization
+  rapidjson::StringBuffer sb;
 };
 
 BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
@@ -268,43 +277,45 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
         defaultName = std::string(kDefaultNewTrackName) + std::to_string(++nameSuffix);
       }
 
-      SetDlgItemText(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_NAME, StringToWChar(defaultName).get());
+      SetDlgItemText(hWndDlg, IDC_EDIT_ADDVOICE_NAME, StringToWChar(defaultName).get());
 
       // Set default duration
-      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_NUMERATOR, 1, FALSE);
-      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_DENOMINATOR, 4, FALSE);
+      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_NUMERATOR, 1, FALSE);
+      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_DENOMINATOR, 4, FALSE);
 
       // Set default frequency
-      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_FREQUENCY, 1000, FALSE);
+      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_FREQUENCY, 1000, FALSE);
 
       // Add all synth voices to the combo
       HWND hWndCombo = GetDlgItem(hWndDlg, IDC_COMBO_ADDSYNTHVOICEPRESET);
 
-      const auto& synthSoundInfoMap = SynthSoundInfoFactory::GetInfoMap();
-      for (const auto& synthSoundInfo : synthSoundInfoMap) {
-        // Add to combo box
-        SendMessage(hWndCombo, CB_ADDSTRING, 0,
-          reinterpret_cast<LPARAM>(StringToWChar(synthSoundInfo.second.name).get()));
+      const auto synthSoundTag = typeid(SynthSound).hash_code();
+      const auto& soundInfoMap = SoundFactory::GetInfoMap();
+      for (const auto& soundInfo : soundInfoMap) {
+        if (soundInfo.second.tag == synthSoundTag) {
+          workspace.comboBoxEntries.push_back(&soundInfo.second);
+
+          // Add to combo box
+          SendMessage(hWndCombo, CB_ADDSTRING, 0,
+            reinterpret_cast<LPARAM>(StringToWChar(soundInfo.second.name).get()));
+        }
       }
 
       // Choose the default
       SendMessage(hWndCombo, CB_SETCURSEL, 0, 0);
-      if (synthSoundInfoMap.size()) {
-        workspace.selectedSoundInfo = &synthSoundInfoMap.begin()->second;
+      if (workspace.comboBoxEntries.size()) {
+        workspace.selectedSoundInfo = workspace.comboBoxEntries.front();
       }
 
       break;
     }
     case WM_COMMAND:
       if (HIWORD(wParam) == CBN_SELCHANGE) {
-        const auto& synthSoundInfoMap = SynthSoundInfoFactory::GetInfoMap();
+        const auto& soundInfoMap = SoundFactory::GetInfoMap();
 
         int itemIndex = SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
-        if (itemIndex < synthSoundInfoMap.size()) {
-          auto itemIter = synthSoundInfoMap.begin();
-          std::advance(itemIter, itemIndex);
-
-          workspace.selectedSoundInfo = &itemIter->second;
+        if (itemIndex < workspace.comboBoxEntries.size()) {
+          workspace.selectedSoundInfo = workspace.comboBoxEntries[itemIndex];
 
           // Update properties display
         }
@@ -312,30 +323,58 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
       else {
         switch (LOWORD(wParam)) {
           case IDOK: {
-            // Pull data
-            workspace.frequency =
-              GetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_FREQUENCY, nullptr, FALSE);
-            
-            WCHAR voiceName[256];
-            GetDlgItemText(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_NAME, voiceName, _countof(voiceName));
-            USES_CONVERSION;
-            workspace.voiceName = std::string(W2A(voiceName));
-
-            INT num = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_NUMERATOR, nullptr, FALSE);
-            INT den = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDSYNTHVOICE_PROPERTIES_DURATION_DENOMINATOR, nullptr, FALSE);
             auto& sequencer = Sequencer::Get();
 
-            if (den > sequencer.GetMaxSubdivisions()) {
-              den = sequencer.GetMaxSubdivisions();
-            }
-            if (den < 1) {
-              den = 1;
-            }
+            // Pull data and serialize it
+            rapidjson::PrettyWriter<rapidjson::StringBuffer> w(workspace.sb);
 
-            auto& mixer = Mixer::Get();
+            /*
+            workspace.w.StartArray();
+            */
 
-            workspace.duration = ((float)num / (float)den) * 
-              (Mixer::kDefaultFrequency / Mixer::kDefaultChannels);
+            // Track name
+            WCHAR trackNameBuf[256];
+            GetDlgItemText(hWndDlg, IDC_EDIT_ADDVOICE_NAME, trackNameBuf, _countof(trackNameBuf));
+            USES_CONVERSION;
+            /*
+            std::string trackName(W2A(trackNameBuf));
+            workspace.w.Key("name"); // FIXME
+            workspace.w.String(trackName.c_str());
+            */
+            workspace.trackName = std::string(W2A(trackNameBuf));
+
+            // TODO: Color scheme
+
+            /*
+            // Sounds array
+            workspace.w.Key("sounds"); // FIXME
+            workspace.w.StartArray();
+            */
+
+            w.StartObject();
+
+            // TODO: Customize based on type
+
+            // Frequency
+            uint32 frequency =
+              GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_FREQUENCY, nullptr, FALSE);
+            w.Key("frequency");
+            w.Uint(frequency);
+
+            // Duration
+            INT num = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_NUMERATOR, nullptr, FALSE);
+            INT den = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_DENOMINATOR, nullptr, FALSE);
+            den = std::min(std::max(static_cast<uint32>(den), 1u), sequencer.GetMaxSubdivisions());
+            uint32 duration = ((float)num / (float)den) *
+              (Mixer::kDefaultFrequency / Mixer::kDefaultChannels);// num* (sequencer.GetMaxSubdivisions() / den);
+            w.Key("duration");
+            w.Uint(duration);
+
+            w.EndObject();
+
+            /*
+            w.EndArray();
+            */
 
             EndDialog(hWndDlg, wParam);
             return TRUE;
@@ -363,14 +402,18 @@ bool AddSynthVoiceDialog() { //const MidiSource& midiSource, Sequencer::MidiConv
   SetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA, reinterpret_cast<LONG>(&workspace));
 
   // Push the dialog
-  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_INSTRUMENT_ADDSYNTHVOICE),
+  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_INSTRUMENT_ADDVOICE),
     sysWmInfo.info.win.window, reinterpret_cast<DLGPROC>(AddSynthVoiceDialogProc)) == IDOK) {
     if (workspace.selectedSoundInfo != nullptr) {
       MCLOG(Info, "You selected synth sound %s", workspace.selectedSoundInfo->name.c_str());
 
       // Instantiate
-      Sequencer::Get().GetInstrument()->AddTrack(workspace.voiceName, "Need color scheme",
-        new SineSynthSound(Mixer::kDefaultFrequency, workspace.frequency, workspace.duration));
+      rapidjson::Document document;
+      document.Parse(workspace.sb.GetString());
+
+      Sequencer::Get().GetInstrument()->AddTrack(workspace.trackName,
+        workspace.colorScheme,
+        workspace.selectedSoundInfo->createSerialized({ document }));
 
       // Add to instrument
     }

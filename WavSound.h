@@ -14,6 +14,8 @@ protected:
   bool LoadWav(const std::string& fileName);
 
 public:
+  DECLARE_FACTORY_CLASS(WavSound);
+
   WavSound(const ReadSerializer& serializer);
   WavSound(const std::string& soundName);
 
