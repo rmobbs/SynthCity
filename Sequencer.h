@@ -1,21 +1,22 @@
 #pragma once
 
 #include "BaseTypes.h"
+#include "Mixer.h"
+#include "SerializeFwd.h"
+
 #include <vector>
 #include <string>
 #include <functional>
-#include "SerializeFwd.h"
 
 class Sound;
 class Instrument;
 
-class Sequencer {
+class Sequencer : public Mixer {
 private:
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
   static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kMaxTempo = 220;
-  static constexpr float kDefaultMasterVolume = 0.7f;
 public:
 public:
   // Loaded MIDI is passed to the host; they interact with the user to determine what
@@ -34,10 +35,9 @@ private:
   uint32 maxBeatSubdivisions;
   uint32 currBeatSubdivision;
   uint32 currentBpm = 120;
-  float masterVolume = kDefaultMasterVolume;
   bool isPlaying = false;
   bool isMetrononeOn = false;
-  bool isLooping = true;
+  std::atomic<bool> isLooping = true;
   NotePlayedCallback notePlayedCallback = nullptr;
   void* notePlayedPayload = nullptr;
   int currPosition;
@@ -50,8 +50,11 @@ private:
 
   void PartialNoteCallback();
   void FullNoteCallback(bool isMeasure);
-
   uint32 CalcInterval(uint32 beatSubdivision) const;
+
+
+  // Mixer
+  uint32 NextFrame() override;
 
 public:
   inline bool IsMetronomeOn(void) const {
@@ -109,11 +112,6 @@ public:
 
   void SetLooping(bool looping);
 
-  inline float GetMasterVolume() const {
-    return masterVolume;
-  }
-  void SetMasterVolume(float masterVolume);
-
   void Play();
   void Pause();
   void Stop();
@@ -148,7 +146,6 @@ public:
 
   void SetPosition(uint32 newPosition);
   void SetNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
-  uint32 NextFrame(void);
   bool NewInstrument();
 
    Sequencer() {}

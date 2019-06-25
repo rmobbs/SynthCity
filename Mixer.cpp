@@ -23,9 +23,6 @@ static constexpr uint32 kMaxSimultaneousVoices = 64;
 // Synth voice
 static constexpr double	kSmC0 = 16.3515978312874;
 
-static sm_control_cb control_callback = NULL;
-static void* control_payload = nullptr;
-
 static void flip_endian(Uint8 *data, int length)
 {
   int i;
@@ -36,18 +33,6 @@ static void flip_endian(Uint8 *data, int length)
     data[i + 1] = x;
   }
 }
-
-void sm_set_control_cb(sm_control_cb cb, void* payload)
-{
-  SDL_LockAudio();
-  control_callback = cb;
-  control_payload = payload;
-  //ticksRemaining = 0;
-  SDL_UnlockAudio();
-}
-
-/* static */
-Mixer *Mixer::singleton = nullptr;
 
 Mixer::Mixer() {
 
@@ -119,15 +104,13 @@ SoundHandle Mixer::AddSound(Sound* sound) {
 }
 
 void Mixer::ApplyInterval(uint32 ticksPerFrame) {
-  if (ticksRemaining > ticksPerFrame)
-    ticksRemaining = ticksPerFrame;
+  ticksRemaining = std::min(ticksRemaining, static_cast<int32>(ticksPerFrame));
 }
 
 bool Mixer::Init(uint32 audioBufferSize) {
   SDL_AudioSpec as = { 0 };
-  int i;
 
-  mixbuf.resize(kMaxCallbackSampleFrames * sizeof(Sint32) * 2);
+  mixbuf.resize(kMaxCallbackSampleFrames * 2);
 
   if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
   {
@@ -162,7 +145,6 @@ bool Mixer::Init(uint32 audioBufferSize) {
 }
 
 void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
-  int vi;
   // Clear the buffer
   memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
 
@@ -176,7 +158,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
     uint32 n = voices.size();
     while (i < n) {
       Voice* v = voices[i];
-      Sound* s = Mixer::Get().sounds[v->sound];
+      Sound* s = sounds[v->sound];
 
       for (uint32 f = 0; f < numFrames; ++f) {
         float samples[2] = { 0 }; // Stereo
@@ -216,7 +198,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
     voices.resize(n);
 
     // So people can query this without locking
-    numActiveVoices.store(n);
+    numActiveVoices = n;
   }
 }
 
@@ -226,9 +208,9 @@ void Mixer::WriteOutput(float *input, int16 *output, int frames)
   frames *= 2;	/* Stereo! */
   while (i < frames)
   {
-    output[i] = input[i] * SHRT_MAX;
+    output[i] = static_cast<int16>(input[i] * SHRT_MAX);
     ++i;
-    output[i] = input[i] * SHRT_MAX;;
+    output[i] = static_cast<int16>(input[i] * SHRT_MAX);
     ++i;
   }
 }
@@ -255,17 +237,16 @@ void Mixer::AudioCallback(void *ud, Uint8 *stream, int len)
     ticksRemaining -= frames;
     if (!ticksRemaining)
     {
-      if (control_callback) {
-        ticksPerFrame = ticksRemaining = control_callback(control_payload);
-      }
-      else {
-        ticksPerFrame = ticksRemaining = 10000;
-      }
+      ticksPerFrame = ticksRemaining = NextFrame();
     }
   }
 }
 
-void Mixer::Play(uint32 soundHandle, float volume) {
+uint32 Mixer::NextFrame() {
+  return 10000; // Default implementation just waits (but it should wait the proper subdivisions ...)
+}
+
+void Mixer::PlaySound(uint32 soundHandle, float volume) {
   SDL_LockAudio();
 
   if (voices.size() >= kMaxSimultaneousVoices) {
@@ -284,27 +265,4 @@ void Mixer::Play(uint32 soundHandle, float volume) {
 
   SDL_UnlockAudio();
 }
-
-/* static */
-bool Mixer::InitSingleton(uint32 audioBufferSize) {
-  if (!singleton) {
-    singleton = new Mixer;
-    if (singleton) {
-      if (singleton->Init(audioBufferSize)) {
-        return true;
-      }
-
-      delete singleton;
-      singleton = nullptr;
-    }
-  }
-  return false;
-}
-
-/* static */
-void Mixer::TermSingleton() {
-  delete singleton;
-  singleton = nullptr;
-}
-
 

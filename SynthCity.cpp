@@ -96,14 +96,13 @@ BOOL CALLBACK MidiPropertiesDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, L
 
       // Nice formatting for numbers < 10
       auto logTen = static_cast<uint32>(std::floor(log10(midiTracks.size())));
-      for (int currIndex = 0; currIndex < midiTracks.size(); ++currIndex) {
+      for (uint32 currIndex = 0; currIndex < midiTracks.size(); ++currIndex) {
         const auto& midiTrack = midiTracks[currIndex];
 
         TVITEM tvi = { 0 };
         TVINSERTSTRUCT tvins;
         static HTREEITEM hPrevRootItem = NULL;
         static HTREEITEM hPrevLev2Item = NULL;
-        HTREEITEM hti;
 
         tvi.mask = TVIF_TEXT | TVS_CHECKBOXES | TVIF_PARAM;
 
@@ -264,7 +263,7 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
 
         auto& tracks = instrument->GetTracks();
 
-        int index;
+        uint32 index;
         for (index = 0; index < tracks.size(); ++index) {
           if (tracks[index].GetName() == defaultName) {
             break;
@@ -314,7 +313,7 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
       if (HIWORD(wParam) == CBN_SELCHANGE) {
         const auto& soundInfoMap = SoundFactory::GetInfoMap();
 
-        int itemIndex = SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
+        uint32 itemIndex = SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
         if (itemIndex < workspace.comboBoxEntries.size()) {
           workspace.selectedSoundInfo = workspace.comboBoxEntries[itemIndex];
 
@@ -366,8 +365,8 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
             INT num = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_NUMERATOR, nullptr, FALSE);
             INT den = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_DENOMINATOR, nullptr, FALSE);
             den = std::min(std::max(static_cast<uint32>(den), 1u), sequencer.GetMaxSubdivisions());
-            uint32 duration = ((float)num / (float)den) *
-              (Mixer::kDefaultFrequency / Mixer::kDefaultChannels);// num* (sequencer.GetMaxSubdivisions() / den);
+            uint32 duration = static_cast<uint32>((static_cast<float>(num) /
+              static_cast<float>(den)) * (Sequencer::kDefaultFrequency / Sequencer::kDefaultChannels));
             w.Key("duration");
             w.Uint(duration);
 
@@ -561,7 +560,8 @@ void MainLoop() {
   /////////////////////////////////////////////////////////////////////
   // RENDERING
   /////////////////////////////////////////////////////////////////////
-  currentView->Render(currentTime, ImVec2(windowWidth, windowHeight));
+  currentView->Render(currentTime,
+    ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
 
   SDL_GL_SwapWindow(sdlWindow);
 }
@@ -809,9 +809,9 @@ bool Init() {
   SDL_SetWindowsMessageHook([](void *payload, void *hWnd, unsigned int message, Uint64 wParam, Sint64 lParam) {
     MSG msg = { 0 };
     msg.hwnd = reinterpret_cast<HWND>(hWnd);
-    msg.lParam = lParam;
+    msg.lParam = static_cast<LPARAM>(lParam);
     msg.message = message;
-    msg.wParam = wParam;
+    msg.wParam = static_cast<WPARAM>(wParam);
     TranslateAccelerator(sysWmInfo.info.win.window, hAccel, &msg);
   }, nullptr);
 

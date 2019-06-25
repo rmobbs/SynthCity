@@ -1,7 +1,7 @@
 #include "Sequencer.h"
 #include "SDL.h"
 #include <iostream>
-#include "mixer.h"
+#include "Mixer.h"
 #include "SDL_audio.h"
 #include <stdlib.h>
 #include <string.h>
@@ -45,7 +45,7 @@ Sequencer& Sequencer::Get() {
 
 uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
   if (currentBpm > 0 && beatSubdivision > 0) {
-    return static_cast<uint32>(Mixer::kDefaultFrequency / currentBpm * 60.0 / static_cast<float>(beatSubdivision));
+    return static_cast<uint32>(kDefaultFrequency / currentBpm * 60.0 / static_cast<float>(beatSubdivision));
   }
   return 0;
 }
@@ -61,7 +61,7 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
 void Sequencer::SetBeatsPerMinute(uint32 bpm) {
   currentBpm = bpm;
   interval = static_cast<int>(CalcInterval(GetSubdivision()));
-  Mixer::Get().ApplyInterval(interval);
+  ApplyInterval(interval);
 }
 
 void Sequencer::PartialNoteCallback() {
@@ -74,7 +74,7 @@ void Sequencer::FullNoteCallback(bool isMeasure) {
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
     }
-    Mixer::Get().Play(reservedSounds[metronomeSound], kMetronomeVolume);
+    Mixer::PlaySound(reservedSounds[metronomeSound], kMetronomeVolume);
   }
 }
 
@@ -117,14 +117,7 @@ void Sequencer::SetBeatsPerMeasure(uint32 beatsPerMeasure) {
 }
 
 void Sequencer::SetLooping(bool looping) {
-  SDL_LockAudio();
   isLooping = looping;
-  SDL_UnlockAudio();
-}
-
-void Sequencer::SetMasterVolume(float masterVolume) {
-  this->masterVolume = masterVolume;
-  Mixer::Get().SetMasterVolume(masterVolume);
 }
 
 uint32 Sequencer::GetPosition(void) const {
@@ -491,19 +484,13 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   this->beatsPerMeasure = beatsPerMeasure;
   this->maxBeatSubdivisions = maxBeatSubdivisions;
 
-  SetLooping(true);
-
-  Mixer::InitSingleton(kAudioBufferSize);
-
-  sm_set_control_cb([](void* payload) {
-    return reinterpret_cast<Sequencer*>(payload)->NextFrame();
-  }, reinterpret_cast<void*>(this));
+  Mixer::Init(kAudioBufferSize);
 
   // Load the reserved sounds
   reservedSounds.resize(static_cast<int>(ReservedSounds::Count));
-  reservedSounds[static_cast<int>(ReservedSounds::MetronomeFull)] = Mixer::Get().
+  reservedSounds[static_cast<int>(ReservedSounds::MetronomeFull)] = 
     LoadSound(std::string("Assets\\Metronome\\seikosq50_hi.wav").c_str());
-  reservedSounds[static_cast<int>(ReservedSounds::MetronomePartial)] = Mixer::Get().
+  reservedSounds[static_cast<int>(ReservedSounds::MetronomePartial)] = 
     LoadSound(std::string("Assets\\Metronome\\seikosq50_lo.wav").c_str());
 
   SetSubdivision(currBeatSubdivision);
@@ -516,9 +503,7 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
 
 Sequencer::~Sequencer() {
   SDL_LockAudio();
-  sm_set_control_cb(nullptr, nullptr);
   delete instrument;
   instrument = nullptr;
-  Mixer::TermSingleton();
   SDL_UnlockAudio();
 }

@@ -88,7 +88,7 @@ bool WavSound::SerializeRead(const ReadSerializer& serializer) {
     decay = 0.0f;
   }
   else {
-    decay = r[kDecayTag].GetDouble();
+    decay = static_cast<float>(r[kDecayTag].GetDouble());
   }
 
   return true;
