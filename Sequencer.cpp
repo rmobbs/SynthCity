@@ -14,10 +14,10 @@
 #include "SynthSound.h"
 #include "SerializeImpl.h"
 #include "WavSound.h"
+#include "Instrument.h"
 
 static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
-static constexpr uint32 kNoteVelocityAsUint8 = 255;
 static constexpr const char *kInstrumentTag = "Instrument";
 static constexpr const char *kTempoTag = "Tempo";
 static constexpr const char *kMeasuresTag = "Measures";
@@ -31,7 +31,7 @@ static constexpr std::string_view kJsonTag(".json");
 static constexpr std::string_view kNewInstrumentDefaultName("New Instrument");
 
 
-enum class Sounds {
+enum class ReservedSounds {
   MetronomeFull,
   MetronomePartial,
   Count,
@@ -41,358 +41,6 @@ enum class Sounds {
 Sequencer& Sequencer::Get() {
   static Sequencer theSequencer;
   return theSequencer;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Sequencer::Track
-///////////////////////////////////////////////////////////////////////////////
-Sequencer::Track::Track() {
-
-}
-
-Sequencer::Track::Track(Track&& other) noexcept {
-  this->colorScheme = other.colorScheme;
-  other.colorScheme.clear();
-  this->data = other.data;
-  other.data.clear();
-  this->decay = other.decay;
-  other.decay = 0;
-  this->lvol = other.lvol;
-  other.lvol = 0;
-  this->mute = other.mute;
-  other.mute = 0;
-  this->name = other.name;
-  other.name.clear();
-  this->rvol = other.rvol;
-  other.rvol = 0;
-  this->skip = other.skip;
-  other.skip = 0;
-  this->soundIndex = other.soundIndex;
-  other.soundIndex = kInvalidSoundHandle;
-}
-
-Sequencer::Track::~Track() {
-  Mixer::Get().ReleaseSound(soundIndex);
-}
-
-void Sequencer::Track::AddNotes(uint32 noteCount, uint8 noteValue) {
-  SDL_LockAudio();
-  data.resize(data.size() + noteCount, noteValue);
-  SDL_UnlockAudio();
-}
-
-void Sequencer::Track::SetNoteCount(uint32 noteCount, uint8 noteValue) {
-  SDL_LockAudio();
-  data.resize(noteCount, noteValue);
-  SDL_UnlockAudio();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Sequencer::Instrument
-///////////////////////////////////////////////////////////////////////////////
-Sequencer::Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
-  name(instrumentName),
-  numNotes(numNotes) {
-
-}
-
-Sequencer::Instrument::Instrument(const ReadSerializer& r, uint32 numNotes)
-  : numNotes(numNotes) {
-  if (!SerializeRead(r)) {
-    std::string strError("Instrument: Unable to serialize (read)");
-    MCLOG(Error, strError.c_str());
-    throw std::runtime_error(strError);
-  }
-}
-
-static constexpr const char* kVersionTag("version");
-static constexpr const char* kVersionString("0.0.6");
-static constexpr const char* kNameTag("name");
-static constexpr const char* kTracksTag("tracks");
-static constexpr const char* kColorSchemeTag("colorscheme");
-static constexpr const char* kSoundsTag("sounds");
-static constexpr const char* kClassTag("class");
-
-bool Sequencer::Instrument::SerializeRead(const ReadSerializer& serializer) {
-  auto& d = serializer.d;
-
-  // Version
-  if (!d.HasMember(kVersionTag) || !d[kVersionTag].IsString()) {
-    MCLOG(Error, "Missing/invalid version tag in instrument file");
-    return false;
-  }
-  std::string version = d[kVersionTag].GetString();
-  
-  // TODO: Check version
-
-  // Name
-  if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
-    MCLOG(Error, "Missing/invalid name tag in instrument file");
-    return false;
-  }
-  SetName(d[kNameTag].GetString());
-
-  // Tracks
-  if (!d.HasMember(kTracksTag) || !d[kTracksTag].IsArray()) {
-    MCLOG(Error, "Invalid tracks array in instrument file");
-    return false;
-  }
-
-  const auto& tracksArray = d[kTracksTag];
-  for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
-    const auto& trackEntry = tracksArray[trackArrayIndex];
-
-    if (!trackEntry.HasMember(kNameTag) || !trackEntry[kNameTag].IsString()) {
-      MCLOG(Error, "Invalid track in tracks array!");
-      continue;
-    }
-    auto trackName = trackEntry[kNameTag].GetString();
-
-    std::string colorScheme;
-    if (trackEntry.HasMember(kColorSchemeTag) && trackEntry[kColorSchemeTag].IsString()) {
-      colorScheme = trackEntry[kColorSchemeTag].GetString();
-    }
-
-    // Sounds
-    if (!trackEntry.HasMember(kSoundsTag) || !trackEntry[kSoundsTag].IsArray()) {
-      MCLOG(Error, "Invalid sounds array in track");
-      return false;
-    }
-
-    const auto& soundsArray = trackEntry[kSoundsTag];
-
-    if (soundsArray.Size()) {
-      // Take the first one for now
-      const auto& soundsEntry = soundsArray[0];
-
-      // Get factory
-      if (!soundsEntry.HasMember(kClassTag) || !soundsEntry[kClassTag].IsString()) {
-        MCLOG(Error, "No class tag for sound");
-        return false;
-      }
-      std::string className(soundsEntry[kClassTag].GetString());
-
-      const auto& soundInfoMap = SoundFactory::GetInfoMap();
-      const auto& soundInfo = soundInfoMap.find(className);
-      if (soundInfo == soundInfoMap.end()) {
-        MCLOG(Error, "Invalid class tag for sound");
-        return false;
-      }
-
-      try {
-        AddTrack(trackName, colorScheme,
-          soundInfo->second.createSerialized({ soundsEntry }));
-      }
-      catch (...) {
-      }
-    }
-    else {
-      MCLOG(Warn, "Empty sounds array in track");
-    }
-  }
-
-  return true;
-}
-
-bool Sequencer::Instrument::SerializeWrite(const WriteSerializer& serializer) {
-  auto& w = serializer.w;
-
-  w.StartObject();
-
-  // Version tag:string
-  w.Key(kVersionTag);
-  w.String(kVersionString);
-
-  // Name tag:string
-  w.Key(kNameTag);
-  w.String(name.c_str());
-
-  // Tracks tag:array_start
-  w.Key(kTracksTag);
-  w.StartArray();
-
-  // Tracks
-  for (uint32 trackIndex = 0; trackIndex < tracks.size(); ++trackIndex) {
-    auto& track = tracks[trackIndex];
-
-    w.StartObject();
-
-    // Name tag:string
-    w.Key(kNameTag);
-    w.String(track.name.c_str());
-
-    // Color scheme tag:string
-    if (track.colorScheme.length()) {
-      w.Key(kColorSchemeTag);
-      w.String(track.colorScheme.c_str());
-    }
-
-    // TODO: Eventually handle dynamics (piano, forte, etc.). For right now
-    // we'll only have one sound per track.
-    w.Key(kSoundsTag);
-    w.StartArray();
-
-    Sound* sound = Mixer::Get().GetSound(track.soundIndex);
-    if (sound != nullptr) {
-      w.StartObject();
-
-      // Class tag:string
-      w.Key(kClassTag);
-      w.String(sound->GetClassName());
-
-      sound->SerializeWrite({ w });
-
-      w.EndObject();
-    }
-
-    w.EndArray();
-
-    w.EndObject();
-  }
-
-  w.EndArray();
-  w.EndObject();
-
-  return true;
-}
-
-Sequencer::Instrument::~Instrument() {
-  Clear();
-}
-
-void Sequencer::Instrument::ClearNotes() {
-  for (auto& track : tracks) {
-    std::fill(track.data.begin(), track.data.end(), 0);
-  }
-}
-
-void Sequencer::Instrument::Clear() {
-  tracks.clear();
-}
-
-void Sequencer::Instrument::SetNoteCount(uint32 numNotes) {
-  for (auto& track : tracks) {
-    track.SetNoteCount(numNotes);
-  }
-}
-
-void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorScheme, std::string fileName) {
-  auto soundIndex = Mixer::Get().LoadSound(fileName);
-  if (soundIndex != -1) {
-    auto trackIndex = tracks.size();
-    tracks.resize(trackIndex + 1);
-
-    tracks[trackIndex].name = voiceName;
-    tracks[trackIndex].colorScheme = colorScheme;
-    tracks[trackIndex].soundIndex = soundIndex;
-
-    // TODO: Do we always want to do this?
-    tracks[trackIndex].AddNotes(numNotes, 0);
-  }
-}
-
-void Sequencer::Instrument::AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound) {
-  auto soundIndex = Mixer::Get().AddSound(synthSound);
-  if (soundIndex != -1) {
-    auto trackIndex = tracks.size();
-    tracks.resize(trackIndex + 1);
-
-    tracks[trackIndex].name = voiceName;
-    tracks[trackIndex].colorScheme = colorScheme;
-    tracks[trackIndex].soundIndex = soundIndex;
-
-    // TODO: Do we always want to do this?
-    tracks[trackIndex].AddNotes(numNotes, 0);
-  }
-}
-
-void Sequencer::Instrument::PlayTrack(uint32 trackIndex, uint8 velocity) {
-  SDL_LockAudio();
-  float vel = velocity / 255.0f;
-  if (vel) {
-    vel = 0.3f + vel * 0.7f;
-  }
-  const Track& track = tracks[trackIndex];
-  Mixer::Get().Play(track.soundIndex, vel * track.lvol);
-  SDL_UnlockAudio();
-}
-
-bool Sequencer::Instrument::SaveInstrument(std::string fileName) {
-  std::ofstream ofs(fileName);
-  if (ofs.bad()) {
-    MCLOG(Warn, "Unable to save instrument to file %s ", fileName.c_str());
-    return false;
-  }
-
-  rapidjson::StringBuffer sb;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
-
-  if (SerializeWrite({ w })) {
-    std::string outputString(sb.GetString());
-    ofs.write(outputString.c_str(), outputString.length());
-    ofs.close();
-    return true;
-  }
-  return false;
-}
-
-/* static */
-Sequencer::Instrument* Sequencer::Instrument::LoadInstrument(std::string fileName, uint32 numNotes) {
-  MCLOG(Info, "Loading instrument from file \'%s\'", fileName.c_str());
-
-  std::ifstream ifs(fileName);
-
-  if (ifs.bad()) {
-    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
-    return nullptr;
-  }
-
-  std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-
-  if (!fileData.length()) {
-    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
-    return nullptr;
-  }
-
-  // Create JSON parser
-  rapidjson::Document document;
-  document.Parse(fileData.c_str());
-
-  if (!document.IsObject()) {
-    MCLOG(Warn, "Failure parsing JSON in file %s", fileName.c_str());
-    return nullptr;
-  }
-
-  Instrument* newInstrument = nullptr;
-  try {
-    newInstrument = new Instrument({ document }, numNotes);
-  }
-  catch (...) {
-
-  }
-  return newInstrument;
-}
-
-void Sequencer::Instrument::SetName(const std::string& name) {
-  this->name = name;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Sequencer
-///////////////////////////////////////////////////////////////////////////////
-void Sequencer::SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteVelocity) {
-  if (instrument != nullptr) {
-    if (trackIndex < instrument->tracks.size()) {
-
-      SDL_LockAudio();
-      if (noteIndex >= instrument->tracks[trackIndex].data.size()) {
-        instrument->tracks[trackIndex].data.resize(noteIndex + 1, 0);
-      }
-      instrument->tracks[trackIndex].data[noteIndex] = 
-        static_cast<uint8>(noteVelocity * kNoteVelocityAsUint8);
-      SDL_UnlockAudio();
-    }
-  }
 }
 
 uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
@@ -422,9 +70,9 @@ void Sequencer::PartialNoteCallback() {
 
 void Sequencer::FullNoteCallback(bool isMeasure) {
   if (IsMetronomeOn()) {
-    uint32 metronomeSound = static_cast<uint32>(Sounds::MetronomePartial);
+    uint32 metronomeSound = static_cast<uint32>(ReservedSounds::MetronomePartial);
     if (isMeasure) {
-      metronomeSound = static_cast<uint32>(Sounds::MetronomeFull);
+      metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
     }
     Mixer::Get().Play(reservedSounds[metronomeSound], kMetronomeVolume);
   }
@@ -531,17 +179,12 @@ uint32 Sequencer::NextFrame(void)
       if (notePlayedCallback != nullptr) {
         notePlayedCallback(trackIndex, currPosition, notePlayedPayload);
       }
-      instrument->PlayTrack(trackIndex, *d);
+      instrument->PlayTrack(trackIndex, static_cast<float>(*d) /
+        static_cast<float>(Instrument::kNoteVelocityAsUint8));
     }
   }
 
   return interval;
-}
-
-void Sequencer::PlayInstrumentTrack(uint32 instrumentTrack, float noteVelocity) {
-  if (instrument != nullptr) {
-    instrument->PlayTrack(instrumentTrack, static_cast<uint8>(noteVelocity * kNoteVelocityAsUint8));
-  }
 }
 
 void Sequencer::SetNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
@@ -549,16 +192,8 @@ void Sequencer::SetNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCa
   this->notePlayedPayload = notePlayedPayload;
 }
 
-void Sequencer::Clear() {
-  SDL_LockAudio();
-  if (instrument) {
-    instrument->Clear();
-  }
-  SDL_UnlockAudio();
-}
-
 bool Sequencer::NewInstrument() {
-  Instrument* newInstrument = new Sequencer::Instrument(std::string(kNewInstrumentDefaultName),
+  Instrument* newInstrument = new Instrument(std::string(kNewInstrumentDefaultName),
     GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
   if (newInstrument) {
     SDL_LockAudio();
@@ -572,7 +207,7 @@ bool Sequencer::NewInstrument() {
 }
 
 bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
-  Instrument *newInstrument = Sequencer::Instrument::
+  Instrument *newInstrument = Instrument::
     LoadInstrument(fileName, GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
 
   if (newInstrument) {
@@ -637,7 +272,7 @@ bool Sequencer::SaveSong(std::string fileName) {
             w.Key(kTrackTag);
             w.Uint(trackIndex);
             w.Key(kVelocityTag);
-            w.Double(static_cast<float>(n) / kNoteVelocityAsUint8);
+            w.Double(static_cast<float>(n) / static_cast<float>(Instrument::kNoteVelocityAsUint8));
             w.EndObject();
           }
         }
@@ -658,7 +293,7 @@ bool Sequencer::SaveSong(std::string fileName) {
   return true;
 }
 
-void Sequencer::LoadMidi(std::string fileName) {
+void Sequencer::LoadSongMidi(std::string fileName) {
   if (!instrument) {
     MCLOG(Error, "Cannot load MIDI file without a loaded instrument");
     return;
@@ -707,7 +342,7 @@ void Sequencer::LoadMidi(std::string fileName) {
           ++numMeasures;
         }
         
-        SetTrackNote(trackIndex, beatsIndex, 1.0f); // Need velocity
+        instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f); // TODO: Need velocity
       }
 
       // Currently capping number of loaded measures as unlimited measures are not properly
@@ -726,7 +361,7 @@ void Sequencer::LoadMidi(std::string fileName) {
   }
 }
 
-void Sequencer::LoadJson(std::string fileName) {
+void Sequencer::LoadSongJson(std::string fileName) {
   MCLOG(Info, "Loading song from file \'%s\'", fileName.c_str());
 
   std::ifstream ifs(fileName);
@@ -834,19 +469,19 @@ void Sequencer::LoadJson(std::string fileName) {
     }
 
     auto noteVelocity = noteEntry[kVelocityTag].GetFloat();
-    SetTrackNote(trackIndex, beatIndex, noteVelocity);
+    instrument->SetTrackNote(trackIndex, beatIndex, noteVelocity);
   }
 }
 
 void Sequencer::LoadSong(std::string fileName) {
   if (fileName.compare(fileName.length() -
     kJsonTag.length(), kJsonTag.length(), kJsonTag) == 0) {
-    return LoadJson(fileName);
+    return LoadSongJson(fileName);
   }
   for (size_t m = 0; m < _countof(kMidiTags); ++m) {
     if (fileName.compare(fileName.length() - 
       kMidiTags[m].length(), kMidiTags[m].length(), kMidiTags[m]) == 0) {
-      return LoadMidi(fileName);
+      return LoadSongMidi(fileName);
     }
   }
 }
@@ -857,7 +492,6 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   this->maxBeatSubdivisions = maxBeatSubdivisions;
 
   SetLooping(true);
-  Clear();
 
   Mixer::InitSingleton(kAudioBufferSize);
 
@@ -866,10 +500,10 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   }, reinterpret_cast<void*>(this));
 
   // Load the reserved sounds
-  reservedSounds.resize(static_cast<int>(Sounds::Count));
-  reservedSounds[static_cast<int>(Sounds::MetronomeFull)] = Mixer::Get().
+  reservedSounds.resize(static_cast<int>(ReservedSounds::Count));
+  reservedSounds[static_cast<int>(ReservedSounds::MetronomeFull)] = Mixer::Get().
     LoadSound(std::string("Assets\\Metronome\\seikosq50_hi.wav").c_str());
-  reservedSounds[static_cast<int>(Sounds::MetronomePartial)] = Mixer::Get().
+  reservedSounds[static_cast<int>(ReservedSounds::MetronomePartial)] = Mixer::Get().
     LoadSound(std::string("Assets\\Metronome\\seikosq50_lo.wav").c_str());
 
   SetSubdivision(currBeatSubdivision);

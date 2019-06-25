@@ -13,6 +13,7 @@
 #include "GlobalRenderData.h"
 #include "ShaderProgram.h"
 #include "Mixer.h"
+#include "Instrument.h"
 
 static constexpr float kFullBeatWidth = 80.0f;
 static constexpr float kKeyboardKeyWidth = 100.0f;
@@ -237,7 +238,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
   if (pendingPlayTrack != -1) {
-    sequencer.PlayInstrumentTrack(pendingPlayTrack, kDefaultNoteVelocity);
+    instrument->PlayTrack(pendingPlayTrack, kDefaultNoteVelocity);
     pendingPlayTrack = -1;
   }
   SDL_UnlockAudio();
@@ -363,15 +364,11 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
                 imGuiStyle.ItemSpacing.x = 0.0f;
                 imGuiStyle.ItemSpacing.y = 0.0f;
                 if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote != 0, beatWidth, kKeyboardKeyHeight)) {
-                  if (trackNote != 0) {
-                    trackNote = 0;
+                  float floatTrackNote = 0.0f;
+                  if (trackNote == 0) {
+                    floatTrackNote = kDefaultNoteVelocity;
                   }
-                  else {
-                    trackNote = kDefaultNoteVelocity;
-                  }
-
-                  // Can only set notes via the sequencer
-                  sequencer.SetTrackNote(trackIndex, noteLocalIndex, trackNote);
+                  instrument->SetTrackNote(trackIndex, noteLocalIndex, floatTrackNote);
                 }
 
                 // Draw filled note

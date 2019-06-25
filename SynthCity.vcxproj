@@ -182,6 +182,7 @@
     <ClInclude Include="EnumIterator.h" />
     <ClInclude Include="GlobalRenderData.h" />
     <ClInclude Include="InputState.h" />
+    <ClInclude Include="Instrument.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="MidiSource.h" />
     <ClInclude Include="OddsAndEnds.h" />
@@ -206,6 +207,7 @@
     <ClCompile Include="ClassFactory.cpp" />
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />
+    <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="logging.cpp" />
     <ClCompile Include="MidiSource.cpp" />
     <ClCompile Include="OddsAndEnds.cpp" />

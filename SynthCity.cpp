@@ -27,6 +27,7 @@
 #include "SynthSound.h"
 #include "Mixer.h"
 #include "SerializeImpl.h"
+#include "Instrument.h"
 
 static ComposerView* currentView = nullptr;
 

@@ -7,6 +7,8 @@
 #include "SerializeFwd.h"
 
 class Sound;
+class Instrument;
+
 class Sequencer {
 private:
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
@@ -22,70 +24,6 @@ public:
     uint32 tempo;
     bool rebaseToFirstNote = false;
     std::vector<uint32> trackIndices; // Tracks to flatten into single song
-  };
-
-  class Track {
-  public:
-    std::string name;
-    std::string colorScheme;
-    std::vector<uint8> data;
-    int	skip = 0;
-    int	mute = 0;
-    int soundIndex = -1;
-    int voiceIndex = -1;
-    float	decay = 0.0f;
-    float	lvol = 1.0f;
-    float	rvol = 1.0f;
-
-     Track();
-     Track(Track&& other) noexcept; // Necessary for vector.resize ...
-    ~Track();
-
-    void AddNotes(uint32 noteCount, uint8 noteValue = 0);
-    void SetNoteCount(uint32 noteCount, uint8 noteValue = 0);
-
-    inline const std::string& GetColorScheme(void) const {
-      return colorScheme;
-    }
-    inline const std::string& GetName(void) const {
-      return name;
-    }
-    inline const std::vector<uint8>& GetNotes(void) const {
-      return data;
-    }
-  };
-
-  class Instrument {
-  public:
-    std::vector<Track> tracks;
-    std::string name;
-    uint32 numNotes;
-
-    void AddTrack(std::string voiceName, std::string colorScheme, std::string fileName);
-    void AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound);
-    void ClearNotes();
-    void Clear();
-    void PlayTrack(uint32 trackIndex, uint8 velocity);
-    void SetNoteCount(uint32 numNotes);
-    bool SaveInstrument(std::string fileName);
-
-     Instrument(const ReadSerializer& r, uint32 numNotes);
-     Instrument(std::string instrumentName, uint32 numNotes);
-    ~Instrument();
-
-    std::string GetName(void) const {
-      return name;
-    }
-    void SetName(const std::string& name);
-
-    inline const std::vector<Track> &GetTracks(void) const {
-      return tracks;
-    }
-
-    static Instrument* LoadInstrument(std::string fileName, uint32 numNotes);
-
-    bool SerializeRead(const ReadSerializer& serializer);
-    bool SerializeWrite(const WriteSerializer& serializer);
   };
 
   typedef void(*NotePlayedCallback)(int trackIndex, int noteIndex, void* payload);
@@ -156,8 +94,6 @@ public:
     return kMaxTempo;
   }
 
-  void SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteValue);
-
   inline uint32 GetBeatsPerMinute() const {
     return currentBpm;
   }
@@ -184,8 +120,8 @@ public:
   bool LoadInstrument(std::string fileName, std::string mustMatch);
 
   bool SaveSong(std::string fileName);
-  void LoadJson(std::string fileName);
-  void LoadMidi(std::string fileName);
+  void LoadSongJson(std::string fileName);
+  void LoadSongMidi(std::string fileName);
   void LoadSong(std::string fileName);
 
   inline void SetLoadInstrumentCallback(std::function<bool(std::string)> loadInstrumentCallback) {
@@ -210,13 +146,10 @@ public:
 
   bool Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision);
 
-  void Clear();
   void SetPosition(uint32 newPosition);
   void SetNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
   uint32 NextFrame(void);
   bool NewInstrument();
-
-  void PlayInstrumentTrack(uint32 instrumentTrack, float notVelocity);
 
    Sequencer() {}
   ~Sequencer();
