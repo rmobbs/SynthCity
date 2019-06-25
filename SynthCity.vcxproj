@@ -186,7 +186,6 @@
     <ClInclude Include="logging.h" />
     <ClInclude Include="MidiSource.h" />
     <ClInclude Include="OddsAndEnds.h" />
-    <ClInclude Include="pch.h" />
     <ClInclude Include="Renderable.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sequencer.h" />

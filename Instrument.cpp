@@ -1,6 +1,6 @@
 #include "Instrument.h"
 #include "Logging.h"
-#include "Mixer.h"
+#include "Sequencer.h" // TODO: Remove this dependency!
 #include "SerializeImpl.h"
 
 #include <stdexcept>
@@ -32,7 +32,7 @@ Track::Track(Track&& other) noexcept {
 }
 
 Track::~Track() {
-  Mixer::Get().ReleaseSound(soundIndex);
+  Sequencer::Get().ReleaseSound(soundIndex);
 }
 
 void Track::AddNotes(uint32 noteCount, uint8 noteValue) {
@@ -190,7 +190,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
     w.Key(kSoundsTag);
     w.StartArray();
 
-    Sound* sound = Mixer::Get().GetSound(track.soundIndex);
+    Sound* sound = Sequencer::Get().GetSound(track.soundIndex);
     if (sound != nullptr) {
       w.StartObject();
 
@@ -235,7 +235,7 @@ void Instrument::SetNoteCount(uint32 numNotes) {
 }
 
 void Instrument::AddTrack(std::string voiceName, std::string colorScheme, std::string fileName) {
-  auto soundIndex = Mixer::Get().LoadSound(fileName);
+  auto soundIndex = Sequencer::Get().LoadSound(fileName);
   if (soundIndex != -1) {
     auto trackIndex = tracks.size();
     tracks.resize(trackIndex + 1);
@@ -250,7 +250,7 @@ void Instrument::AddTrack(std::string voiceName, std::string colorScheme, std::s
 }
 
 void Instrument::AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound) {
-  auto soundIndex = Mixer::Get().AddSound(synthSound);
+  auto soundIndex = Sequencer::Get().AddSound(synthSound);
   if (soundIndex != -1) {
     auto trackIndex = tracks.size();
     tracks.resize(trackIndex + 1);
@@ -271,7 +271,10 @@ void Instrument::PlayTrack(uint32 trackIndex, float velocity) {
   velocity = 0.3f + velocity * 0.7f;
 
   const Track& track = tracks[trackIndex];
-  Mixer::Get().Play(track.soundIndex, velocity * track.lvol); // TODO: Why lvol?
+
+  // TODO: This makes no sense, Sequencer calls PlayTrack which calls Sequencer::Play?
+  // TODO: Shouldn't rely only on lvol
+  Sequencer::Get().PlaySound(track.soundIndex, velocity * track.lvol);
 
   SDL_UnlockAudio();
 }
