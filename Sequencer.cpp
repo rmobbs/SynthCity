@@ -16,7 +16,6 @@
 #include "WavSound.h"
 #include "Instrument.h"
 
-static constexpr int kAudioBufferSize = 2048;
 static constexpr float kMetronomeVolume = 0.7f;
 static constexpr const char *kInstrumentTag = "Instrument";
 static constexpr const char *kTempoTag = "Tempo";
@@ -38,14 +37,34 @@ enum class ReservedSounds {
 };
 
 /* static */
-Sequencer& Sequencer::Get() {
-  static Sequencer theSequencer;
-  return theSequencer;
+Sequencer* Sequencer::singleton = nullptr;
+
+/* static */
+bool Sequencer::InitSingleton(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision) {
+  if (!singleton) {
+    singleton = new Sequencer;
+    if (singleton) {
+      if (singleton->Init(numMeasures, beatsPerMeasure, bpm, maxBeatSubdivisions, currBeatSubdivision)) {
+        return true;
+      }
+      delete singleton;
+      singleton = nullptr;
+    }
+  }
+  return false;
+}
+
+/* static */
+bool Sequencer::TermSingleton() {
+  delete singleton;
+  singleton = nullptr;
+  return true;
 }
 
 uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
   if (currentBpm > 0 && beatSubdivision > 0) {
-    return static_cast<uint32>(kDefaultFrequency / currentBpm * 60.0 / static_cast<float>(beatSubdivision));
+    return static_cast<uint32>(Mixer::kDefaultFrequency /
+      currentBpm * 60.0 / static_cast<float>(beatSubdivision));
   }
   return 0;
 }
@@ -55,13 +74,13 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
     subdivision = maxBeatSubdivisions;
   }
   currBeatSubdivision = subdivision;
-  interval = static_cast<int>(CalcInterval(GetSubdivision()));
+  interval = static_cast<int32>(CalcInterval(GetSubdivision()));
 }
 
 void Sequencer::SetBeatsPerMinute(uint32 bpm) {
   currentBpm = bpm;
-  interval = static_cast<int>(CalcInterval(GetSubdivision()));
-  ApplyInterval(interval);
+  interval = static_cast<int32>(CalcInterval(GetSubdivision()));
+  Mixer::Get().ApplyInterval(interval);
 }
 
 void Sequencer::PartialNoteCallback() {
@@ -74,7 +93,7 @@ void Sequencer::FullNoteCallback(bool isMeasure) {
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
     }
-    Mixer::PlaySound(reservedSounds[metronomeSound], kMetronomeVolume);
+    Mixer::Get().PlaySound(reservedSounds[metronomeSound], kMetronomeVolume);
   }
 }
 
@@ -163,7 +182,7 @@ uint32 Sequencer::NextFrame(void)
   }
 
   for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
-    if (currPosition >= static_cast<int>(instrument->tracks[trackIndex].data.size())) {
+    if (currPosition >= static_cast<int32>(instrument->tracks[trackIndex].data.size())) {
       continue;
     }
 
@@ -325,8 +344,8 @@ void Sequencer::LoadSongMidi(std::string fileName) {
       // Now we need to iterate these and add them as notes!
       this->maxBeatSubdivisions;
       for (const auto& midiEvent : midiTrack.events) {
-        auto a = static_cast<int>(midiEvent.dataptr[1]);
-        auto b = static_cast<int>(kMinMidiValue);
+        auto a = static_cast<int32>(midiEvent.dataptr[1]);
+        auto b = static_cast<int32>(kMinMidiValue);
         auto trackIndex = (std::max(a, b) - b) % instrument->tracks.size();
         auto beatsIndex = static_cast<uint32>(static_cast<double>(midiEvent.timeStamp) /
           static_cast<double>(midiSource.getTimeDivision()) * maxBeatSubdivisions);
@@ -484,20 +503,18 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   this->beatsPerMeasure = beatsPerMeasure;
   this->maxBeatSubdivisions = maxBeatSubdivisions;
 
-  Mixer::Init(kAudioBufferSize);
-
   // Load the reserved sounds
-  reservedSounds.resize(static_cast<int>(ReservedSounds::Count));
+  reservedSounds.resize(static_cast<int32>(ReservedSounds::Count));
   try {
-    reservedSounds[static_cast<int>(ReservedSounds::MetronomeFull)] =
-      AddSound(new WavSound("Assets\\Metronome\\seikosq50_hi.wav"));
+    reservedSounds[static_cast<int32>(ReservedSounds::MetronomeFull)] =
+      Mixer::Get().AddSound(new WavSound("Assets\\Metronome\\seikosq50_hi.wav"));
   }
   catch (...) {
     MCLOG(Error, "Unable to load downbeat metronome WAV file");
   }
   try {
-    reservedSounds[static_cast<int>(ReservedSounds::MetronomePartial)] =
-      AddSound(new WavSound("Assets\\Metronome\\seikosq50_lo.wav"));
+    reservedSounds[static_cast<int32>(ReservedSounds::MetronomePartial)] =
+      Mixer::Get().AddSound(new WavSound("Assets\\Metronome\\seikosq50_lo.wav"));
   }
   catch (...) {
     MCLOG(Error, "Unable to load upbeat metronome WAV file");

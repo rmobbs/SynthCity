@@ -519,9 +519,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         // Master volume
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        float masterVolume = sequencer.GetMasterVolume();
+        float masterVolume = Mixer::Get().GetMasterVolume();
         if (ImGui::SliderFloat("Master", &masterVolume, 0.0f, 1.0f)) {
-          sequencer.SetMasterVolume(masterVolume);
+          Mixer::Get().SetMasterVolume(masterVolume);
         }
       }
 
@@ -580,7 +580,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
       ImGui::OpenPopup("Options");
     }
     ImGui::SameLine();
-    ImGui::Text("Voices: %d", Sequencer::Get().GetNumActiveVoices());
+    ImGui::Text("Voices: %d", Mixer::Get().GetNumActiveVoices());
     ImGui::Separator();
 
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);

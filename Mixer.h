@@ -13,28 +13,39 @@ public:
   static constexpr uint32 kDefaultFrequency = 44100;
   static constexpr uint32 kDefaultChannels = 2;
   static constexpr float kDefaultMasterVolume = 0.7f;
+  
+  // Used to control gameplay, editing, etc.
+  class Controller {
+  public:
+    virtual uint32 NextFrame() = 0;
+
+    virtual void OnDisconnect() {}
+    virtual void OnConnect() {}
+  };
 protected:
-  SDL_AudioSpec audiospec;
-  int ticksPerFrame = 0;
-  int ticksRemaining = 0;
-  float masterVolume = kDefaultMasterVolume;
+  static Mixer* singleton;
+
+  SDL_AudioSpec audioSpec = { 0 };
   SDL_AudioDeviceID audioDeviceId = 0;
-  std::vector<float> mixbuf;
+
+  int32 ticksPerFrame = 0;
+  int32 ticksRemaining = 0;
+  float masterVolume = kDefaultMasterVolume;
+  Controller* controller = nullptr;
+  SoundHandle nextSoundHandle = 0;
 
   // Refreshed every frame for thread-safe query
   std::atomic<uint32> numActiveVoices;
 
-  void WriteOutput(float *input, int16 *output, int frames);
-
-  // Used to control frame-based sequence
-  virtual uint32 NextFrame();
-
-public:
-  SoundHandle nextSoundHandle = 0;
-  void AudioCallback(void *ud, Uint8 *stream, int len);
-  void MixVoices(float* mixBuffer, uint32 numFrames);
+  std::vector<float> mixbuf;
   std::vector<Voice*> voices;
   std::map<SoundHandle, Sound*> sounds;
+
+  void WriteOutput(float *input, int16 *output, int32 frames);
+
+public:
+  void AudioCallback(void *userData, uint8 *stream, int32 length);
+  void MixVoices(float* mixBuffer, uint32 numFrames);
 
   inline uint32 GetNumActiveVoices() const {
     return numActiveVoices;
@@ -51,9 +62,9 @@ public:
   bool Init(uint32 audioBufferSize);
   void PlaySound(uint32 soundHandle, float volume);
   void ApplyInterval(uint32 interval);
+  void SetController(Controller* controller);
 
   Sound* GetSound(SoundHandle soundHandle) const {
-    // Gotta combine these classes dude
     auto sound = sounds.find(soundHandle);
     if (sound != sounds.end()) {
       return sound->second;
@@ -63,4 +74,11 @@ public:
 
    Mixer();
   ~Mixer();
+
+  static bool InitSingleton(uint32 audioBufferSize);
+  static bool TermSingleton();
+  
+  static inline Mixer& Get() {
+    return *singleton;
+  }
 };

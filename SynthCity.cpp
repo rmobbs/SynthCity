@@ -58,6 +58,7 @@ static constexpr uint32 kDefaultSubdivisions = 4;
 static constexpr uint32 kDefaultBpm = 120;
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
 static constexpr std::string_view kDefaultNewTrackName("NewTrack");
+static constexpr int kAudioBufferSize = 2048;
 
 static double currentTime = 0;
 static WNDPROC oldWindowProc = nullptr;
@@ -366,7 +367,7 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
             INT den = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_DENOMINATOR, nullptr, FALSE);
             den = std::min(std::max(static_cast<uint32>(den), 1u), sequencer.GetMaxSubdivisions());
             uint32 duration = static_cast<uint32>((static_cast<float>(num) /
-              static_cast<float>(den)) * (Sequencer::kDefaultFrequency / Sequencer::kDefaultChannels));
+              static_cast<float>(den)) * (Mixer::kDefaultFrequency / Mixer::kDefaultChannels));
             w.Key("duration");
             w.Uint(duration);
 
@@ -824,16 +825,25 @@ bool Init() {
   InitGL();
   InitImGui();
 
-  // Instantiate and initialize sequencer
-  auto& sequencer = Sequencer::Get();
-  if (!sequencer.Init(kDefaultNumMeasures, kDefaultBeatsPerMeasure,
-    kDefaultBpm, TimelineDivisions.back(), kDefaultSubdivisions)) {
-    MCLOG(Fatal, "Unable to initialize mixer");
+  // Initialize mixer
+  if (!Mixer::InitSingleton(kAudioBufferSize)) {
+    MCLOG(Error, "Unable to init Mixer.");
     SDL_Quit();
     return false;
   }
 
-  sequencer.SetLoadInstrumentCallback(
+  // Initialize sequencer
+  if (!Sequencer::InitSingleton(kDefaultNumMeasures, kDefaultBeatsPerMeasure,
+    kDefaultBpm, TimelineDivisions.back(), kDefaultSubdivisions)) {
+    MCLOG(Error, "Unable to initialize mixer");
+    SDL_Quit();
+    return false;
+  }
+
+  // TODO: determine default view
+  Mixer::Get().SetController(&Sequencer::Get());
+
+  Sequencer::Get().SetLoadInstrumentCallback(
     [](std::string instrumentName) {
       return LoadInstrument(instrumentName);
   });
@@ -848,6 +858,10 @@ bool Init() {
 
 void Term() {
   // Term the sequencer
+  Sequencer::TermSingleton();
+
+  // Term the mixer
+  Mixer::TermSingleton();
 
   // Term all views
   delete currentView;
@@ -859,9 +873,8 @@ void Term() {
 }
 
 int main(int argc, char **argv) {
-
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
-  //_CrtSetBreakAlloc(397);
+  //_CrtSetBreakAlloc(262);
 
   if (!Init()) {
     return -1;

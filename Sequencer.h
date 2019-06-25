@@ -11,13 +11,13 @@
 class Sound;
 class Instrument;
 
-class Sequencer : public Mixer {
+class Sequencer : public Mixer::Controller {
 private:
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
   static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kMaxTempo = 220;
-public:
+  static constexpr uint32 kDefaultTempo = 120;
 public:
   // Loaded MIDI is passed to the host; they interact with the user to determine what
   // parameters will be used to convert that MIDI to our song format
@@ -27,22 +27,24 @@ public:
     std::vector<uint32> trackIndices; // Tracks to flatten into single song
   };
 
-  typedef void(*NotePlayedCallback)(int trackIndex, int noteIndex, void* payload);
+  typedef void(*NotePlayedCallback)(int32 trackIndex, int32 noteIndex, void* payload);
 
 private:
+  static Sequencer* singleton;
+
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
   uint32 numMeasures = kDefaultNumMeasures;
-  uint32 maxBeatSubdivisions;
-  uint32 currBeatSubdivision;
-  uint32 currentBpm = 120;
+  uint32 maxBeatSubdivisions = 0;
+  uint32 currBeatSubdivision = 0;
+  uint32 currentBpm = kDefaultTempo;
   bool isPlaying = false;
   bool isMetrononeOn = false;
   std::atomic<bool> isLooping = true;
   NotePlayedCallback notePlayedCallback = nullptr;
   void* notePlayedPayload = nullptr;
-  int currPosition;
-  int nextPosition;
-  int interval;
+  int32 currPosition = 0;
+  int32 nextPosition = 0;
+  int32 interval = 0;
   Instrument* instrument = nullptr;
   std::vector<uint32> reservedSounds;
   std::function<bool(std::string)> loadInstrumentCallback;
@@ -151,6 +153,12 @@ public:
    Sequencer() {}
   ~Sequencer();
 
-  static Sequencer& Get();
+  static bool InitSingleton(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision);
+  static bool TermSingleton();
+
+
+  static inline Sequencer& Get() {
+    return *singleton;
+  }
 };
 
