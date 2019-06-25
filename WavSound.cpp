@@ -20,11 +20,10 @@ WavSound::WavSound(const ReadSerializer& serializer)
   }
 }
 
-WavSound::WavSound(const std::string& soundName)
+WavSound::WavSound(const std::string& fileName)
 : Sound("WavSound") {
 
-  // TODO: Fix the variable name
-  if (!LoadWav(soundName)) {
+  if (!LoadWav(fileName)) {
     throw std::runtime_error("Unable to load Wav file");
   }
 

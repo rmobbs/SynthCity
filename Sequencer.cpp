@@ -488,10 +488,20 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
 
   // Load the reserved sounds
   reservedSounds.resize(static_cast<int>(ReservedSounds::Count));
-  reservedSounds[static_cast<int>(ReservedSounds::MetronomeFull)] = 
-    LoadSound(std::string("Assets\\Metronome\\seikosq50_hi.wav").c_str());
-  reservedSounds[static_cast<int>(ReservedSounds::MetronomePartial)] = 
-    LoadSound(std::string("Assets\\Metronome\\seikosq50_lo.wav").c_str());
+  try {
+    reservedSounds[static_cast<int>(ReservedSounds::MetronomeFull)] =
+      AddSound(new WavSound("Assets\\Metronome\\seikosq50_hi.wav"));
+  }
+  catch (...) {
+    MCLOG(Error, "Unable to load downbeat metronome WAV file");
+  }
+  try {
+    reservedSounds[static_cast<int>(ReservedSounds::MetronomePartial)] =
+      AddSound(new WavSound("Assets\\Metronome\\seikosq50_lo.wav"));
+  }
+  catch (...) {
+    MCLOG(Error, "Unable to load upbeat metronome WAV file");
+  }
 
   SetSubdivision(currBeatSubdivision);
   SetBeatsPerMinute(bpm);
