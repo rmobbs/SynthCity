@@ -45,7 +45,6 @@ public:
   }
   void SetMasterVolume(float masterVolume);
 
-  SoundHandle LoadSound(std::string fileName);
   SoundHandle AddSound(Sound* sound);
   void ReleaseSound(SoundHandle soundHandle);
 

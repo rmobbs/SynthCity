@@ -46,7 +46,6 @@ public:
   std::string name;
   uint32 numNotes;
 
-  void AddTrack(std::string voiceName, std::string colorScheme, std::string fileName);
   void AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound);
   void ClearNotes();
   void Clear();

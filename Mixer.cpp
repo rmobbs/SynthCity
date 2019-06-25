@@ -77,23 +77,6 @@ void Mixer::ReleaseSound(SoundHandle soundHandle) {
   }
 }
 
-SoundHandle Mixer::LoadSound(std::string fileName) {
-  // TODO: Hash filenames and use them for a library
-
-  WavSound* wavSound = new WavSound(fileName);
-  if (wavSound == nullptr) {
-    return kInvalidSoundHandle;
-  }
-
-  if (wavSound->getFrequency() != kDefaultFrequency) {
-    MCLOG(Warn, "Mixer::LoadSound: %s has a frequency of %f kHz "
-      "but will be played back at %f kHz", fileName.c_str(),
-      static_cast<float>(wavSound->getFrequency()) / 1000.0f,
-      static_cast<float>(kDefaultFrequency) / 1000.0f);
-  }
-  return AddSound(wavSound);
-}
-
 SoundHandle Mixer::AddSound(Sound* sound) {
   SDL_LockAudio();
   SoundHandle currSoundHandle = nextSoundHandle++;

@@ -234,21 +234,6 @@ void Instrument::SetNoteCount(uint32 numNotes) {
   }
 }
 
-void Instrument::AddTrack(std::string voiceName, std::string colorScheme, std::string fileName) {
-  auto soundIndex = Sequencer::Get().LoadSound(fileName);
-  if (soundIndex != -1) {
-    auto trackIndex = tracks.size();
-    tracks.resize(trackIndex + 1);
-
-    tracks[trackIndex].name = voiceName;
-    tracks[trackIndex].colorScheme = colorScheme;
-    tracks[trackIndex].soundIndex = soundIndex;
-
-    // TODO: Do we always want to do this?
-    tracks[trackIndex].AddNotes(numNotes, 0);
-  }
-}
-
 void Instrument::AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound) {
   auto soundIndex = Sequencer::Get().AddSound(synthSound);
   if (soundIndex != -1) {

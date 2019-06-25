@@ -17,7 +17,7 @@ public:
   DECLARE_FACTORY_CLASS(WavSound);
 
   WavSound(const ReadSerializer& serializer);
-  WavSound(const std::string& soundName);
+  WavSound(const std::string& fileName);
 
   uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) override;
 
