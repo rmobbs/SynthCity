@@ -18,6 +18,8 @@ namespace Logging {
     std::string_view dispatchBuf(buf);
     for (const auto& responderEntry : respondersById) {
       responderEntry.second(dispatchBuf);
+
+      // TODO: Handle fatal
     }
   }
 

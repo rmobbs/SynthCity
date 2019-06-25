@@ -32,7 +32,7 @@ Track::Track(Track&& other) noexcept {
 }
 
 Track::~Track() {
-  Sequencer::Get().ReleaseSound(soundIndex);
+
 }
 
 void Track::AddNotes(uint32 noteCount, uint8 noteValue) {
@@ -57,9 +57,7 @@ Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
 Instrument::Instrument(const ReadSerializer& r, uint32 numNotes)
   : numNotes(numNotes) {
   if (!SerializeRead(r)) {
-    std::string strError("Instrument: Unable to serialize (read)");
-    MCLOG(Error, strError.c_str());
-    throw std::runtime_error(strError);
+    throw std::runtime_error("Instrument: Unable to serialize (read)");
   }
 }
 
@@ -190,7 +188,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
     w.Key(kSoundsTag);
     w.StartArray();
 
-    Sound* sound = Sequencer::Get().GetSound(track.soundIndex);
+    Sound* sound = Mixer::Get().GetSound(track.soundIndex);
     if (sound != nullptr) {
       w.StartObject();
 
@@ -235,7 +233,7 @@ void Instrument::SetNoteCount(uint32 numNotes) {
 }
 
 void Instrument::AddTrack(std::string voiceName, std::string colorScheme, Sound* synthSound) {
-  auto soundIndex = Sequencer::Get().AddSound(synthSound);
+  auto soundIndex = Mixer::Get().AddSound(synthSound);
   if (soundIndex != -1) {
     auto trackIndex = tracks.size();
     tracks.resize(trackIndex + 1);
@@ -250,18 +248,10 @@ void Instrument::AddTrack(std::string voiceName, std::string colorScheme, Sound*
 }
 
 void Instrument::PlayTrack(uint32 trackIndex, float velocity) {
-  SDL_LockAudio();
-
-  // Set a minimum velocity
+  // Ensure a minimum velocity
   velocity = 0.3f + velocity * 0.7f;
 
-  const Track& track = tracks[trackIndex];
-
-  // TODO: This makes no sense, Sequencer calls PlayTrack which calls Sequencer::Play?
-  // TODO: Shouldn't rely only on lvol
-  Sequencer::Get().PlaySound(track.soundIndex, velocity * track.lvol);
-
-  SDL_UnlockAudio();
+  Mixer::Get().PlaySound(tracks[trackIndex].soundIndex, velocity);
 }
 
 void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteVelocity) {
