@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "logging.h"
-#include "mixer.h"
+#include "Logging.h"
+#include "Mixer.h"
 #include "SDL_audio.h"
 #include <vector>
 #include <iostream>

@@ -1,5 +1,5 @@
 #include "WavSound.h"
-#include "logging.h"
+#include "Logging.h"
 
 #include <iostream>
 

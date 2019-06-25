@@ -183,7 +183,7 @@
     <ClInclude Include="GlobalRenderData.h" />
     <ClInclude Include="InputState.h" />
     <ClInclude Include="Instrument.h" />
-    <ClInclude Include="logging.h" />
+    <ClInclude Include="Logging.h" />
     <ClInclude Include="MidiSource.h" />
     <ClInclude Include="OddsAndEnds.h" />
     <ClInclude Include="Renderable.h" />
@@ -207,7 +207,7 @@
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />
     <ClCompile Include="Instrument.cpp" />
-    <ClCompile Include="logging.cpp" />
+    <ClCompile Include="Logging.cpp" />
     <ClCompile Include="MidiSource.cpp" />
     <ClCompile Include="OddsAndEnds.cpp" />
     <ClCompile Include="Renderable.cpp" />

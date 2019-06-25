@@ -6,8 +6,8 @@
 #include <mutex>
 
 #include "imgui.h"
-#include "logging.h"
 #include "soil.h"
+#include "Logging.h"
 #include "Sequencer.h"
 #include "SDL.h"
 #include "GlobalRenderData.h"

@@ -10,7 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include "MidiSource.h"
-#include "logging.h"
+#include "Logging.h"
 #include "SynthSound.h"
 #include "SerializeImpl.h"
 #include "WavSound.h"
