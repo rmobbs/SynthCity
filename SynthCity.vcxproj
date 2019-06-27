@@ -228,7 +228,9 @@
     <ResourceCompile Include="SynthCity.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\mixer_icon.ico" />
+    <Image Include="Assets\mixer_icon1.ico" />
+    <Image Include="Assets\mixer_icon2.ico" />
+    <Image Include="Assets\mixer_icon3.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

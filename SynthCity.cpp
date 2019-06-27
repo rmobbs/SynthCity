@@ -803,7 +803,7 @@ bool Init() {
     SetMenu(sysWmInfo.info.win.window, hMenu);
   }
 
-  hMainWindowIcon = LoadIcon(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDI_MAINWINDOW));
+  hMainWindowIcon = LoadIcon(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDI_MAINWINDOW2));
   SendMessage(sysWmInfo.info.win.window, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hMainWindowIcon));
   SendMessage(sysWmInfo.info.win.window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hMainWindowIcon));
 
