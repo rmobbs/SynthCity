@@ -31,23 +31,6 @@ WavSound::WavSound(const ReadSerializer& serializer)
   }
 }
 
-void WavSound::PreSerialize(std::string rootPath) {
-  // Thank God the C++ standards committee is making things easier!
-  std::string newFileName = std::filesystem::relative(fileName,
-    std::filesystem::path(rootPath).parent_path()).generic_string();
-  if (newFileName.length() > 0) {
-    fileName = newFileName;
-
-    // Everything should work with the incorrect (on Windows) forward-slash paths
-    // returned from std::filesystem functions, but for consistency we'll convert
-    // the result to Windows-style backslashes
-    std::replace(fileName.begin(), fileName.end(), '/', '\\');
-  }
-  else {
-    MCLOG(Warn, "Instrument will reference absolute path for sound \'%s\'", fileName.c_str());
-  }
-}
-
 uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) {
   // Could eventually use the sound state for ADSR ...
 
@@ -69,6 +52,21 @@ uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame,
 
 bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
+
+  if (serializer.rootPath.generic_string().length()) {
+    std::string newFileName = std::filesystem::relative(fileName, serializer.rootPath).generic_string();
+    if (newFileName.length() > 0) {
+      fileName = newFileName;
+
+      // Everything should work with the incorrect (on Windows) forward-slash paths
+      // returned from std::filesystem functions, but for consistency we'll convert
+      // the result to Windows-style backslashes
+      std::replace(fileName.begin(), fileName.end(), '/', '\\');
+    }
+    else {
+      MCLOG(Warn, "Instrument will reference absolute path for sound \'%s\'", fileName.c_str());
+    }
+  }
 
   // File tag:string
   w.Key(kFileNameTag);

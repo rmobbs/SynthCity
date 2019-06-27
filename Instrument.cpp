@@ -198,7 +198,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
       w.Key(kClassTag);
       w.String(sound->GetSoundClassName().c_str());
 
-      sound->SerializeWrite({ w });
+      sound->SerializeWrite(serializer);
 
       w.EndObject();
     }
@@ -276,21 +276,10 @@ bool Instrument::SaveInstrument(std::string fileName) {
     return false;
   }
 
-  // We want any storage-based sounds to be stored with relative paths, but this is quite
-  // likely the first time we know the path for the instrument. 
-  // TODO: This solution is hot garbage. Obviously the serialize functions need to take
-  // the controlling document's root path
-  for (auto& track : tracks) {
-    auto sound = Mixer::Get().GetSound(track.soundIndex);
-    if (sound) {
-      sound->PreSerialize(fileName);
-    }
-  }
-
   rapidjson::StringBuffer sb;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
 
-  if (SerializeWrite({ w })) {
+  if (SerializeWrite({ w, std::filesystem::path(fileName).parent_path() })) {
     std::string outputString(sb.GetString());
     ofs.write(outputString.c_str(), outputString.length());
     ofs.close();

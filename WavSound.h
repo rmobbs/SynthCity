@@ -30,8 +30,6 @@ public:
   Voice* CreateVoice() override;
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
-
-  void PreSerialize(std::string rootPath) override;
 };
 
 class DialogPageWavSound : public DialogPage {

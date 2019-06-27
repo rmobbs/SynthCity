@@ -38,11 +38,6 @@ public:
     return className;
   }
 
-  // TODO: Obviously the serialize functions need to take the controlling document's root path
-  virtual void PreSerialize(std::string rootPath) {
-
-  }
-
   virtual Voice* CreateVoice() = 0;
   virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) = 0;
 
