@@ -288,8 +288,8 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
 
       // Pick an available name
       std::string defaultName(kDefaultNewTrackName);
-      for (;;) {
-        int nameSuffix = 0;
+      // Just feels weird and shameful to not have an upper bounds ...
+      for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
 
         auto& tracks = instrument->GetTracks();
 
@@ -304,7 +304,7 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
           break;
         }
 
-        defaultName = std::string(kDefaultNewTrackName) + std::to_string(++nameSuffix);
+        defaultName = std::string(kDefaultNewTrackName) + std::to_string(nameSuffix);
       }
 
       SetDlgItemText(hWndDlg, IDC_EDIT_ADDTRACK_NAME, StringToWChar(defaultName).get());

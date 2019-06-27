@@ -26,7 +26,7 @@ bool SynthSound::SerializeWrite(const WriteSerializer& serializer) {
 
   // Duration tag:uint
   w.Key(kDurationTag);
-  w.Uint(duration);
+  w.Uint(durationNum << 16 | durationDen);
 
   return true;
 }
@@ -46,7 +46,10 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
     MCLOG(Warn, "Missing/invalid frequency tag");
     return false;
   }
-  duration = r[kDurationTag].GetUint();
+  uint32 durationMasked = r[kDurationTag].GetUint();
+
+  durationNum = durationMasked >> 16;
+  durationDen = durationMasked & 0xFFFF;
 
   return true;
 }
@@ -78,14 +81,16 @@ bool DialogPageSynthSound::SerializeWrite(const WriteSerializer& serializer) {
   w.Key("frequency");
   w.Uint(frequency);
 
-  // Duration
-  INT num = GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_DURATION_BAR, nullptr, FALSE);
+  // The time value of the note unit in which our duration is expressed, i.e. half-note, quarter-note
+  // We'll make sure it's between [2,<upper-limit>] and it's even
   INT den = GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_DURATION_BEAT, nullptr, FALSE);
-  den = std::min(std::max(static_cast<uint32>(den), 1u), Sequencer::Get().GetMaxSubdivisions());
-  uint32 duration = static_cast<uint32>((static_cast<float>(num) /
-    static_cast<float>(den)) * (Mixer::kDefaultFrequency / Mixer::kDefaultChannels));
+  den = std::min(std::max(static_cast<uint32>(den), 2u), Sequencer::Get().GetMaxSubdivisions()) & ~1u;
+
+  // The number of these notes that defines the duration
+  INT num = GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_DURATION_BAR, nullptr, FALSE);
+
   w.Key("duration");
-  w.Uint(duration);
+  w.Uint(num << 16 | den);
 
   return true;
 }
@@ -97,8 +102,8 @@ bool DialogPageSynthSound::SerializeRead(const ReadSerializer& serializer) {
 
 // Sine
 REGISTER_SOUND(SineSynthSound, "Modulated sine wave", DialogPageSynthSound);
-SineSynthSound::SineSynthSound(uint32 frequency, uint32 duration)
-  : SynthSound("SineSynthSound", frequency, duration) {
+SineSynthSound::SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen)
+  : SynthSound("SineSynthSound", frequency, durationNum, durationDen) {
 }
 
 SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
@@ -107,15 +112,20 @@ SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
 
 Voice* SineSynthSound::CreateVoice() {
   SineSynthVoice* voice = new SineSynthVoice;
+
+  float durationInSeconds = static_cast<float>(Sequencer::Get().
+    GetSecondsPerBeat()) * (static_cast<float>(durationNum) / static_cast<float>(durationDen));
+
+  voice->duration = static_cast<uint32>(durationInSeconds * static_cast<float>(Mixer::kDefaultFrequency));
+
   voice->radstep = static_cast<float>((2.0 * M_PI *
     frequency) / static_cast<double>(Mixer::kDefaultFrequency));
   return voice;
 }
 
 uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voiceGeneric) {
-  if (frame < duration) {
-    SineSynthVoice* voice = static_cast<SineSynthVoice*>(voiceGeneric);
-
+  SineSynthVoice* voice = static_cast<SineSynthVoice*>(voiceGeneric);
+  if (frame < voice->duration) {
     voice->radians += voice->radstep; // * speed
     while (voice->radians > (2.0 * M_PI)) {
       voice->radians -= static_cast<float>(2.0 * M_PI);

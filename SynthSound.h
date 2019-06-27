@@ -10,12 +10,17 @@ public:
   static constexpr uint32 kDefaultNotesPerBeat = 4; // Denominator of time sig
 protected:
   uint32 frequency = 0;
-  uint32 duration = 0;
+
+  // Seems easier to understand to express the duration of a synthesized sound as
+  // the native note unit time value and count of those units, e.g. 1/4, 4/4
+  uint32 durationNum = 0;
+  uint32 durationDen = 0;
 public:
-  SynthSound(const std::string& className, uint32 frequency, uint32 duration)
+  SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
     : Sound(className)
     , frequency(frequency)
-    , duration(duration) {
+    , durationNum(durationNum)
+    , durationDen(durationDen) {
 
   }
 
@@ -39,11 +44,12 @@ class SineSynthVoice : public Voice {
 public:
   float radians = 0;
   float radstep = 0;
+  uint32 duration = 0; // Has to be calculated at Voice creation time due to reliance on current BPM
 };
 
 class SineSynthSound : public SynthSound {
 public:
-  SineSynthSound(uint32 frequency, uint32 duration);
+  SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen);
   SineSynthSound(const ReadSerializer& serializer);
 
   Voice* CreateVoice() override;
