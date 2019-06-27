@@ -182,6 +182,7 @@
     <ClInclude Include="DialogPage.h" />
     <ClInclude Include="EnumIterator.h" />
     <ClInclude Include="GlobalRenderData.h" />
+    <ClInclude Include="Globals.h" />
     <ClInclude Include="InputState.h" />
     <ClInclude Include="Instrument.h" />
     <ClInclude Include="Logging.h" />

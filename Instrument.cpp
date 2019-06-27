@@ -4,6 +4,7 @@
 #include "SerializeImpl.h"
 #include "SoundFactory.h"
 #include "WavSound.h"
+#include "Globals.h"
 
 #include <stdexcept>
 #include <fstream>
@@ -64,7 +65,6 @@ Instrument::Instrument(const ReadSerializer& r, uint32 numNotes)
 }
 
 static constexpr const char* kVersionTag("version");
-static constexpr const char* kVersionString("0.0.6");
 static constexpr const char* kNameTag("name");
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");

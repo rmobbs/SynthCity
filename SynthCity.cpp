@@ -31,6 +31,7 @@
 #include "WavSound.h"
 #include "DialogPage.h"
 #include "SoundFactory.h"
+#include "Globals.h"
 
 // This should go away when we move to data abstraction
 #include "SpriteRenderable.h"
@@ -73,7 +74,6 @@ static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
 static constexpr uint32 kSwapInterval = 1;
 static constexpr std::string_view kJsonTag(".json");
-static constexpr const char *kSynthCityVersion = "0.0.1";
 static constexpr std::string_view kEmptyTrackName("<unknown>");
 
 static ComposerView* currentView = nullptr;
@@ -498,7 +498,7 @@ void MainLoop() {
     EnableMenuItem(hMenu, ID_FILE_SAVESONG, MF_DISABLED);
   }
 
-  glClearColor(0.0f, 0.0f, 0.7f, 0);
+  glClearColor(0.5f, 0.5f, 0.5f, 0);
   glClear(GL_COLOR_BUFFER_BIT);
 
   // Update viewport
@@ -661,8 +661,8 @@ bool LoadInstrument(std::string instrumentName) {
 
   if (GetOpenFileName(&ofn)) {
     if (Sequencer::Get().LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
-      ::EnableMenuItem(hMenu, reinterpret_cast<UINT>(::GetSubMenu(hMenu, 1)), MF_ENABLED);
-      return true;
+      EnableMenuItem(hMenu, reinterpret_cast<UINT>(GetSubMenu(hMenu, 1)), MF_ENABLED);
+      DrawMenuBar(sysWmInfo.info.win.window);
     }
   }
   return false;
@@ -700,7 +700,8 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
           return 0;
         case ID_FILE_NEWINSTRUMENT: {
           if (Sequencer::Get().NewInstrument()) {
-            ::EnableMenuItem(hMenu, reinterpret_cast<UINT>(::GetSubMenu(hMenu, 1)), MF_ENABLED);
+            EnableMenuItem(hMenu, reinterpret_cast<UINT>(GetSubMenu(hMenu, 1)), MF_ENABLED);
+            DrawMenuBar(sysWmInfo.info.win.window);
           }
           return 0;
         }
@@ -798,9 +799,8 @@ bool Init() {
 
   SDL_VERSION(&sysWmInfo.version);
   if (SDL_GetWindowWMInfo(sdlWindow, &sysWmInfo)) {
-    hMenu = ::LoadMenu(nullptr, MAKEINTRESOURCE(IDR_MENU_FILEINSTRUMENT));
-    ::SetMenu(sysWmInfo.info.win.window, hMenu);
-    ::EnableMenuItem(hMenu, reinterpret_cast<UINT>(::GetSubMenu(hMenu, 1)), MF_GRAYED | MF_DISABLED);
+    hMenu = LoadMenu(nullptr, MAKEINTRESOURCE(IDR_MENU_FILEINSTRUMENT));
+    SetMenu(sysWmInfo.info.win.window, hMenu);
   }
 
   hMainWindowIcon = LoadIcon(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDI_MAINWINDOW));
@@ -853,7 +853,7 @@ bool Init() {
   // Initialize the designer view
   currentView = new ComposerView;
 
-  MCLOG(Info, "SynthCity %s", kSynthCityVersion);
+  MCLOG(Info, "SynthCity %s", kVersionString);
 
   return true;
 }
