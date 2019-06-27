@@ -2,6 +2,8 @@
 #include "Logging.h"
 #include "Sequencer.h" // TODO: Remove this dependency!
 #include "SerializeImpl.h"
+#include "SoundFactory.h"
+#include "WavSound.h"
 
 #include <stdexcept>
 #include <fstream>
@@ -137,7 +139,7 @@ bool Instrument::SerializeRead(const ReadSerializer& serializer) {
 
       try {
         AddTrack(trackName, colorScheme,
-          soundInfo->second.createSerialized({ soundsEntry }));
+          soundInfo->second.soundFactory({ soundsEntry }));
       }
       catch (...) {
       }
@@ -194,7 +196,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
 
       // Class tag:string
       w.Key(kClassTag);
-      w.String(sound->GetClassName());
+      w.String(sound->GetSoundClassName().c_str());
 
       sound->SerializeWrite({ w });
 
@@ -272,6 +274,17 @@ bool Instrument::SaveInstrument(std::string fileName) {
   if (ofs.bad()) {
     MCLOG(Warn, "Unable to save instrument to file %s ", fileName.c_str());
     return false;
+  }
+
+  // We want any storage-based sounds to be stored with relative paths, but this is quite
+  // likely the first time we know the path for the instrument. 
+  // TODO: This solution is hot garbage. Obviously the serialize functions need to take
+  // the controlling document's root path
+  for (auto& track : tracks) {
+    auto sound = Mixer::Get().GetSound(track.soundIndex);
+    if (sound) {
+      sound->PreSerialize(fileName);
+    }
   }
 
   rapidjson::StringBuffer sb;

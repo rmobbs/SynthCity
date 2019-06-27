@@ -1,9 +1,13 @@
 #pragma once
 
 #include "Sound.h"
+#include "DialogPage.h"
 #include <vector>
 
 class WavSound : public Sound {
+public:
+  static constexpr const char* kFileNameTag = "filename";
+  static constexpr const char* kDecayTag = "decay";
 protected:
   std::string fileName;
   uint32 frequency = 0;
@@ -14,10 +18,8 @@ protected:
   bool LoadWav(const std::string& fileName);
 
 public:
-  DECLARE_FACTORY_CLASS(WavSound);
-
-  WavSound(const ReadSerializer& serializer);
   WavSound(const std::string& fileName);
+  WavSound(const ReadSerializer& serializer);
 
   uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) override;
 
@@ -28,4 +30,16 @@ public:
   Voice* CreateVoice() override;
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
+
+  void PreSerialize(std::string rootPath) override;
 };
+
+class DialogPageWavSound : public DialogPage {
+public:
+  DialogPageWavSound(HINSTANCE hInstance, HWND hWndParent);
+
+  bool DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+  bool SerializeWrite(const WriteSerializer& serializer) override;
+  bool SerializeRead(const ReadSerializer& serializer) override;
+};
+
