@@ -177,8 +177,9 @@
     <ClInclude Include="..\3rdParty\imgui\stb_textedit.h" />
     <ClInclude Include="..\3rdParty\imgui\stb_truetype.h" />
     <ClInclude Include="BaseTypes.h" />
-    <ClInclude Include="ClassFactory.h" />
+    <ClInclude Include="BaseWindows.h" />
     <ClInclude Include="ComposerView.h" />
+    <ClInclude Include="DialogPage.h" />
     <ClInclude Include="EnumIterator.h" />
     <ClInclude Include="GlobalRenderData.h" />
     <ClInclude Include="InputState.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="SerializeImpl.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Sound.h" />
+    <ClInclude Include="SoundFactory.h" />
     <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
     <ClInclude Include="WavSound.h" />
@@ -203,8 +205,8 @@
     <ClCompile Include="..\3rdParty\imgui\imgui.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\3rdParty\imgui\imgui_draw.cpp" />
-    <ClCompile Include="ClassFactory.cpp" />
     <ClCompile Include="ComposerView.cpp" />
+    <ClCompile Include="DialogPage.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Logging.cpp" />
@@ -215,6 +217,7 @@
     <ClCompile Include="Mixer.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="Sound.cpp" />
+    <ClCompile Include="SoundFactory.cpp" />
     <ClCompile Include="SpriteRenderable.cpp" />
     <ClCompile Include="SynthCity.cpp" />
     <ClCompile Include="SynthSound.cpp" />

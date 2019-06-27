@@ -1,32 +1,51 @@
 #include "WavSound.h"
 #include "Logging.h"
-
-#include <iostream>
+#include "SerializeImpl.h"
+#include "SoundFactory.h"
+#include "resource.h"
 
 #include "SDL_audio.h"
 
-#include "SerializeImpl.h"
+#include <iostream>
+#include <atlbase.h>
+#include <commdlg.h>
+#include <filesystem>
 
 static constexpr float kSilenceThresholdIntro = 0.01f;
 static constexpr float kSilenceThresholdOutro = 0.50f;
-static constexpr const char* kFileNameTag("filename");
-static constexpr const char* kDecayTag("decay");
 
-REGISTER_SOUND(WavSound, "Sound from WAV file");
-WavSound::WavSound(const ReadSerializer& serializer) 
-: Sound("WavSound") {
-  if (!SerializeRead(serializer)) {
-    throw std::runtime_error("WavSound: Unable to serialize (read)");
-  }
-}
-
+REGISTER_SOUND(WavSound, "Sound from WAV file", DialogPageWavSound);
 WavSound::WavSound(const std::string& fileName)
 : Sound("WavSound") {
 
   if (!LoadWav(fileName)) {
-    throw std::runtime_error("Unable to load Wav file");
+    throw std::runtime_error("Unable to load WAV file");
   }
 
+}
+
+WavSound::WavSound(const ReadSerializer& serializer)
+  : Sound("WavSound") {
+  if (!SerializeRead(serializer)) {
+    throw std::runtime_error("Unable to serialize WAV sound");
+  }
+}
+
+void WavSound::PreSerialize(std::string rootPath) {
+  // Thank God the C++ standards committee is making things easier!
+  std::string newFileName = std::filesystem::relative(fileName,
+    std::filesystem::path(rootPath).parent_path()).generic_string();
+  if (newFileName.length() > 0) {
+    fileName = newFileName;
+
+    // Everything should work with the incorrect (on Windows) forward-slash paths
+    // returned from std::filesystem functions, but for consistency we'll convert
+    // the result to Windows-style backslashes
+    std::replace(fileName.begin(), fileName.end(), '/', '\\');
+  }
+  else {
+    MCLOG(Warn, "Instrument will reference absolute path for sound \'%s\'", fileName.c_str());
+  }
 }
 
 uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) {
@@ -159,3 +178,66 @@ Voice* WavSound::CreateVoice() {
   voice->decay = decay * 0.0001f;
   return voice;
 }
+
+DialogPageWavSound::DialogPageWavSound(HINSTANCE hInstance, HWND hWndParent)
+  : DialogPage(hInstance, hWndParent, IDD_TRACKPROPERTIES_WAV) {
+
+}
+
+bool DialogPageWavSound::DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  switch (uMsg) {
+    case WM_COMMAND: {
+      switch (HIWORD(wParam)) {
+        case BN_CLICKED: {
+          switch (LOWORD(wParam)) {
+            case IDC_BUTTON_WAVPROPERTIES_FILEDIALOG: {
+              WCHAR szFile[FILENAME_MAX] = { 0 };
+              OPENFILENAME ofn = { 0 };
+
+              USES_CONVERSION;
+              ofn.lStructSize = sizeof(ofn);
+
+              ofn.lpstrTitle = A2W("Open WAV");
+              ofn.hwndOwner = hWndDlg;
+              ofn.lpstrFile = szFile;
+              ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+              ofn.lpstrFilter = _TEXT("WAV\0*.wav\0");
+              ofn.nFilterIndex = 0;
+              ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+              if (GetOpenFileName(&ofn)) {
+                SetDlgItemText(hWndDlg, IDC_EDIT_WAVPROPERTIES_FILENAME, ofn.lpstrFile);
+              }
+              break;
+            }
+          }
+          break;
+        }
+      }
+      break;
+    }
+  }
+  return false;
+}
+
+bool DialogPageWavSound::SerializeWrite(const WriteSerializer& serializer) {
+  auto& w = serializer.w;
+
+  WCHAR fileNameBuf[256];
+  GetDlgItemText(hWnd, IDC_EDIT_WAVPROPERTIES_FILENAME, fileNameBuf, _countof(fileNameBuf));
+  USES_CONVERSION;
+  std::string fileName = std::string(W2A(fileNameBuf));
+
+  w.Key(WavSound::kFileNameTag);
+  w.String(fileName.c_str());
+
+  w.Key(WavSound::kDecayTag);
+  w.Double(0.4f);
+
+  return false;
+}
+
+bool DialogPageWavSound::SerializeRead(const ReadSerializer& serializer) {
+  return false;
+}
+

@@ -2,7 +2,6 @@
 
 #include "BaseTypes.h"
 #include "SerializeFwd.h"
-#include "ClassFactory.h"
 
 #include <string>
 
@@ -23,20 +22,25 @@ public:
 // Sound is the invariant class; it stores the data/algorithm for generating a sound
 class Sound {
 protected:
-  std::string name;
+  std::string className;
 
 public:
-  DECLARE_FACTORY_CLASS(Sound);
-
-  Sound(const std::string& name)
-    : name(name) {
+  Sound(std::string className)
+    : className(className) {
   }
+
   virtual ~Sound() {
 
   }
 
-  inline const std::string& GetName() const {
-    return name;
+  // Seriously, Windows ...
+  inline const std::string& GetSoundClassName() const {
+    return className;
+  }
+
+  // TODO: Obviously the serialize functions need to take the controlling document's root path
+  virtual void PreSerialize(std::string rootPath) {
+
   }
 
   virtual Voice* CreateVoice() = 0;
@@ -46,6 +50,3 @@ public:
   virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
 };
 
-DECLARE_CLASS_FACTORY(SoundFactory, Sound);
-#define REGISTER_SOUND(SoundClass, SoundDesc) \
-  REGISTER_FACTORY_CLASS(SoundFactory, SoundClass, typeid(SoundClass).hash_code(), SoundDesc)

@@ -28,8 +28,9 @@
 #include "Mixer.h"
 #include "SerializeImpl.h"
 #include "Instrument.h"
-
-static ComposerView* currentView = nullptr;
+#include "WavSound.h"
+#include "DialogPage.h"
+#include "SoundFactory.h"
 
 // This should go away when we move to data abstraction
 #include "SpriteRenderable.h"
@@ -65,6 +66,7 @@ static WNDPROC oldWindowProc = nullptr;
 static bool wantQuit = false;
 static SDL_SysWMinfo sysWmInfo;
 static HMENU hMenu;
+static HACCEL hAccel;
 
 static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
@@ -72,6 +74,8 @@ static constexpr uint32 kSwapInterval = 1;
 static constexpr std::string_view kJsonTag(".json");
 static constexpr const char *kSynthCityVersion = "0.0.1";
 static constexpr std::string_view kEmptyTrackName("<unknown>");
+
+static ComposerView* currentView = nullptr;
 
 #define SYNTHCITY_WM_MIDIPROPERTIES_TREE_CHECKSTATECHANGED (WM_APP + 1)
 
@@ -234,24 +238,49 @@ bool GetMidiConversionParams(const MidiSource& midiSource, Sequencer::MidiConver
   return false;
 }
 
-struct AddSynthVoiceWorkspace {
-  // Combo box contents
-  std::vector<const SoundFactory::ClassInformation*> comboBoxEntries;
-
-  // Factory entry
-  const SoundFactory::ClassInformation* selectedSoundInfo = nullptr;
+struct AddTrackWorkspace {
+  std::vector<const SoundFactory::SoundInformation*> comboBoxEntries;
+  std::vector<DialogPage*> dialogPages;
 
   // Name
   std::string trackName;
   std::string colorScheme;
 
-  // Serialization
+  // Serialization of sound type
   rapidjson::StringBuffer sb;
+
+  // Selected item index
+  uint32 selectedIndex = 0;
 };
+
+void SetDialogPage(HWND hWndDlg, AddTrackWorkspace& workspace, uint32 newIndex) {
+  if (workspace.selectedIndex != newIndex) {
+    ShowWindow(workspace.dialogPages[workspace.selectedIndex]->GetHandle(), SW_HIDE);
+  }
+
+  // Create dialog page via factory
+  if (workspace.dialogPages.size() <= newIndex) {
+    workspace.dialogPages.resize(newIndex + 1);
+  }
+  if (workspace.dialogPages[newIndex] == nullptr) {
+    auto& soundInfo = workspace.comboBoxEntries[newIndex];
+    workspace.dialogPages[newIndex] =
+      soundInfo->pageFactory(sysWmInfo.info.win.hinstance, hWndDlg);
+  }
+
+  auto dialogPage = workspace.dialogPages[newIndex];
+  if (dialogPage != nullptr) {
+    // Update properties display
+    RECT rect;
+    GetWindowRect(GetDlgItem(hWndDlg, IDC_PROPERTIES_AREA), &rect);
+    SetWindowPos(dialogPage->GetHandle(), 0, rect.left, rect.top,
+      rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW);
+  }
+}
 
 BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   auto& sequencer = Sequencer::Get();
-  auto& workspace = *reinterpret_cast<AddSynthVoiceWorkspace*>(GetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA));
+  auto& workspace = *reinterpret_cast<AddTrackWorkspace*>(GetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA));
 
   switch (uMsg) {
     case WM_INITDIALOG: {
@@ -278,105 +307,53 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
         defaultName = std::string(kDefaultNewTrackName) + std::to_string(++nameSuffix);
       }
 
-      SetDlgItemText(hWndDlg, IDC_EDIT_ADDVOICE_NAME, StringToWChar(defaultName).get());
+      SetDlgItemText(hWndDlg, IDC_EDIT_ADDTRACK_NAME, StringToWChar(defaultName).get());
 
-      // Set default duration
-      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_NUMERATOR, 1, FALSE);
-      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_DENOMINATOR, 4, FALSE);
+      // Add all factory types to the combo
+      HWND hWndCombo = GetDlgItem(hWndDlg, IDC_COMBO_ADDTRACK_PRESETS);
 
-      // Set default frequency
-      SetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_FREQUENCY, 1000, FALSE);
-
-      // Add all synth voices to the combo
-      HWND hWndCombo = GetDlgItem(hWndDlg, IDC_COMBO_ADDSYNTHVOICEPRESET);
-
-      const auto synthSoundTag = typeid(SynthSound).hash_code();
       const auto& soundInfoMap = SoundFactory::GetInfoMap();
       for (const auto& soundInfo : soundInfoMap) {
-        if (soundInfo.second.tag == synthSoundTag) {
-          workspace.comboBoxEntries.push_back(&soundInfo.second);
-
-          // Add to combo box
-          SendMessage(hWndCombo, CB_ADDSTRING, 0,
-            reinterpret_cast<LPARAM>(StringToWChar(soundInfo.second.name).get()));
-        }
+        workspace.comboBoxEntries.push_back(&soundInfo.second);
+        SendMessage(hWndCombo, CB_ADDSTRING, 0,
+          reinterpret_cast<LPARAM>(StringToWChar(soundInfo.second.name).get()));
       }
 
       // Choose the default
       SendMessage(hWndCombo, CB_SETCURSEL, 0, 0);
-      if (workspace.comboBoxEntries.size()) {
-        workspace.selectedSoundInfo = workspace.comboBoxEntries.front();
-      }
-
+      SetDialogPage(hWndDlg, workspace, 0);
       break;
     }
     case WM_COMMAND:
       if (HIWORD(wParam) == CBN_SELCHANGE) {
-        const auto& soundInfoMap = SoundFactory::GetInfoMap();
-
-        uint32 itemIndex = SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
-        if (itemIndex < workspace.comboBoxEntries.size()) {
-          workspace.selectedSoundInfo = workspace.comboBoxEntries[itemIndex];
-
-          // Update properties display
-        }
+        uint32 selectedIndex = SendMessage(reinterpret_cast<HWND>(lParam), CB_GETCURSEL, 0, 0);
+        assert(selectedIndex < workspace.comboBoxEntries.size());
+        SetDialogPage(hWndDlg, workspace, selectedIndex);
+        workspace.selectedIndex = selectedIndex;
       }
       else {
         switch (LOWORD(wParam)) {
           case IDOK: {
-            auto& sequencer = Sequencer::Get();
+            auto dialogPage = workspace.dialogPages[workspace.selectedIndex];
+            if (dialogPage != nullptr) {
+              // TODO: Just use Track::Serialize
 
-            // Pull data and serialize it
-            rapidjson::PrettyWriter<rapidjson::StringBuffer> w(workspace.sb);
+              // Pull data and serialize it
+              rapidjson::PrettyWriter<rapidjson::StringBuffer> w(workspace.sb);
 
-            /*
-            workspace.w.StartArray();
-            */
+              // Track name
+              WCHAR trackNameBuf[256];
+              GetDlgItemText(hWndDlg, IDC_EDIT_ADDTRACK_NAME, trackNameBuf, _countof(trackNameBuf));
+              USES_CONVERSION;
+              workspace.trackName = std::string(W2A(trackNameBuf));
 
-            // Track name
-            WCHAR trackNameBuf[256];
-            GetDlgItemText(hWndDlg, IDC_EDIT_ADDVOICE_NAME, trackNameBuf, _countof(trackNameBuf));
-            USES_CONVERSION;
-            /*
-            std::string trackName(W2A(trackNameBuf));
-            workspace.w.Key("name"); // FIXME
-            workspace.w.String(trackName.c_str());
-            */
-            workspace.trackName = std::string(W2A(trackNameBuf));
+              // TODO: Color scheme
+              w.StartObject();
 
-            // TODO: Color scheme
+              dialogPage->SerializeWrite({ w });
 
-            /*
-            // Sounds array
-            workspace.w.Key("sounds"); // FIXME
-            workspace.w.StartArray();
-            */
-
-            w.StartObject();
-
-            // TODO: Customize based on type
-
-            // Frequency
-            uint32 frequency =
-              GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_FREQUENCY, nullptr, FALSE);
-            w.Key("frequency");
-            w.Uint(frequency);
-
-            // Duration
-            INT num = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_NUMERATOR, nullptr, FALSE);
-            INT den = GetDlgItemInt(hWndDlg, IDC_EDIT_ADDVOICE_PROPERTIES_DURATION_DENOMINATOR, nullptr, FALSE);
-            den = std::min(std::max(static_cast<uint32>(den), 1u), sequencer.GetMaxSubdivisions());
-            uint32 duration = static_cast<uint32>((static_cast<float>(num) /
-              static_cast<float>(den)) * (Mixer::kDefaultFrequency / Mixer::kDefaultChannels));
-            w.Key("duration");
-            w.Uint(duration);
-
-            w.EndObject();
-
-            /*
-            w.EndArray();
-            */
-
+              w.EndObject();
+            }
             EndDialog(hWndDlg, wParam);
             return TRUE;
           }
@@ -389,35 +366,57 @@ BOOL CALLBACK AddSynthVoiceDialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LP
           }
           break;
       }
-    case WM_CLOSE:
+    case WM_WINDOWPOSCHANGED:
+    case WM_MOVE: {      
+      if (workspace.dialogPages.size() > workspace.selectedIndex) {
+        auto dialogPage = workspace.dialogPages[workspace.selectedIndex];
+        if (dialogPage != nullptr) {
+          // Update properties display
+          RECT rect;
+          GetWindowRect(GetDlgItem(hWndDlg, IDC_PROPERTIES_AREA), &rect);
+          SetWindowPos(dialogPage->GetHandle(), 0, rect.left, rect.top,
+            rect.right - rect.left, rect.bottom - rect.top, SWP_SHOWWINDOW);
+        }
+      }
       break;
+    }
+    case WM_CLOSE: {
+      break;
+    }
+    case WM_DESTROY: {
+      for (auto& dialogPage : workspace.dialogPages) {
+        if (dialogPage != nullptr) {
+          EndDialog(dialogPage->GetHandle(), 0);
+        }
+      }
+      break;
+    }
     default:
       break;
   }
   return FALSE;
 }
 
-bool AddSynthVoiceDialog() { //const MidiSource& midiSource, Sequencer::MidiConversionParams& midiConversionParams) {
-  AddSynthVoiceWorkspace workspace;
+bool AddSynthVoiceDialog() {
+  AddTrackWorkspace workspace;
   // Pass data
   SetWindowLong(sysWmInfo.info.win.window, GWL_USERDATA, reinterpret_cast<LONG>(&workspace));
 
   // Push the dialog
-  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_INSTRUMENT_ADDVOICE),
+  if (DialogBox(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDD_INSTRUMENT_ADDTRACK),
     sysWmInfo.info.win.window, reinterpret_cast<DLGPROC>(AddSynthVoiceDialogProc)) == IDOK) {
-    if (workspace.selectedSoundInfo != nullptr) {
-      MCLOG(Info, "You selected synth sound %s", workspace.selectedSoundInfo->name.c_str());
+    
+    auto soundInfo = workspace.comboBoxEntries[workspace.selectedIndex];
 
-      // Instantiate
-      rapidjson::Document document;
-      document.Parse(workspace.sb.GetString());
+    MCLOG(Info, "You selected sound type %s", soundInfo->name.c_str());
 
-      Sequencer::Get().GetInstrument()->AddTrack(workspace.trackName,
-        workspace.colorScheme,
-        workspace.selectedSoundInfo->createSerialized({ document }));
+    rapidjson::Document document;
+    document.Parse(workspace.sb.GetString());
 
-      // Add to instrument
-    }
+    Sequencer::Get().GetInstrument()->AddTrack(workspace.trackName,
+      workspace.colorScheme,
+      soundInfo->soundFactory({ document }));
+
     return true;
   }
 
@@ -759,7 +758,7 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
           }
           return 0;
         }
-        case ID_INSTRUMENT_ADDVOICE: {
+        case ID_INSTRUMENT_ADDTRACK: {
           if (Sequencer::Get().GetInstrument() != nullptr) {
             if (AddSynthVoiceDialog()) {
 
@@ -771,8 +770,6 @@ LRESULT CALLBACK MyWindowProc(_In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam
   }
   return oldWindowProc(hWnd, uMsg, wParam, lParam);
 }
-
-static HACCEL hAccel;
 
 bool Init() {
   Logging::AddResponder([](const std::string_view& logLine) {

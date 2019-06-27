@@ -1,17 +1,19 @@
 #include "SynthSound.h"
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include "SerializeImpl.h"
 #include "Logging.h"
 #include "Mixer.h"
+#include "SoundFactory.h"
+#include "Sequencer.h"
+#include "resource.h"
+#include <algorithm>
 
 static constexpr const char* kFrequencyTag("frequency");
 static constexpr const char* kDurationTag("duration");
 
-SynthSound::SynthSound(const ReadSerializer& serializer) 
-: Sound("SynthSound") {
+SynthSound::SynthSound(std::string className, const ReadSerializer& serializer)
+  : Sound(className) {
   if (!SerializeRead(serializer)) {
-    throw std::runtime_error("Failed to serialize SynthSound");
+    throw std::runtime_error("Unable to serialize synth sound");
   }
 }
 
@@ -49,10 +51,58 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
   return true;
 }
 
+DialogPageSynthSound::DialogPageSynthSound(HINSTANCE hInstance, HWND hWndParent)
+  : DialogPage(hInstance, hWndParent, IDD_TRACKPROPERTIES_SYNTH) {
+
+}
+
+bool DialogPageSynthSound::DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  switch (uMsg) {
+    case WM_USERINIT: {
+      // Set the defaults
+      SetDlgItemInt(hWndDlg, IDC_EDIT_SYNTHPROPERTIES_FREQUENCY, SynthSound::kDefaultFrequency, FALSE);
+      SetDlgItemInt(hWndDlg, IDC_EDIT_SYNTHPROPERTIES_DURATION_BAR, SynthSound::kDefaultBeatsPerBar, FALSE);
+      SetDlgItemInt(hWndDlg, IDC_EDIT_SYNTHPROPERTIES_DURATION_BEAT, SynthSound::kDefaultNotesPerBeat, FALSE);
+      break;
+    }
+  }
+  return false;
+}
+
+bool DialogPageSynthSound::SerializeWrite(const WriteSerializer& serializer) {
+  auto& w = serializer.w;
+
+  // Frequency
+  uint32 frequency =
+    GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_FREQUENCY, nullptr, FALSE);
+  w.Key("frequency");
+  w.Uint(frequency);
+
+  // Duration
+  INT num = GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_DURATION_BAR, nullptr, FALSE);
+  INT den = GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_DURATION_BEAT, nullptr, FALSE);
+  den = std::min(std::max(static_cast<uint32>(den), 1u), Sequencer::Get().GetMaxSubdivisions());
+  uint32 duration = static_cast<uint32>((static_cast<float>(num) /
+    static_cast<float>(den)) * (Mixer::kDefaultFrequency / Mixer::kDefaultChannels));
+  w.Key("duration");
+  w.Uint(duration);
+
+  return true;
+}
+
+bool DialogPageSynthSound::SerializeRead(const ReadSerializer& serializer) {
+  return false;
+}
+
+
 // Sine
-REGISTER_SYNTH_SOUND(SineSynthSound, "Modulated sine wave");
+REGISTER_SOUND(SineSynthSound, "Modulated sine wave", DialogPageSynthSound);
 SineSynthSound::SineSynthSound(uint32 frequency, uint32 duration)
   : SynthSound("SineSynthSound", frequency, duration) {
+}
+
+SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
+  : SynthSound("SineSynthSound", serializer) {
 }
 
 Voice* SineSynthSound::CreateVoice() {
