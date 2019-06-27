@@ -488,13 +488,11 @@ void MainLoop() {
   if (sequencer.GetInstrument()) {
     EnableMenuItem(hMenu, ID_FILE_SAVEINSTRUMENT, MF_ENABLED);
     EnableMenuItem(hMenu, ID_FILE_NEWSONG, MF_ENABLED);
-    EnableMenuItem(hMenu, ID_FILE_LOADSONG, MF_ENABLED);
     EnableMenuItem(hMenu, ID_FILE_SAVESONG, MF_ENABLED);
   }
   else {
     EnableMenuItem(hMenu, ID_FILE_SAVEINSTRUMENT, MF_DISABLED);
     EnableMenuItem(hMenu, ID_FILE_NEWSONG, MF_DISABLED);
-    EnableMenuItem(hMenu, ID_FILE_LOADSONG, MF_DISABLED);
     EnableMenuItem(hMenu, ID_FILE_SAVESONG, MF_DISABLED);
   }
 
@@ -663,6 +661,7 @@ bool LoadInstrument(std::string instrumentName) {
     if (Sequencer::Get().LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
       EnableMenuItem(hMenu, reinterpret_cast<UINT>(GetSubMenu(hMenu, 1)), MF_ENABLED);
       DrawMenuBar(sysWmInfo.info.win.window);
+      return true;
     }
   }
   return false;
@@ -848,6 +847,10 @@ bool Init() {
   Sequencer::Get().SetLoadInstrumentCallback(
     [](std::string instrumentName) {
       return LoadInstrument(instrumentName);
+  });
+  Sequencer::Get().SetMidiConversionParamsCallback(
+    [](const MidiSource& midiSource, Sequencer::MidiConversionParams& midiConversionParams) {
+      return GetMidiConversionParams(midiSource, midiConversionParams);
   });
 
   // Initialize the designer view

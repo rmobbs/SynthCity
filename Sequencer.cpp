@@ -311,6 +311,11 @@ void Sequencer::LoadSongMidi(std::string fileName) {
     return;
   }
 
+  if (!instrument->tracks.size()) {
+    MCLOG(Error, "Cannot load MIDI file if instrument has no tracks");
+    return;
+  }
+
   MCLOG(Info, "Importing MIDI from file \'%s\'", fileName.c_str());
 
   MidiSource midiSource;
