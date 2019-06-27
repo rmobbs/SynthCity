@@ -67,6 +67,7 @@ static bool wantQuit = false;
 static SDL_SysWMinfo sysWmInfo;
 static HMENU hMenu;
 static HACCEL hAccel;
+static HICON hMainWindowIcon;
 
 static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
@@ -802,6 +803,10 @@ bool Init() {
     ::EnableMenuItem(hMenu, reinterpret_cast<UINT>(::GetSubMenu(hMenu, 1)), MF_GRAYED | MF_DISABLED);
   }
 
+  hMainWindowIcon = LoadIcon(sysWmInfo.info.win.hinstance, MAKEINTRESOURCE(IDI_MAINWINDOW));
+  SendMessage(sysWmInfo.info.win.window, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hMainWindowIcon));
+  SendMessage(sysWmInfo.info.win.window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hMainWindowIcon));
+
   hAccel = LoadAccelerators(sysWmInfo.info.
     win.hinstance, MAKEINTRESOURCE(IDR_ACCELERATOR_FILEMENU));
   SDL_SetWindowsMessageHook([](void *payload, void *hWnd, unsigned int message, Uint64 wParam, Sint64 lParam) {
@@ -866,6 +871,15 @@ void Term() {
 
   TermImGui();
   TermGL();
+
+  // Clean up Windows resources
+  DestroyIcon(hMainWindowIcon);
+  hMainWindowIcon = 0;
+  DestroyAcceleratorTable(hAccel);
+  hAccel = 0;
+  DestroyMenu(hMenu);
+  hMenu = 0;
+
   SDL_Quit();
 }
 
