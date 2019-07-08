@@ -1,0 +1,9 @@
+[submodule "Source/3rdParty/imgui"]
+	path = Source/3rdParty/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "Source/3rdParty/rapidjson"]
+	path = Source/3rdParty/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
+[submodule "Source/3rdParty/glm"]
+	path = Source/3rdParty/glm
+	url = https://github.com/g-truc/glm.git
