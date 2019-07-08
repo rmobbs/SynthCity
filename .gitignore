@@ -2,4 +2,7 @@
 Source/Debug
 Source/Release
 *.aps
-*.user
+SDL2d.dll
+SynthCityd.exe
+SDL2.dll
+SynthCity.exe
