@@ -15,5 +15,5 @@ public:
 public:
   SpriteRenderable();
 
-  void render() override;
+  void Render() override;
 };

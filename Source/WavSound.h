@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Sound.h"
-#include "DialogPage.h"
+#include "Dialog.h"
 #include <vector>
 
 class WavSound : public Sound {
@@ -32,11 +32,11 @@ public:
   bool SerializeRead(const ReadSerializer& serializer) override;
 };
 
-class DialogPageWavSound : public DialogPage {
+class DialogWavSound : public Dialog {
+protected:
+  std::string fileName;
 public:
-  DialogPageWavSound(HINSTANCE hInstance, HWND hWndParent);
-
-  bool DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+  bool Render() override;
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 };

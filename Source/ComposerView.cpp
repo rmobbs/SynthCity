@@ -14,6 +14,14 @@
 #include "ShaderProgram.h"
 #include "Instrument.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef min
+#undef max
+#include <commdlg.h>
+#include <atlbase.h>
+#include <commctrl.h>
+
 static constexpr float kFullBeatWidth = 80.0f;
 static constexpr float kKeyboardKeyWidth = 100.0f;
 static constexpr float kKeyboardKeyHeight = 20.0f;
@@ -34,6 +42,7 @@ static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
 static constexpr float kScrollBarWidth = 15.0f;
 static constexpr float kSequencerWindowToolbarHeight = 64.0f;
+static constexpr std::string_view kJsonTag(".json");
 
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
@@ -105,144 +114,101 @@ void ComposerView::OutputWindowState::AddLog(const std::string_view& logString) 
   }
 }
 
+bool LoadInstrument(HWND mainWindowHandle, std::string instrumentName = {}) {
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
 
-ComposerView::ImGuiRenderable::ImGuiRenderable() {
-  // Generate ImGui VB and EB
-  glGenBuffers(1, &vertexBufferId);
-  glGenBuffers(1, &elementBufferId);
+  USES_CONVERSION;
+  ofn.lStructSize = sizeof(ofn);
 
-  // Get our shader program
-  shaderProgram = GlobalRenderData::get().getShaderProgram("ImGuiProgram");
-  if (shaderProgram != nullptr) {
-    // Get the world/scale uniform (TODO: abstract this)
-    fontTextureLoc = glGetUniformLocation(shaderProgram->getProgramId(), "Texture");
-
-    // Bind vertex attributes
-    addShaderAttribute(shaderProgram->getProgramId(),
-      "Position", 2, GL_FLOAT, GL_FALSE, offsetof(ImDrawVert, pos));
-    addShaderAttribute(shaderProgram->getProgramId(),
-      "UV", 2, GL_FLOAT, GL_FALSE, offsetof(ImDrawVert, uv));
-    addShaderAttribute(shaderProgram->getProgramId(),
-      "Color", 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(ImDrawVert, col));
+  std::string windowTitle("Open instrument");
+  if (instrumentName.length() != 0) {
+    windowTitle += " \'" + instrumentName + "\'";
   }
-  else {
-    std::string strError("ComposerView::ImGuiRenderable: Unable to find loaded shader program");
-    MCLOG(Error, strError.c_str());
-    throw std::runtime_error(strError);
+  ofn.lpstrTitle = A2W(windowTitle.c_str());
+  ofn.hwndOwner = mainWindowHandle;
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+  if (GetOpenFileName(&ofn)) {
+    if (Sequencer::Get().LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
+      return true;
+    }
   }
+  return false;
 }
 
-void ComposerView::ImGuiRenderable::Render() {
-  if (shaderProgram != nullptr) {
-    ImGui::Render();
+bool SaveInstrument() {
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
 
-    ImDrawData* imDrawData = ImGui::GetDrawData();
+  USES_CONVERSION;
+  ofn.lStructSize = sizeof(ofn);
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_OVERWRITEPROMPT;
 
-    // Backup GL state
-    GLboolean lastEnableBlend = glIsEnabled(GL_BLEND);
-    GLboolean lastEnableCullFace = glIsEnabled(GL_CULL_FACE);
-    GLboolean lastEnableDepthTest = glIsEnabled(GL_DEPTH_TEST);
-    GLboolean lastEnableScissorTest = glIsEnabled(GL_SCISSOR_TEST);
+  if (GetSaveFileName(&ofn)) {
+    std::string fileName(W2A(szFile));
 
-    GLint lastTexture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
-    GLint lastArrayBuffer;
-    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &lastArrayBuffer);
-    GLint lastElementArrayBuffer;
-    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER, &lastElementArrayBuffer);
+    if (fileName.compare(fileName.length() - kJsonTag.length(), kJsonTag.length(), kJsonTag)) {
+      fileName += kJsonTag;
+    }
+    Sequencer::Get().GetInstrument()->SaveInstrument(fileName);
+  }
+  return false;
+}
 
-    // Set our state
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_SCISSOR_TEST);
-    glActiveTexture(GL_TEXTURE0);
+bool LoadSong() {
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
 
-    auto& imGuiIo = ImGui::GetIO();
-    glViewport(0, 0, static_cast<GLuint>(imGuiIo.
-      DisplaySize.x), static_cast<GLuint>(imGuiIo.DisplaySize.y));
+  USES_CONVERSION;
+  ofn.lStructSize = sizeof(ofn);
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0MIDI\0*.midi;*.mid\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    // Handle issue where screen coordinates and framebuffer coordinates are not 1:1
-    auto frameBufferHeight = imGuiIo.DisplaySize.y * imGuiIo.DisplayFramebufferScale.y;
-    imDrawData->ScaleClipRects(imGuiIo.DisplayFramebufferScale);
+  if (GetOpenFileName(&ofn)) {
+    Sequencer::Get().LoadSong(std::string(W2A(szFile)));
+  }
+  return true;
+}
 
-    shaderProgram->begin();
+bool SaveSong() {
+  if (Sequencer::Get().GetInstrument() != nullptr) {
+    WCHAR szFile[FILENAME_MAX] = { 0 };
+    OPENFILENAME ofn = { 0 };
 
-    // Select the 0th texture
-    glUniform1i(fontTextureLoc, 0);
+    USES_CONVERSION;
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+    ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+    ofn.nFilterIndex = 0;
+    ofn.Flags = OFN_OVERWRITEPROMPT;
 
-    // Run through the ImGui draw lists
-    for (int n = 0; n < imDrawData->CmdListsCount; ++n) {
-      const auto& cmdList = imDrawData->CmdLists[n];
+    if (GetSaveFileName(&ofn)) {
+      std::string fileName(W2A(szFile));
 
-      // Bind vertex buffer and set vertex data
-      glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-      glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(cmdList->VtxBuffer.size()) *
-        sizeof(ImDrawVert), reinterpret_cast<GLvoid*>(&cmdList->VtxBuffer.front()), GL_STREAM_DRAW);
-
-      // Bind buffer offsets to vertex offsets
-      bindShaderAttributes(sizeof(ImDrawVert));
-
-      // Bind index buffer and set index data
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferId);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(cmdList->IdxBuffer.size()) *
-        sizeof(ImDrawIdx), reinterpret_cast<GLvoid*>(&cmdList->IdxBuffer.front()), GL_STREAM_DRAW);
-
-      // Run through the draw commands for this draw list
-      const ImDrawIdx* drawIndex = 0;
-      for (const auto& drawCmd : cmdList->CmdBuffer) {
-        if (drawCmd.UserCallback != nullptr) {
-          drawCmd.UserCallback(cmdList, &drawCmd);
-        }
-        else {
-          glBindTexture(GL_TEXTURE_2D, reinterpret_cast<GLuint>(drawCmd.TextureId));
-          glScissor(static_cast<int>(drawCmd.ClipRect.x),
-            static_cast<int>(frameBufferHeight - drawCmd.ClipRect.w),
-            static_cast<int>(drawCmd.ClipRect.z - drawCmd.ClipRect.x),
-            static_cast<int>(drawCmd.ClipRect.w - drawCmd.ClipRect.y));
-          glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(drawCmd.ElemCount), GL_UNSIGNED_SHORT, drawIndex);
-        }
-        drawIndex += drawCmd.ElemCount;
+      if (fileName.compare(fileName.length() - kJsonTag.length(), kJsonTag.length(), kJsonTag)) {
+        fileName += kJsonTag;
       }
-    }
-
-    shaderProgram->end();
-
-    // Restore previous GL state
-    glBindTexture(GL_TEXTURE_2D, lastTexture);
-    glBindBuffer(GL_ARRAY_BUFFER, lastArrayBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lastElementArrayBuffer);
-
-    if (lastEnableBlend) {
-      glEnable(GL_BLEND);
-    }
-    else {
-      glDisable(GL_BLEND);
-    }
-    if (lastEnableCullFace) {
-      glEnable(GL_CULL_FACE);
-    }
-    else {
-      glDisable(GL_CULL_FACE);
-    }
-    if (lastEnableDepthTest) {
-      glEnable(GL_DEPTH_TEST);
-    }
-    else {
-      glDisable(GL_DEPTH_TEST);
-    }
-    if (lastEnableScissorTest) {
-      glEnable(GL_SCISSOR_TEST);
-    }
-    else {
-      glDisable(GL_SCISSOR_TEST);
+      Sequencer::Get().SaveSong(fileName);
     }
   }
+
+  return true;
 }
 
-void ComposerView::ImGuiRenderable::SetTrackColors(std::string colorScheme, uint32& flashColor) {
+void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
 
   if (colorScheme.length()) {
     auto& imGuiStyle = ImGui::GetStyle();
@@ -267,17 +233,13 @@ void ComposerView::ImGuiRenderable::SetTrackColors(std::string colorScheme, uint
 void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
-  // Lock the instrument for the duration
-  //std::lock_guard<std::mutex> lockInstrument(mutexInstrument);
-  auto instrument = sequencer.GetInstrument();
-
   // Lock out the audio callback to update the shared data
   SDL_LockAudio();
   playingTrackFlashTimes[0] = playingTrackFlashTimes[1];
   playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
   if (pendingPlayTrack != -1) {
-    instrument->PlayTrack(pendingPlayTrack, kDefaultNoteVelocity);
+    sequencer.GetInstrument()->PlayTrack(pendingPlayTrack, kDefaultNoteVelocity);
     pendingPlayTrack = -1;
   }
   SDL_UnlockAudio();
@@ -286,13 +248,74 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   if (!wasConsoleOpen) {
     outputWindowHeight = 20;
   }
-  int32 sequencerHeight = static_cast<int32>(canvasSize.y - outputWindowHeight);
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
 
+  Dialog* pendingDialog = nullptr;
+
+  auto mainMenuBarHeight = 0.0f;
+  if (ImGui::BeginMainMenuBar()) {
+    mainMenuBarHeight = ImGui::GetWindowSize().y;
+
+    if (ImGui::BeginMenu("File")) {
+      if (ImGui::MenuItem("New Instrument")) {
+        Sequencer::Get().NewInstrument();
+      }
+      if (ImGui::MenuItem("Load Instrument")) {
+        LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle));
+      }
+      if (ImGui::MenuItem("Save Instrument")) {
+        SaveInstrument();
+      }
+      if (ImGui::MenuItem("New Song")) {
+
+      }
+      if (ImGui::MenuItem("Load Song")) {
+        LoadSong();
+      }
+      if (ImGui::MenuItem("Save Song")) {
+        SaveSong();
+      }
+      if (ImGui::MenuItem("Exit")) {
+        if (exitFunction != nullptr) {
+          exitFunction();
+        }
+      }
+      ImGui::EndMenu();
+    }
+    if (sequencer.GetInstrument() != nullptr) {
+      if (ImGui::BeginMenu("Instrument")) {
+        if (ImGui::MenuItem("Add Track")) {
+          pendingDialog = new DialogTrack;
+        }
+        ImGui::EndMenu();
+      }
+    }
+    ImGui::EndMainMenuBar();
+  }
+
+  if (pendingDialog != nullptr) {
+    assert(activeDialog == nullptr);
+    pendingDialog->Open();
+    activeDialog = pendingDialog;
+  }
+
+  if (activeDialog != nullptr) {
+    if (!activeDialog->Render()) {
+      delete activeDialog;
+      activeDialog = nullptr;
+    }
+  }
+
+  auto const sequencerHeight = static_cast<int32>(canvasSize.y - outputWindowHeight - mainMenuBarHeight);
+
+  // Lock the instrument for the duration
+  //std::lock_guard<std::mutex> lockInstrument(mutexInstrument);
+  auto instrument = sequencer.GetInstrument();
+
   if (instrument != nullptr) {
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowPos(ImVec2(0, mainMenuBarHeight));
     ImGui::SetNextWindowSize(ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(sequencerHeight)));
     ImGui::Begin("Instrument",
       nullptr,
@@ -348,10 +371,10 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
             memcpy(oldColors, imGuiStyle.Colors, sizeof(oldColors));
 
             uint32 flashColor = kPlayTrackFlashColor;
-            imGuiRenderable.SetTrackColors(track.GetColorScheme(), flashColor);
+            SetTrackColors(track->GetColorScheme(), flashColor);
 
             auto prevPos = ImGui::GetCursorPos();
-            if (ImGui::Button(track.GetName().
+            if (ImGui::Button(track->GetName().
               c_str(), ImVec2(kKeyboardKeyWidth, kKeyboardKeyHeight))) {
               // Do it next frame so we only lock audio once per UI loop
               pendingPlayTrack = trackIndex;
@@ -394,9 +417,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
                 ImGui::SameLine();
 
                 // Lesson learned: labels are required to pair UI with UX
-                auto uniqueLabel(track.GetName() + std::string("#") + std::to_string(noteLocalIndex));
+                auto uniqueLabel(track->GetName() + std::string("#") + std::to_string(noteLocalIndex));
 
-                auto trackNote = track.GetNotes()[noteLocalIndex];
+                auto trackNote = track->GetNotes()[noteLocalIndex];
                 auto cursorPos = ImGui::GetCursorPos();
 
                 // Toggle notes that are clicked
@@ -658,32 +681,16 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
   ImGui::End();
 
-  imGuiRenderable.Render();
+  renderable.Render();
 }
 
 void ComposerView::InitResources() {
-  auto& imGuiIo = ImGui::GetIO();
-
   // Backup GL state
   GLint lastTexture;
   glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
 
-  // Create GL texture for font
-  glGenTextures(1, &fontTextureId);
-  glBindTexture(GL_TEXTURE_2D, fontTextureId);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  uchar* pixels;
-  int width, height;
-  imGuiIo.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
-  imGuiIo.Fonts->TexID = reinterpret_cast<ImTextureID>(fontTextureId);
-  imGuiIo.Fonts->ClearInputData();
-  imGuiIo.Fonts->ClearTexData();
-
   // Load UI textures
+  int width, height;
   glGenTextures(1, &playButtonIconTexture);
   glBindTexture(GL_TEXTURE_2D, playButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -713,12 +720,19 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, lastTexture);
 }
 
-ComposerView::ComposerView() {
+ComposerView::ComposerView(uint32 mainWindowHandle, std::function<void()> exitFunction)
+: mainWindowHandle(mainWindowHandle)
+, exitFunction(exitFunction) {
   logResponderId = Logging::AddResponder([=](const std::string_view& logLine) {
     outputWindowState.AddLog(logLine);
   });
 
   InitResources();
+
+  Sequencer::Get().SetLoadInstrumentCallback(
+    [mainWindowHandle](std::string instrumentName) {
+      return LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle), instrumentName);
+    });
 }
 
 ComposerView::~ComposerView() {

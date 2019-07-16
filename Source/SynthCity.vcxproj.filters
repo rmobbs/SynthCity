@@ -75,9 +75,6 @@
     <ClInclude Include="BaseWindows.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DialogPage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Globals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -120,6 +117,15 @@
     <ClInclude Include="3rdParty\glew\GL\wglew.h">
       <Filter>Source Files\glew</Filter>
     </ClInclude>
+    <ClInclude Include="ImGuiRenderable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Track.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SynthCity.cpp">
@@ -161,9 +167,6 @@
     <ClCompile Include="ComposerView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DialogPage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Instrument.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -187,6 +190,15 @@
     </ClCompile>
     <ClCompile Include="3rdParty\glew\GL\glew.c">
       <Filter>Source Files\glew</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiRenderable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Track.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

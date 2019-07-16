@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Sound.h"
-#include "DialogPage.h"
+#include "Dialog.h"
 
 class SynthSound : public Sound {
 public:
@@ -30,12 +30,9 @@ public:
   bool SerializeRead(const ReadSerializer& serializer) override;
 };
 
-class DialogPageSynthSound : public DialogPage {
+class DialogSynthSound : public Dialog {
 public:
-  bool DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
-
-  DialogPageSynthSound(HINSTANCE hInstance, HWND hWndParent);
-
+  bool Render() override;
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 };

@@ -9,23 +9,14 @@
 
 class ShaderProgram {
 public:
-  struct UniformInfo {
-    enum class Type {
-      Matrix4x4,
-    };
+  struct Attribute {
     std::string name;
-    Type type;
-    std::function<const void*()> data;
-  };
-protected:
-  struct Uniform : UniformInfo {
     int32 location;
-
-    Uniform(const UniformInfo& info)
-      : UniformInfo(info)
-      , location(-1) {
-
-    }
+  };
+  struct Uniform {
+    std::string name;
+    int32 location;
+    std::function<void(int32 location)> data;
   };
 protected:
   uint32 CompileShaderFromFile(const std::string& shaderPath, uint32 shaderType);
@@ -36,10 +27,11 @@ protected:
   int32 previousProgramId = -1;
   std::string programName;
 
-  std::vector<Uniform> uniforms;
+  std::map<std::string, Uniform> uniformMap;
+  std::map<std::string, Attribute> attributeMap;
 
 public:
-  ShaderProgram(const std::string& programName, const std::string& vertPath, const std::string& fragPath, const std::vector<UniformInfo>& uniformInfo);
+  ShaderProgram(const std::string& programName, const std::string& vertPath, const std::string& fragPath, const std::vector<Uniform>& uniforms = {}, const std::vector<Attribute>& attributes = {});
 
   uint32 getProgramId() const {
     return programId;
@@ -47,5 +39,8 @@ public:
 
   void begin();
   void end();
+
+  const Uniform& GetUniform(std::string uniformName) const;
+  const Attribute& GetAttribute(std::string attributeName) const;
 };
 

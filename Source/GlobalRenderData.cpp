@@ -27,3 +27,15 @@ const glm::mat4x4& GlobalRenderData::getMatrix(MatrixType matrixType) {
   return identity4x4;
 }
 
+uint32 GlobalRenderData::GetShader(std::string name) {
+  auto const shaderEntry = shaderMap.find(name);
+  if (shaderEntry != shaderMap.end()) {
+    return shaderEntry->second;
+  }
+  return UINT32_MAX;
+}
+
+void GlobalRenderData::AddShader(std::string name, uint32 shaderId) {
+  shaderMap[name] = shaderId;
+}
+

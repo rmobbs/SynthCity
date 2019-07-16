@@ -1,4 +1,5 @@
 #include "ShaderProgram.h"
+#include "GlobalRenderData.h"
 #include <istream>
 #include <fstream>
 #include <sstream>
@@ -55,20 +56,28 @@ uint32 ShaderProgram::CompileShaderFromFile(const std::string& shaderPath, uint3
   return shaderId;
 }
 
-ShaderProgram::ShaderProgram(const std::string& programName, const std::string& vertPath, const std::string& fragPath, const std::vector<UniformInfo>& uniformInfo) {
+ShaderProgram::ShaderProgram(const std::string& programName, const std::string& vertPath, const std::string& fragPath, const std::vector<Uniform>& uniforms, const std::vector<Attribute>& attributes) {
   this->programName = programName;
 
-  this->vertShaderId = CompileShaderFromFile(vertPath, GL_VERTEX_SHADER);
-  if (this->vertShaderId == UINT32_MAX) {
-    throw std::runtime_error("<failure>");
+  auto vertShaderId = GlobalRenderData::get().GetShader(vertPath);
+  if (vertShaderId == UINT32_MAX) {
+    vertShaderId = CompileShaderFromFile(vertPath, GL_VERTEX_SHADER);
+    if (vertShaderId == UINT32_MAX) {
+      throw std::runtime_error("<failure>");
+    }
+    GlobalRenderData::get().AddShader(vertPath, vertShaderId);
   }
+  this->vertShaderId = vertShaderId;
 
-  this->fragShaderId = CompileShaderFromFile(fragPath, GL_FRAGMENT_SHADER);
-  if (this->fragShaderId == UINT32_MAX) {
-    glDeleteShader(this->vertShaderId);
-    this->vertShaderId = UINT32_MAX;
-    throw std::runtime_error("<failure>");
+  auto fragShaderId = GlobalRenderData::get().GetShader(fragPath);
+  if (fragShaderId == UINT32_MAX) {
+    fragShaderId = CompileShaderFromFile(fragPath, GL_FRAGMENT_SHADER);
+    if (fragShaderId == UINT32_MAX) {
+      throw std::runtime_error("<failure>");
+    }
+    GlobalRenderData::get().AddShader(fragPath, fragShaderId);
   }
+  this->fragShaderId = fragShaderId;
 
   this->programId = glCreateProgram();
   glAttachShader(this->programId, this->vertShaderId);
@@ -93,12 +102,13 @@ ShaderProgram::ShaderProgram(const std::string& programName, const std::string& 
     throw std::runtime_error("<failure>");
   }
 
-  // Locate uniforms
-  for (const auto& info : uniformInfo) {
-    Uniform uniform(info);
-    uniform.location = glGetUniformLocation(this->programId, info.name.c_str());
-    uniforms.emplace_back(uniform);
+  for (const auto& uniform : uniforms) {
+    uniformMap[uniform.name] = uniform;
   }
+  for (const auto& attribute : attributes) {
+    attributeMap[attribute.name] = attribute;
+  }
+
 }
 
 void ShaderProgram::begin() {
@@ -106,14 +116,9 @@ void ShaderProgram::begin() {
   glUseProgram(this->programId);
 
   // Bind auto-bind uniforms
-  for (const auto& uniform : this->uniforms) {
-    switch (uniform.type) {
-      case UniformInfo::Type::Matrix4x4: {
-        auto data = reinterpret_cast<const GLfloat*>(uniform.data());
-        glUniformMatrix4fv(uniform.location, 1, GL_FALSE,
-          data);
-        break;
-      }
+  for (const auto& uniform : this->uniformMap) {
+    if (uniform.second.data != nullptr) {
+      uniform.second.data(uniform.second.location);
     }
   }
 }
@@ -122,4 +127,12 @@ void ShaderProgram::end() {
   if (this->previousProgramId != -1) {
     glUseProgram(this->previousProgramId);
   }
+}
+
+const ShaderProgram::Uniform& ShaderProgram::GetUniform(std::string uniformName) const {
+  return uniformMap.find(uniformName)->second;
+}
+
+const ShaderProgram::Attribute& ShaderProgram::GetAttribute(std::string attributeName) const {
+  return attributeMap.find(attributeName)->second;
 }

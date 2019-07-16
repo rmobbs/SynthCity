@@ -182,11 +182,11 @@ uint32 Sequencer::NextFrame(void)
   }
 
   for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
-    if (currPosition >= static_cast<int32>(instrument->tracks[trackIndex].data.size())) {
+    if (currPosition >= static_cast<int32>(instrument->tracks[trackIndex]->data.size())) {
       continue;
     }
 
-    uint8* d = instrument->tracks[trackIndex].data.data() + currPosition;
+    uint8* d = instrument->tracks[trackIndex]->data.data() + currPosition;
     if (*d > 0) {
       if (notePlayedCallback != nullptr) {
         notePlayedCallback(trackIndex, currPosition, notePlayedPayload);
@@ -274,7 +274,7 @@ bool Sequencer::SaveSong(std::string fileName) {
       for (size_t s = 0; s < GetMaxSubdivisions(); ++s) {
         for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
           auto& track = instrument->GetTracks()[trackIndex];
-          auto n = track.GetNotes()[subdivisionIndex];
+          auto n = track->GetNotes()[subdivisionIndex];
           if (n != 0) {
             float floatBeat = static_cast<float>(wholeBeatIndex) + 1.0f +
               (static_cast<float>(s) / static_cast<float>(GetMaxSubdivisions()));

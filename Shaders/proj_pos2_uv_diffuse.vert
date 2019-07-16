@@ -1,7 +1,9 @@
-uniform mat4 ProjMtx;
-attribute vec2 Position;
-attribute vec2 UV;
-attribute vec4 Color;
+#version 420
+#extension GL_ARB_explicit_uniform_location : enable
+layout(location=0) uniform mat4 ProjMtx;
+layout(location=0) attribute vec2 Position;
+layout(location=1) attribute vec2 UV;
+layout(location=2) attribute vec4 Color;
 varying vec2 Frag_UV;
 varying vec4 Frag_Color;
 void main() {

@@ -9,7 +9,6 @@
 #include <functional>
 
 class Sound;
-class DialogPage;
 
 // Factory for creating sounds and related objects
 class SoundFactory {
@@ -17,22 +16,21 @@ public:
   class SoundInformation {
   public:
     using SoundFactoryFunction = std::function<Sound* (const ReadSerializer& serializer)>;
-    using PageFactoryFunction = std::function<DialogPage* (HINSTANCE, HWND)>;
 
     std::string name;
     std::string desc;
+    std::string dialog;
     SoundFactoryFunction soundFactory;
-    PageFactoryFunction pageFactory;
 
     inline SoundInformation() {
 
     }
 
-    inline SoundInformation(std::string name, std::string desc, SoundFactoryFunction soundFactory, PageFactoryFunction pageFactory)
+    inline SoundInformation(std::string name, std::string desc, std::string dialog, SoundFactoryFunction soundFactory)
       : name(name)
       , desc(desc)
-      , soundFactory(soundFactory)
-      , pageFactory(pageFactory) {
+      , dialog(dialog)
+      , soundFactory(soundFactory) {
       SoundFactory::Register(*this);
     }
   };
@@ -55,15 +53,11 @@ public:
   }
 };
 
-#define REGISTER_SOUND(SoundClass, SoundDesc, PageClass) \
+#define REGISTER_SOUND(SoundClass, SoundDesc, DialogClass) \
   SoundFactory::SoundInformation SoundClass##FactoryInfo(#SoundClass, \
     SoundDesc, \
+    #DialogClass, \
     [](const ReadSerializer& serializer) { \
       return new SoundClass(serializer); \
-    }, \
-    [](HINSTANCE hInstance, HWND hWndParent) { \
-      auto newPage = new PageClass(hInstance, hWndParent); \
-      SendMessage(newPage->GetHandle(), PageClass::WM_USERINIT, 0, reinterpret_cast<LPARAM>(newPage)); \
-      return newPage; \
     })
 

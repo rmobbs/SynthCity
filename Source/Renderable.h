@@ -35,6 +35,6 @@ public:
     this->shaderProgram = shaderProgram;
   }
 
-  virtual void render() = 0;
+  virtual void Render() = 0;
 };
 

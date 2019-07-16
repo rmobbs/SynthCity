@@ -59,7 +59,7 @@ SpriteRenderable::SpriteRenderable() {
   }
 }
 
-void SpriteRenderable::render() {
+void SpriteRenderable::Render() {
   if (shaderProgram != nullptr) {
     // Save state
     GLint lastArrayBuffer;

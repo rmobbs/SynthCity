@@ -6,6 +6,7 @@
 #include "Sequencer.h"
 #include "resource.h"
 #include <algorithm>
+#include "imgui.h"
 
 static constexpr const char* kFrequencyTag("frequency");
 static constexpr const char* kDurationTag("duration");
@@ -54,54 +55,39 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
   return true;
 }
 
-DialogPageSynthSound::DialogPageSynthSound(HINSTANCE hInstance, HWND hWndParent)
-  : DialogPage(hInstance, hWndParent, IDD_TRACKPROPERTIES_SYNTH) {
-
+REGISTER_DIALOG(DialogSynthSound);
+bool DialogSynthSound::Render() {
+  ImGui::Text("DialogSynthSound");
+  return true;
 }
 
-bool DialogPageSynthSound::DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  switch (uMsg) {
-    case WM_USERINIT: {
-      // Set the defaults
-      SetDlgItemInt(hWndDlg, IDC_EDIT_SYNTHPROPERTIES_FREQUENCY, SynthSound::kDefaultFrequency, FALSE);
-      SetDlgItemInt(hWndDlg, IDC_EDIT_SYNTHPROPERTIES_DURATION_BAR, SynthSound::kDefaultBeatsPerBar, FALSE);
-      SetDlgItemInt(hWndDlg, IDC_EDIT_SYNTHPROPERTIES_DURATION_BEAT, SynthSound::kDefaultNotesPerBeat, FALSE);
-      break;
-    }
-  }
-  return false;
-}
-
-bool DialogPageSynthSound::SerializeWrite(const WriteSerializer& serializer) {
+bool DialogSynthSound::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
 
   // Frequency
-  uint32 frequency =
-    GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_FREQUENCY, nullptr, FALSE);
+  uint32 frequency = 1000;
   w.Key("frequency");
   w.Uint(frequency);
 
   // The time value of the note unit in which our duration is expressed, i.e. half-note, quarter-note
   // We'll make sure it's between [2,<upper-limit>] and it's even
-  INT den = GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_DURATION_BEAT, nullptr, FALSE);
+  INT den = 4;
   den = std::min(std::max(static_cast<uint32>(den), 2u), Sequencer::Get().GetMaxSubdivisions()) & ~1u;
 
   // The number of these notes that defines the duration
-  INT num = GetDlgItemInt(GetHandle(), IDC_EDIT_SYNTHPROPERTIES_DURATION_BAR, nullptr, FALSE);
+  INT num = 2;
 
   w.Key("duration");
   w.Uint(num << 16 | den);
-
   return true;
 }
 
-bool DialogPageSynthSound::SerializeRead(const ReadSerializer& serializer) {
-  return false;
+bool DialogSynthSound::SerializeRead(const ReadSerializer& serializer) {
+  return true;
 }
 
-
 // Sine
-REGISTER_SOUND(SineSynthSound, "Modulated sine wave", DialogPageSynthSound);
+REGISTER_SOUND(SineSynthSound, "Modulated sine wave", DialogSynthSound);
 SineSynthSound::SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen)
   : SynthSound("SineSynthSound", frequency, durationNum, durationDen) {
 }

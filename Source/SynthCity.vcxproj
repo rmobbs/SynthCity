@@ -193,10 +193,12 @@
     <ClInclude Include="BaseTypes.h" />
     <ClInclude Include="BaseWindows.h" />
     <ClInclude Include="ComposerView.h" />
-    <ClInclude Include="DialogPage.h" />
+    <ClInclude Include="Track.h" />
+    <ClInclude Include="Dialog.h" />
     <ClInclude Include="EnumIterator.h" />
     <ClInclude Include="GlobalRenderData.h" />
     <ClInclude Include="Globals.h" />
+    <ClInclude Include="ImGuiRenderable.h" />
     <ClInclude Include="InputState.h" />
     <ClInclude Include="Instrument.h" />
     <ClInclude Include="Logging.h" />
@@ -222,8 +224,10 @@
     <ClCompile Include="3rdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="ComposerView.cpp" />
-    <ClCompile Include="DialogPage.cpp" />
+    <ClCompile Include="Track.cpp" />
+    <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />
+    <ClCompile Include="ImGuiRenderable.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Logging.cpp" />
     <ClCompile Include="MidiSource.cpp" />

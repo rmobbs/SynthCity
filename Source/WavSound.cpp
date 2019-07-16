@@ -5,6 +5,7 @@
 #include "resource.h"
 
 #include "SDL_audio.h"
+#include "imgui.h"
 
 #include <iostream>
 #include <atlbase.h>
@@ -14,7 +15,7 @@
 static constexpr float kSilenceThresholdIntro = 0.01f;
 static constexpr float kSilenceThresholdOutro = 0.50f;
 
-REGISTER_SOUND(WavSound, "Sound from WAV file", DialogPageWavSound);
+REGISTER_SOUND(WavSound, "Sound from WAV file", DialogWavSound);
 WavSound::WavSound(const std::string& fileName)
 : Sound("WavSound") {
 
@@ -179,54 +180,39 @@ Voice* WavSound::CreateVoice() {
   return voice;
 }
 
-DialogPageWavSound::DialogPageWavSound(HINSTANCE hInstance, HWND hWndParent)
-  : DialogPage(hInstance, hWndParent, IDD_TRACKPROPERTIES_WAV) {
+REGISTER_DIALOG(DialogWavSound);
+bool DialogWavSound::Render() {
+  char fileNameBuf[1024];
+  strcpy_s(fileNameBuf, sizeof(fileNameBuf), fileName.c_str());
+  if (ImGui::InputText("File", fileNameBuf, sizeof(fileNameBuf) - 1)) {
+    fileName = std::string(fileNameBuf);
+  }
 
-}
+  if (ImGui::Button("...")) {
+    WCHAR szFile[FILENAME_MAX] = { 0 };
+    OPENFILENAME ofn = { 0 };
 
-bool DialogPageWavSound::DialogProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  switch (uMsg) {
-    case WM_COMMAND: {
-      switch (HIWORD(wParam)) {
-        case BN_CLICKED: {
-          switch (LOWORD(wParam)) {
-            case IDC_BUTTON_WAVPROPERTIES_FILEDIALOG: {
-              WCHAR szFile[FILENAME_MAX] = { 0 };
-              OPENFILENAME ofn = { 0 };
+    USES_CONVERSION;
+    ofn.lStructSize = sizeof(ofn);
 
-              USES_CONVERSION;
-              ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrTitle = A2W("Open WAV");
+    ofn.hwndOwner = GetActiveWindow();
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+    ofn.lpstrFilter = _TEXT("WAV\0*.wav\0");
+    ofn.nFilterIndex = 0;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-              ofn.lpstrTitle = A2W("Open WAV");
-              ofn.hwndOwner = hWndDlg;
-              ofn.lpstrFile = szFile;
-              ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-              ofn.lpstrFilter = _TEXT("WAV\0*.wav\0");
-              ofn.nFilterIndex = 0;
-              ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-
-              if (GetOpenFileName(&ofn)) {
-                SetDlgItemText(hWndDlg, IDC_EDIT_WAVPROPERTIES_FILENAME, ofn.lpstrFile);
-              }
-              break;
-            }
-          }
-          break;
-        }
-      }
-      break;
+    if (GetOpenFileName(&ofn)) {
+      fileName = std::string(W2A(szFile));
     }
   }
-  return false;
+
+  return true;
 }
 
-bool DialogPageWavSound::SerializeWrite(const WriteSerializer& serializer) {
+bool DialogWavSound::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
-
-  WCHAR fileNameBuf[256];
-  GetDlgItemText(hWnd, IDC_EDIT_WAVPROPERTIES_FILENAME, fileNameBuf, _countof(fileNameBuf));
-  USES_CONVERSION;
-  std::string fileName = std::string(W2A(fileNameBuf));
 
   w.Key(WavSound::kFileNameTag);
   w.String(fileName.c_str());
@@ -234,10 +220,10 @@ bool DialogPageWavSound::SerializeWrite(const WriteSerializer& serializer) {
   w.Key(WavSound::kDecayTag);
   w.Double(0.4f);
 
-  return false;
+  return true;
 }
 
-bool DialogPageWavSound::SerializeRead(const ReadSerializer& serializer) {
+bool DialogWavSound::SerializeRead(const ReadSerializer& serializer) {
   return false;
 }
 

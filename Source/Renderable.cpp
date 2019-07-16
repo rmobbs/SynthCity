@@ -1,9 +1,9 @@
 #include "Renderable.h"
 #include "GL/glew.h"
-
+#include "ShaderProgram.h"
 
 void Renderable::addShaderAttribute(uint32 programId, const std::string& name, uint32 count, uint32 type, uint32 normalized, uint32 offset) {
-  auto location = glGetAttribLocation(programId, name.c_str());
+  auto const location = shaderProgram->GetAttribute(name).location;
   if (location != -1) {
     ShaderAttribute attribute({ name, count, type, normalized, offset });
     attribute.location = location;
