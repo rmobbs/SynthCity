@@ -38,7 +38,7 @@ protected:
   std::atomic<uint32> numActiveVoices;
 
   std::vector<float> mixbuf;
-  std::vector<Voice*> voices;
+  std::vector<SoundInstance*> voices;
   std::map<SoundHandle, Sound*> sounds;
 
   void WriteOutput(float *input, int16 *output, int32 frames);

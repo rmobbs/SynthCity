@@ -37,11 +37,11 @@ public:
   bool SerializeRead(const ReadSerializer& serializer) override;
 };
 
-class SineSynthVoice : public Voice {
+class SineSynthSoundInstance : public SoundInstance {
 public:
   float radians = 0;
   float radstep = 0;
-  uint32 duration = 0; // Has to be calculated at Voice creation time due to reliance on current BPM
+  uint32 duration = 0; // Has to be calculated at instance creation time due to reliance on current BPM
 };
 
 class SineSynthSound : public SynthSound {
@@ -49,6 +49,6 @@ public:
   SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen);
   SineSynthSound(const ReadSerializer& serializer);
 
-  Voice* CreateVoice() override;
-  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) override;
+  SoundInstance* CreateInstance() override;
+  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) override;
 };

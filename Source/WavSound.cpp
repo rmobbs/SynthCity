@@ -32,7 +32,7 @@ WavSound::WavSound(const ReadSerializer& serializer)
   }
 }
 
-uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) {
+uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) {
   // Could eventually use the sound state for ADSR ...
 
   const uint32 frameSize = sizeof(int16) * this->channels;
@@ -174,10 +174,10 @@ bool WavSound::LoadWav(const std::string& fileName) {
   return true;
 }
 
-Voice* WavSound::CreateVoice() {
-  Voice* voice = new Voice;
-  voice->decay = decay * 0.0001f;
-  return voice;
+SoundInstance* WavSound::CreateInstance() {
+  SoundInstance* instance = new SoundInstance;
+  instance->decay = decay * 0.0001f;
+  return instance;
 }
 
 REGISTER_DIALOG(DialogWavSound);

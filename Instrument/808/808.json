@@ -7,7 +7,7 @@
             "colorscheme": "808:Kick",
             "sounds": [
                 {
-					"class": "WavSound",
+          					"class": "WavSound",
                     "filename": "Wavs\\808-kickdrum.wav",
                     "decay": 0.0
                 }
@@ -18,7 +18,7 @@
             "colorscheme": "808:Clap",
             "sounds": [
                 {
-					"class": "WavSound",
+          					"class": "WavSound",
                     "filename": "Wavs\\808-clap.wav",
                     "decay": 0.0
                 }
@@ -29,7 +29,7 @@
             "colorscheme": "808:Cowbell",
             "sounds": [
                 {
-					"class": "WavSound",
+	          				"class": "WavSound",
                     "filename": "Wavs\\808-cowbell.wav",
                     "decay": 0.0
                 }
@@ -40,7 +40,7 @@
             "colorscheme": "808:HiHat",
             "sounds": [
                 {
-					"class": "WavSound",
+          					"class": "WavSound",
                     "filename": "Wavs\\808-hihat.wav",
                     "decay": 0.0
                 }

@@ -58,8 +58,8 @@ Mixer::~Mixer() {
     delete sound.second;
   }
   sounds.clear();
-  for (auto& voice : voices) {
-    delete voice;
+  for (auto& instance : voices) {
+    delete instance;
   }
   voices.clear();
 
@@ -157,7 +157,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
     uint32 i = 0;
     uint32 n = voices.size();
     while (i < n) {
-      Voice* v = voices[i];
+      SoundInstance* v = voices[i];
       Sound* s = sounds[v->sound];
 
       for (uint32 f = 0; f < numFrames; ++f) {
@@ -249,14 +249,14 @@ void Mixer::PlaySound(uint32 soundHandle, float volume) {
     MCLOG(Error, "Currently playing max voices; sound dropped");
   }
   else {
-    Voice* voice = sounds[soundHandle]->CreateVoice();
+    SoundInstance* instance = sounds[soundHandle]->CreateInstance();
 
-    voice->sound = soundHandle;
+    instance->sound = soundHandle;
 
-    voice->lvol = volume;
-    voice->rvol = volume;
+    instance->lvol = volume;
+    instance->rvol = volume;
     
-    voices.push_back(voice);
+    voices.push_back(instance);
   }
 
   SDL_UnlockAudio();

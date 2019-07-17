@@ -21,13 +21,13 @@ public:
   WavSound(const std::string& fileName);
   WavSound(const ReadSerializer& serializer);
 
-  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) override;
+  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) override;
 
   uint32 getFrequency() const {
     return frequency;
   }
 
-  Voice* CreateVoice() override;
+  SoundInstance* CreateInstance() override;
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 };

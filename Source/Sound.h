@@ -8,8 +8,7 @@
 using SoundHandle = uint32;
 static constexpr SoundHandle kInvalidSoundHandle = 0xFFFFFFFF;
 
-// Voice is a playing instance of a sound
-class Voice {
+class SoundInstance {
 public:
   SoundHandle sound = kInvalidSoundHandle;
 
@@ -19,7 +18,6 @@ public:
   float	decay = 0;
 };
 
-// Sound is the invariant class; it stores the data/algorithm for generating a sound
 class Sound {
 protected:
   std::string className;
@@ -38,8 +36,8 @@ public:
     return className;
   }
 
-  virtual Voice* CreateVoice() = 0;
-  virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) = 0;
+  virtual SoundInstance* CreateInstance() = 0;
+  virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) = 0;
 
   virtual bool SerializeWrite(const WriteSerializer& serializer) = 0;
   virtual bool SerializeRead(const ReadSerializer& serializer) = 0;

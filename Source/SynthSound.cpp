@@ -96,28 +96,28 @@ SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
   : SynthSound("SineSynthSound", serializer) {
 }
 
-Voice* SineSynthSound::CreateVoice() {
-  SineSynthVoice* voice = new SineSynthVoice;
+SoundInstance* SineSynthSound::CreateInstance() {
+  SineSynthSoundInstance* instance = new SineSynthSoundInstance;
 
   float durationInSeconds = static_cast<float>(Sequencer::Get().
     GetSecondsPerBeat()) * (static_cast<float>(durationNum) / static_cast<float>(durationDen));
 
-  voice->duration = static_cast<uint32>(durationInSeconds * static_cast<float>(Mixer::kDefaultFrequency));
+  instance->duration = static_cast<uint32>(durationInSeconds * static_cast<float>(Mixer::kDefaultFrequency));
 
-  voice->radstep = static_cast<float>((2.0 * M_PI *
+  instance->radstep = static_cast<float>((2.0 * M_PI *
     frequency) / static_cast<double>(Mixer::kDefaultFrequency));
-  return voice;
+  return instance;
 }
 
-uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voiceGeneric) {
-  SineSynthVoice* voice = static_cast<SineSynthVoice*>(voiceGeneric);
-  if (frame < voice->duration) {
-    voice->radians += voice->radstep; // * speed
-    while (voice->radians > (2.0 * M_PI)) {
-      voice->radians -= static_cast<float>(2.0 * M_PI);
+uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instanceGeneric) {
+  SineSynthSoundInstance* instance = static_cast<SineSynthSoundInstance*>(instanceGeneric);
+  if (frame < instance->duration) {
+    instance->radians += instance->radstep; // * speed
+    while (instance->radians > (2.0 * M_PI)) {
+      instance->radians -= static_cast<float>(2.0 * M_PI);
     }
 
-    float s = sinf(voice->radians);
+    float s = sinf(instance->radians);
     for (uint8 channel = 0; channel < channels; ++channel) {
       samples[channel] = s;
     }
