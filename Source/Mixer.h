@@ -3,10 +3,8 @@
 #include "SDL.h"
 #include "BaseTypes.h"
 #include <string>
-#include <map>
 #include <vector>
 #include <atomic>
-#include "Sound.h" // For SoundHandle
 
 class Patch;
 class SoundInstance;
@@ -35,7 +33,6 @@ protected:
   int32 ticksRemaining = 0;
   float masterVolume = kDefaultMasterVolume;
   Controller* controller = nullptr;
-  SoundHandle nextSoundHandle = 0;
   std::vector<float> mixbuf;
 
   // A voice is a playing instance of a patch
@@ -55,8 +52,6 @@ protected:
   // Refreshed every frame for thread-safe query
   std::atomic<uint32> numActiveVoices;
 
-  std::map<SoundHandle, Sound*> sounds;
-
   void WriteOutput(float *input, int16 *output, int32 frames);
 
 public:
@@ -72,21 +67,10 @@ public:
   }
   void SetMasterVolume(float masterVolume);
 
-  SoundHandle AddSound(Sound* sound);
-  void ReleaseSound(SoundHandle soundHandle);
-
   bool Init(uint32 audioBufferSize);
   void PlayPatch(Patch const* patch, float volume);
   void ApplyInterval(uint32 interval);
   void SetController(Controller* controller);
-
-  Sound* GetSound(SoundHandle soundHandle) const {
-    auto sound = sounds.find(soundHandle);
-    if (sound != sounds.end()) {
-      return sound->second;
-    }
-    return nullptr;
-  }
 
    Mixer();
   ~Mixer();

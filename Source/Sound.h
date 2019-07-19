@@ -5,12 +5,8 @@
 
 #include <string>
 
-using SoundHandle = uint32;
-static constexpr SoundHandle kInvalidSoundHandle = 0xFFFFFFFF;
-
 class SoundInstance {
 public:
-  SoundHandle sound = kInvalidSoundHandle;
 };
 
 class Sound {

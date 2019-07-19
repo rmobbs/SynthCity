@@ -56,10 +56,6 @@ Mixer::~Mixer() {
     SDL_CloseAudioDevice(audioDeviceId);
     audioDeviceId = 0;
   }
-  for (auto& sound : sounds) {
-    delete sound.second;
-  }
-  sounds.clear();
 
   for (auto& voice : voices) {
     delete voice.process;
@@ -84,30 +80,6 @@ void Mixer::SetController(Controller* controller) {
 
 void Mixer::SetMasterVolume(float masterVolume) {
   this->masterVolume = masterVolume;
-}
-
-void Mixer::ReleaseSound(SoundHandle soundHandle) {
-  if (soundHandle != kInvalidSoundHandle) {
-    SDL_LockAudio();
-
-    auto soundEntry = sounds.find(soundHandle);
-    if (soundEntry != sounds.end()) {
-      // TODO: May want to ref-count sounds
-      delete soundEntry->second;
-      sounds.erase(soundEntry);
-    }
-
-    SDL_UnlockAudio();
-  }
-}
-
-SoundHandle Mixer::AddSound(Sound* sound) {
-  SDL_LockAudio();
-  SoundHandle currSoundHandle = nextSoundHandle++;
-  sounds.emplace(currSoundHandle, sound);
-  SDL_UnlockAudio();
-
-  return currSoundHandle;
 }
 
 void Mixer::ApplyInterval(uint32 ticksPerFrame) {
