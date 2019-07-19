@@ -14,7 +14,8 @@ static constexpr const char* kNameTag("name");
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
-static constexpr const char* kClassTag("class");
+
+static constexpr const char* kCurrentVersion("0.0.7");
 
 Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
   name(instrumentName),
@@ -43,7 +44,10 @@ bool Instrument::SerializeRead(const ReadSerializer& serializer) {
   }
   std::string version = d[kVersionTag].GetString();
 
-  // TODO: Check version
+  if (version != std::string(kCurrentVersion)) {
+    MCLOG(Error, "Invalid instrument file version");
+    return false;
+  }
 
   // Name
   if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
@@ -101,7 +105,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
 
 void Instrument::ClearNotes() {
   for (auto& track : tracks) {
-    std::fill(track->data.begin(), track->data.end(), 0);
+    track->ClearNotes();
   }
 }
 
@@ -127,18 +131,15 @@ void Instrument::PlayTrack(uint32 trackIndex, float velocity) {
   // Ensure a minimum velocity
   velocity = 0.3f + velocity * 0.7f;
 
-  Mixer::Get().PlaySound(tracks[trackIndex]->soundIndex, velocity);
+  Mixer::Get().PlayPatch(tracks[trackIndex]->GetPatch(), velocity);
 }
 
 void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteVelocity) {
   if (trackIndex < tracks.size()) {
 
     SDL_LockAudio();
-    if (noteIndex >= tracks[trackIndex]->data.size()) {
-      tracks[trackIndex]->data.resize(noteIndex + 1, 0);
-    }
-    tracks[trackIndex]->data[noteIndex] =
-      static_cast<uint8>(noteVelocity * kNoteVelocityAsUint8);
+    tracks[trackIndex]->SetNote(noteIndex,
+      static_cast<uint8>(noteVelocity * kNoteVelocityAsUint8));
     SDL_UnlockAudio();
   }
 }

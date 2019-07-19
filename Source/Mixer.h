@@ -6,8 +6,11 @@
 #include <map>
 #include <vector>
 #include <atomic>
-#include "Sound.h"
+#include "Sound.h" // For SoundHandle
 
+class Patch;
+class SoundInstance;
+class ProcessInstance;
 class Mixer {
 public:
   static constexpr uint32 kDefaultFrequency = 44100;
@@ -33,12 +36,25 @@ protected:
   float masterVolume = kDefaultMasterVolume;
   Controller* controller = nullptr;
   SoundHandle nextSoundHandle = 0;
+  std::vector<float> mixbuf;
+
+  // A voice is a playing instance of a patch
+  class Voice {
+  public:
+    Patch const* patch = nullptr;
+
+    // Instances
+    SoundInstance* sound = nullptr;
+    ProcessInstance* process = nullptr;
+
+    // Frame counter
+    uint32 frame = 0;
+  };
+  std::vector<Voice> voices;
 
   // Refreshed every frame for thread-safe query
   std::atomic<uint32> numActiveVoices;
 
-  std::vector<float> mixbuf;
-  std::vector<SoundInstance*> voices;
   std::map<SoundHandle, Sound*> sounds;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
@@ -60,7 +76,7 @@ public:
   void ReleaseSound(SoundHandle soundHandle);
 
   bool Init(uint32 audioBufferSize);
-  void PlaySound(uint32 soundHandle, float volume);
+  void PlayPatch(Patch const* patch, float volume);
   void ApplyInterval(uint32 interval);
   void SetController(Controller* controller);
 

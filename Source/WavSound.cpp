@@ -75,16 +75,6 @@ bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
   w.Key(kFileNameTag);
   w.String(serializeFileName.c_str());
 
-  // Volume tag:string
-
-  // Mute tag:boolean
-
-  // Solo tag:boolean
-
-  // Decay tag:string
-  w.Key(kDecayTag);
-  w.Double(decay);
-
   return true;
 }
 
@@ -99,15 +89,6 @@ bool WavSound::SerializeRead(const ReadSerializer& serializer) {
 
   if (!LoadWav(r[kFileNameTag].GetString())) {
     return false;
-  }
-
-  // Decay
-  if (!r.HasMember(kDecayTag) || !r[kDecayTag].IsDouble()) {
-    MCLOG(Warn, "Missing/invalid decay tag; decay will be 0");
-    decay = 0.0f;
-  }
-  else {
-    decay = static_cast<float>(r[kDecayTag].GetDouble());
   }
 
   return true;
@@ -216,9 +197,6 @@ bool DialogWavSound::SerializeWrite(const WriteSerializer& serializer) {
 
   w.Key(WavSound::kFileNameTag);
   w.String(fileName.c_str());
-
-  w.Key(WavSound::kDecayTag);
-  w.Double(0.4f);
 
   return true;
 }

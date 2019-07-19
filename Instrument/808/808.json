@@ -1,50 +1,82 @@
 {
-    "version": "0.0.6",
+    "version": "0.0.7",
     "name": "Roland TR-808",
     "tracks": [
         {
             "name": "Kick",
             "colorscheme": "808:Kick",
-            "sounds": [
-                {
-          					"class": "WavSound",
-                    "filename": "Wavs\\808-kickdrum.wav",
-                    "decay": 0.0
-                }
-            ]
+            "patch":
+            {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.0
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\808-kickdrum.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Clap",
             "colorscheme": "808:Clap",
-            "sounds": [
-                {
-          					"class": "WavSound",
-                    "filename": "Wavs\\808-clap.wav",
-                    "decay": 0.0
-                }
-            ]
+            "patch":
+            {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.0
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\808-clap.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Cowbell",
             "colorscheme": "808:Cowbell",
-            "sounds": [
-                {
-	          				"class": "WavSound",
-                    "filename": "Wavs\\808-cowbell.wav",
-                    "decay": 0.0
-                }
-            ]
+            "patch":
+            {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.0
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\808-cowbell.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Hi-Hat",
             "colorscheme": "808:HiHat",
-            "sounds": [
-                {
-          					"class": "WavSound",
-                    "filename": "Wavs\\808-hihat.wav",
-                    "decay": 0.0
-                }
-            ]
+            "patch":
+            {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.0
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\808-hihat.wav"
+                    }
+                ]
+            }
         }
     ]
 }

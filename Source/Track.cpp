@@ -4,6 +4,7 @@
 #include "Instrument.h"
 #include "SerializeImpl.h"
 #include "Logging.h"
+#include "Patch.h"
 #include "imgui.h"
 
 static constexpr std::string_view kDefaultNewTrackName("NewTrack");
@@ -11,7 +12,6 @@ static constexpr const char* kNameTag("name");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
 static constexpr uint32 kSubDialogPaddingSpacing = 5;
-static constexpr const char* kClassTag("class");
 
 Track::Track() {
 
@@ -29,13 +29,26 @@ Track::~Track() {
 
 void Track::AddNotes(uint32 noteCount, uint8 noteValue) {
   SDL_LockAudio();
-  data.resize(data.size() + noteCount, noteValue);
+  notes.resize(notes.size() + noteCount, noteValue);
   SDL_UnlockAudio();
 }
 
 void Track::SetNoteCount(uint32 noteCount, uint8 noteValue) {
   SDL_LockAudio();
-  data.resize(noteCount, noteValue);
+  notes.resize(noteCount, noteValue);
+  SDL_UnlockAudio();
+}
+
+void Track::SetNote(uint32 noteIndex, uint8 noteValue) {
+  if (noteIndex >= notes.size()) {
+    notes.resize(noteIndex + 1, 0);
+  }
+  notes[noteIndex] = noteValue;
+}
+
+void Track::ClearNotes() {
+  SDL_LockAudio();
+  std::fill(notes.begin(), notes.end(), 0);
   SDL_UnlockAudio();
 }
 
@@ -54,25 +67,8 @@ bool Track::SerializeWrite(const WriteSerializer& serializer) {
     w.String(colorScheme.c_str());
   }
 
-  // TODO: Eventually handle dynamics (piano, forte, etc.). For right now
-  // we'll only have one sound per track.
-  w.Key(kSoundsTag);
-  w.StartArray();
+  patch->SerializeWrite(serializer);
 
-  Sound* sound = Mixer::Get().GetSound(soundIndex);
-  if (sound != nullptr) {
-    w.StartObject();
-
-    // Class tag:string
-    w.Key(kClassTag);
-    w.String(sound->GetSoundClassName().c_str());
-
-    sound->SerializeWrite(serializer);
-
-    w.EndObject();
-  }
-
-  w.EndArray();
   w.EndObject();
 
   return true;
@@ -91,42 +87,11 @@ bool Track::SerializeRead(const ReadSerializer& serializer) {
     colorScheme = d[kColorSchemeTag].GetString();
   }
 
-  // Sounds
-  if (!d.HasMember(kSoundsTag) || !d[kSoundsTag].IsArray()) {
-    MCLOG(Error, "Invalid sounds array in track");
+  try {
+    patch = new Patch({ serializer });
+  }
+  catch (...) {
     return false;
-  }
-
-  const auto& soundsArray = d[kSoundsTag];
-
-  if (soundsArray.Size()) {
-    // Take the first one for now
-    const auto& soundsEntry = soundsArray[0];
-
-    // Get factory
-    if (!soundsEntry.HasMember(kClassTag) || !soundsEntry[kClassTag].IsString()) {
-      MCLOG(Error, "No class tag for sound");
-      return false;
-    }
-    std::string className(soundsEntry[kClassTag].GetString());
-
-    const auto& soundInfoMap = SoundFactory::GetInfoMap();
-    const auto& soundInfo = soundInfoMap.find(className);
-    if (soundInfo == soundInfoMap.end()) {
-      MCLOG(Error, "Invalid class tag for sound");
-      return false;
-    }
-
-    Sound* sound = nullptr;
-    try {
-      soundIndex = Mixer::Get().AddSound(soundInfo->second.soundFactory({ soundsEntry }));
-    }
-    catch (...) {
-      return false;
-    }
-  }
-  else {
-    MCLOG(Warn, "Empty sounds array in track");
   }
 
   return true;

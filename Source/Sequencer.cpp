@@ -93,7 +93,7 @@ void Sequencer::FullNoteCallback(bool isMeasure) {
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
     }
-    Mixer::Get().PlaySound(reservedSounds[metronomeSound], kMetronomeVolume);
+    //Mixer::Get().PlaySound(reservedSounds[metronomeSound], kMetronomeVolume);
   }
 }
 
@@ -182,11 +182,12 @@ uint32 Sequencer::NextFrame(void)
   }
 
   for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
-    if (currPosition >= static_cast<int32>(instrument->tracks[trackIndex]->data.size())) {
+    auto& notes = instrument->tracks[trackIndex]->GetNotes();
+    if (currPosition >= static_cast<int32>(notes.size())) {
       continue;
     }
 
-    uint8* d = instrument->tracks[trackIndex]->data.data() + currPosition;
+    auto d = notes.data() + currPosition;
     if (*d > 0) {
       if (notePlayedCallback != nullptr) {
         notePlayedCallback(trackIndex, currPosition, notePlayedPayload);

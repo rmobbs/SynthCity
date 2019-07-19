@@ -193,6 +193,9 @@
     <ClInclude Include="BaseTypes.h" />
     <ClInclude Include="BaseWindows.h" />
     <ClInclude Include="ComposerView.h" />
+    <ClInclude Include="Patch.h" />
+    <ClInclude Include="Process.h" />
+    <ClInclude Include="ProcessFactory.h" />
     <ClInclude Include="Track.h" />
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="EnumIterator.h" />
@@ -224,6 +227,9 @@
     <ClCompile Include="3rdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="ComposerView.cpp" />
+    <ClCompile Include="Patch.cpp" />
+    <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ProcessFactory.cpp" />
     <ClCompile Include="Track.cpp" />
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />

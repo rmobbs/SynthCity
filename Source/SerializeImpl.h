@@ -15,3 +15,6 @@ struct WriteSerializer {
 struct ReadSerializer {
   const rapidjson::Value& d;
 };
+
+// Generic serialization tags
+static constexpr const char* kClassTag("class");

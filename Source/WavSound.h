@@ -7,7 +7,6 @@
 class WavSound : public Sound {
 public:
   static constexpr const char* kFileNameTag = "filename";
-  static constexpr const char* kDecayTag = "decay";
 protected:
   std::string fileName;
   uint32 frequency = 0;

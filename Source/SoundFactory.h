@@ -13,48 +13,54 @@ class Sound;
 // Factory for creating sounds and related objects
 class SoundFactory {
 public:
-  class SoundInformation {
+  class Information {
   public:
-    using SoundFactoryFunction = std::function<Sound* (const ReadSerializer& serializer)>;
+    using FactoryFunction = std::function<Sound* (const ReadSerializer& serializer)>;
 
     std::string name;
     std::string desc;
     std::string dialog;
-    SoundFactoryFunction soundFactory;
+    FactoryFunction factory;
 
-    inline SoundInformation() {
+    inline Information() {
 
     }
 
-    inline SoundInformation(std::string name, std::string desc, std::string dialog, SoundFactoryFunction soundFactory)
+    inline Information(std::string name, std::string desc, std::string dialog, FactoryFunction factory)
       : name(name)
       , desc(desc)
       , dialog(dialog)
-      , soundFactory(soundFactory) {
+      , factory(factory) {
       SoundFactory::Register(*this);
     }
   };
 
 private:
-  static std::map<std::string, SoundInformation> soundInfoMap;
+  // Static initialization order fiasco
+  static std::map<std::string, Information>& InfoMap() {
+    static std::map<std::string, Information> infoMap;
+    return infoMap;
+  }
 public:
   SoundFactory() = delete;
 
-  static bool Register(const SoundInformation& soundInfo) {
-    auto mapEntry = soundInfoMap.find(soundInfo.name);
-    if (mapEntry != soundInfoMap.end()) {
+  static bool Register(const Information& info) {
+    auto& infoMap = InfoMap();
+
+    auto mapEntry = infoMap.find(info.name);
+    if (mapEntry != infoMap.end()) {
       return false;
     }
-    soundInfoMap[soundInfo.name] = soundInfo;
+    infoMap[info.name] = info;
     return true;
   }
-  static const std::map<std::string, SoundInformation>& GetInfoMap() {
-    return soundInfoMap;
+  static const std::map<std::string, Information>& GetInfoMap() {
+    return InfoMap();
   }
 };
 
 #define REGISTER_SOUND(SoundClass, SoundDesc, DialogClass) \
-  SoundFactory::SoundInformation SoundClass##FactoryInfo(#SoundClass, \
+  SoundFactory::Information SoundClass##FactoryInfo(#SoundClass, \
     SoundDesc, \
     #DialogClass, \
     [](const ReadSerializer& serializer) { \
