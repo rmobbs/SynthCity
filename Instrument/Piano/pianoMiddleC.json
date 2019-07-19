@@ -1,138 +1,222 @@
 {
-    "version": "0.0.6",
+    "version": "0.0.7",
     "name": "Middle C Piano",
     "tracks": [
         {
             "name": "B4",
             "colorscheme": "Piano:White",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.B4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.B4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Bb4",
             "colorscheme": "Piano:Black",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.Bb4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.Bb4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "A4",
             "colorscheme": "Piano:White",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.A4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.A4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Ab4",
             "colorscheme": "Piano:Black",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.Ab4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.Ab4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "G4",
             "colorscheme": "Piano:White",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.G4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.G4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Gb4",
             "colorscheme": "Piano:Black",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.Gb4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.Gb4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "F4",
             "colorscheme": "Piano:White",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.F4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.F4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "E4",
             "colorscheme": "Piano:White",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.E4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.E4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Eb4",
             "colorscheme": "Piano:Black",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.Eb4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.Eb4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "D4",
             "colorscheme": "Piano:White",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.D4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.D4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "Db4",
             "colorscheme": "Piano:Black",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.Db4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.Db4.wav"
+                    }
+                ]
+            }
         },
         {
             "name": "C4",
             "colorscheme": "Piano:White",
-            "sounds": [
-                {
-                    "class": "WavSound",
-                    "filename": "Wavs\\Piano.ff.C4.wav",
-                    "decay": 0.4000000059604645
-                }
-            ]
+            "patch": {
+                "processes": [
+                    {
+                        "class": "ProcessDecay",
+                        "decay": 0.4
+                    }
+                ],
+                "sounds": [
+                    {
+                        "class": "WavSound",
+                        "filename": "Wavs\\Piano.ff.C4.wav"
+                    }
+                ]
+            }
         }
     ]
 }

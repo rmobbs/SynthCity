@@ -5,12 +5,11 @@
         {
             "name": "Kick",
             "colorscheme": "808:Kick",
-            "patch":
-            {
+            "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.0
+                        "decay": 0.4
                     }
                 ],
                 "sounds": [
@@ -24,12 +23,11 @@
         {
             "name": "Clap",
             "colorscheme": "808:Clap",
-            "patch":
-            {
+            "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.0
+                        "decay": 0.4
                     }
                 ],
                 "sounds": [
@@ -43,12 +41,11 @@
         {
             "name": "Cowbell",
             "colorscheme": "808:Cowbell",
-            "patch":
-            {
+            "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.0
+                        "decay": 0.4
                     }
                 ],
                 "sounds": [
@@ -62,12 +59,11 @@
         {
             "name": "Hi-Hat",
             "colorscheme": "808:HiHat",
-            "patch":
-            {
+            "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.0
+                        "decay": 0.4
                     }
                 ],
                 "sounds": [
