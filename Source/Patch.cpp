@@ -3,6 +3,8 @@
 #include "SerializeImpl.h"
 #include "ProcessFactory.h"
 #include "SoundFactory.h"
+#include "Process.h"
+#include "Sound.h"
 
 #include <stdexcept>
 
@@ -14,6 +16,13 @@ Patch::Patch(const ReadSerializer& serializer) {
   if (!SerializeRead(serializer)) {
     throw std::runtime_error("Unable to serialize patch");
   }
+}
+
+Patch::~Patch() {
+  delete process;
+  process = nullptr;
+  delete sound;
+  sound = nullptr;
 }
 
 bool Patch::SerializeRead(const ReadSerializer& serializer) {
@@ -59,6 +68,11 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
       return false;
     }
   }
+  else {
+    // If no process is attached, create a decay 0 process; this will always
+    // return true and allow the sound to naturally expire (if it does)
+    process = new ProcessDecay;
+  }
 
   // Sounds
   if (!patch.HasMember(kSoundsTag) || !patch[kSoundsTag].IsArray()) {
@@ -90,6 +104,9 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
     catch (...) {
       return false;
     }
+  }
+  else {
+    MCLOG(Warn, "Patch has no sounds");
   }
 
   return true;

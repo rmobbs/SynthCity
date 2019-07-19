@@ -11,11 +11,6 @@ static constexpr SoundHandle kInvalidSoundHandle = 0xFFFFFFFF;
 class SoundInstance {
 public:
   SoundHandle sound = kInvalidSoundHandle;
-
-  int	position = 0;
-  float	lvol = 0;
-  float	rvol = 0;
-  float	decay = 0;
 };
 
 class Sound {

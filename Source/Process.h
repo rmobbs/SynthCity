@@ -26,6 +26,11 @@ protected:
 
   float decay = 0.0f;
 public:
+  ProcessDecay() = default;
+  ProcessDecay(float decay)
+    : decay(decay) {
+
+  }
   ProcessDecay(const ReadSerializer& serializer);
 
   bool SerializeWrite(const WriteSerializer& serializer) override;

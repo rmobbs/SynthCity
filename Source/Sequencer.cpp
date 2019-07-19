@@ -15,6 +15,8 @@
 #include "SerializeImpl.h"
 #include "WavSound.h"
 #include "Instrument.h"
+#include "Patch.h"
+#include "Process.h"
 
 static constexpr float kMetronomeVolume = 0.7f;
 static constexpr const char *kInstrumentTag = "Instrument";
@@ -93,7 +95,7 @@ void Sequencer::FullNoteCallback(bool isMeasure) {
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
     }
-    //Mixer::Get().PlaySound(reservedSounds[metronomeSound], kMetronomeVolume);
+    Mixer::Get().PlayPatch(reservedPatches[metronomeSound], kMetronomeVolume);
   }
 }
 
@@ -510,17 +512,17 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   this->maxBeatSubdivisions = maxBeatSubdivisions;
 
   // Load the reserved sounds
-  reservedSounds.resize(static_cast<int32>(ReservedSounds::Count));
+  reservedPatches.resize(static_cast<int32>(ReservedSounds::Count));
   try {
-    reservedSounds[static_cast<int32>(ReservedSounds::MetronomeFull)] =
-      Mixer::Get().AddSound(new WavSound("Assets\\Metronome\\seikosq50_hi.wav"));
+    reservedPatches[static_cast<int32>(ReservedSounds::MetronomeFull)] =
+      new Patch(new ProcessDecay, new WavSound("Assets\\Metronome\\seikosq50_hi.wav"));
   }
   catch (...) {
     MCLOG(Error, "Unable to load downbeat metronome WAV file");
   }
   try {
-    reservedSounds[static_cast<int32>(ReservedSounds::MetronomePartial)] =
-      Mixer::Get().AddSound(new WavSound("Assets\\Metronome\\seikosq50_lo.wav"));
+    reservedPatches[static_cast<int32>(ReservedSounds::MetronomePartial)] =
+      new Patch(new ProcessDecay, new WavSound("Assets\\Metronome\\seikosq50_lo.wav"));
   }
   catch (...) {
     MCLOG(Error, "Unable to load upbeat metronome WAV file");
@@ -529,14 +531,19 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   SetSubdivision(currBeatSubdivision);
   SetBeatsPerMinute(bpm);
 
-  // TODO: Load the default instrument
-
   return true;
 }
 
 Sequencer::~Sequencer() {
   SDL_LockAudio();
+  
   delete instrument;
   instrument = nullptr;
+
+  for (auto& reservedPatch : reservedPatches) {
+    delete reservedPatch;
+  }
+  reservedPatches.clear();
+
   SDL_UnlockAudio();
 }

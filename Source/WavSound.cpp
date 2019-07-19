@@ -144,7 +144,6 @@ bool WavSound::LoadWav(const std::string& fileName) {
     audibleLength = length;
   }
 
-  this->frequency = spec.freq;
   this->channels = spec.channels;
   this->data.assign(data + audibleOffset, data + audibleLength);
 
@@ -157,7 +156,6 @@ bool WavSound::LoadWav(const std::string& fileName) {
 
 SoundInstance* WavSound::CreateInstance() {
   SoundInstance* instance = new SoundInstance;
-  instance->decay = decay * 0.0001f;
   return instance;
 }
 

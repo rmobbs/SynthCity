@@ -38,15 +38,16 @@ ProcessInstance* ProcessDecay::CreateInstance() const {
 }
 
 bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) {
-  if (instance->volume < kVolumeEpsilon) {
-    return false;
-  }
+  if (decay > 0.0f) {
+    if (instance->volume < kVolumeEpsilon) {
+      return false;
+    }
 
-  for (uint32 s = 0; s < numSamples; ++s) {
-    samples[s] *= instance->volume;
-  }
+    for (uint32 s = 0; s < numSamples; ++s) {
+      samples[s] *= instance->volume;
+    }
 
-  instance->volume -= instance->volume * decay;
-  
+    instance->volume -= instance->volume * decay * 0.0001f;
+  }
   return true;
 }
