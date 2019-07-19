@@ -19,6 +19,7 @@
 #include "InputState.h"
 #include "Mixer.h"
 #include "Globals.h"
+#include "WavBank.h"
 
 #include "SDL_syswm.h"
 #include <windows.h>
@@ -327,6 +328,12 @@ bool Init() {
   InitGL();
   InitImGui();
 
+  // Initialize WAV bank
+  if (!WavBank::InitSingleton()) {
+    MCLOG(Error, "Unable to init WAV bank");
+    return false;
+  }
+
   // Initialize mixer
   if (!Mixer::InitSingleton(kAudioBufferSize)) {
     MCLOG(Error, "Unable to init Mixer.");
@@ -359,6 +366,9 @@ void Term() {
 
   // Term the mixer
   Mixer::TermSingleton();
+
+  // Term the WAV bank
+  WavBank::TermSingleton();
 
   // Term all views
   delete currentView;

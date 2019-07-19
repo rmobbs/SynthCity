@@ -218,6 +218,7 @@
     <ClInclude Include="SoundFactory.h" />
     <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
+    <ClInclude Include="WavBank.h" />
     <ClInclude Include="WavSound.h" />
   </ItemGroup>
   <ItemGroup>
@@ -247,6 +248,7 @@
     <ClCompile Include="SpriteRenderable.cpp" />
     <ClCompile Include="SynthCity.cpp" />
     <ClCompile Include="SynthSound.cpp" />
+    <ClCompile Include="WavBank.cpp" />
     <ClCompile Include="WavSound.cpp" />
   </ItemGroup>
   <ItemGroup>

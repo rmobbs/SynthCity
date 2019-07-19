@@ -2,6 +2,7 @@
 #include "Logging.h"
 #include "SerializeImpl.h"
 #include "SoundFactory.h"
+#include "WavBank.h"
 #include "resource.h"
 
 #include "SDL_audio.h"
@@ -12,14 +13,11 @@
 #include <commdlg.h>
 #include <filesystem>
 
-static constexpr float kSilenceThresholdIntro = 0.01f;
-static constexpr float kSilenceThresholdOutro = 0.50f;
-
 REGISTER_SOUND(WavSound, "Sound from WAV file", DialogWavSound);
 WavSound::WavSound(const std::string& fileName)
 : Sound("WavSound") {
-
-  if (!LoadWav(fileName)) {
+  wavData = WavBank::Get().GetWav(fileName);
+  if (!wavData) {
     throw std::runtime_error("Unable to load WAV file");
   }
 
@@ -35,17 +33,17 @@ WavSound::WavSound(const ReadSerializer& serializer)
 uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) {
   // Could eventually use the sound state for ADSR ...
 
-  const uint32 frameSize = sizeof(int16) * this->channels;
+  const uint32 frameSize = sizeof(int16) * wavData->channels;
 
   // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
   // by the size of our frame
-  if (frame >= this->data.size() / frameSize) {
+  if (frame >= wavData->data.size() / frameSize) {
     return 0;
   }
 
   for (uint8 channel = 0; channel < channels; ++channel) {
-    samples[channel] = static_cast<float>(reinterpret_cast<int16*>(this->
-      data.data() + frame * frameSize)[channel % this->channels]) / static_cast<float>(SHRT_MAX);
+    samples[channel] = static_cast<float>(reinterpret_cast<int16*>(wavData->
+      data.data() + frame * frameSize)[channel % wavData->channels]) / static_cast<float>(SHRT_MAX);
   }
 
   return channels;
@@ -54,7 +52,7 @@ uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame,
 bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
 
-  std::string serializeFileName(fileName);
+  std::string serializeFileName(wavData->fileName);
 
   if (serializer.rootPath.generic_string().length()) {
     std::string newFileName = std::filesystem::relative(serializeFileName, serializer.rootPath).generic_string();
@@ -87,69 +85,10 @@ bool WavSound::SerializeRead(const ReadSerializer& serializer) {
     return false;
   }
 
-  if (!LoadWav(r[kFileNameTag].GetString())) {
+  wavData = WavBank::Get().GetWav(r[kFileNameTag].GetString());
+  if (!wavData) {
     return false;
   }
-
-  return true;
-}
-
-bool WavSound::LoadWav(const std::string& fileName) {
-  SDL_AudioSpec spec;
-  uint8* data = nullptr;
-  uint32 length = 0;
-
-  if (SDL_LoadWAV(fileName.c_str(), &spec, &data, &length) == nullptr) {
-    MCLOG(Error, "WavSound: SDL_LoadWAV failed for %s", fileName.c_str());
-    return false;
-  }
-
-  // TODO: FIX THIS
-  if (spec.channels != 1) {
-    MCLOG(Error, "WavSound: %s has %r channels. Only mono "
-      "WAV files are currently supported", fileName.c_str(), spec.channels);
-    return false;
-  }
-
-  // TODO: Support more formats
-  if (spec.format != AUDIO_S16SYS) {
-    MCLOG(Error, "WavSound: %s has an unsupported format %r", fileName.c_str(), spec.format);
-    return false;
-  }
-
-  // Skip any inaudible intro ...
-  // TODO: this should really be a preprocessing step
-  auto frameSize = sizeof(uint16) * spec.channels;
-  auto audibleOffset = 0;
-  auto audibleLength = length;
-
-  while (audibleLength > 0) {
-    int32 sum = 0;
-    for (int c = 0; c < spec.channels; ++c) {
-      sum += reinterpret_cast<const int16*>(data + audibleOffset)[c];
-    }
-
-    if ((static_cast<float>(sum) / SHRT_MAX) > kSilenceThresholdIntro) {
-      break;
-    }
-
-    audibleOffset += frameSize;
-    audibleLength -= frameSize;
-  }
-
-  if (audibleLength <= 0) {
-    MCLOG(Warn, "WavSound: %s is entirely inaudible by "
-      "the current metric - not trimming", fileName.c_str());
-    audibleOffset = 0;
-    audibleLength = length;
-  }
-
-  this->channels = spec.channels;
-  this->data.assign(data + audibleOffset, data + audibleLength);
-
-  SDL_FreeWAV(data);
-
-  this->fileName = fileName;
 
   return true;
 }

@@ -4,15 +4,12 @@
 #include "Dialog.h"
 #include <vector>
 
+class WavData;
 class WavSound : public Sound {
 public:
   static constexpr const char* kFileNameTag = "filename";
 protected:
-  std::string fileName;
-  uint32 channels = 0;
-  std::vector<uint8> data;
-
-  bool LoadWav(const std::string& fileName);
+  WavData* wavData;
 
 public:
   WavSound(const std::string& fileName);

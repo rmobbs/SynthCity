@@ -24,7 +24,8 @@ Track::Track(const ReadSerializer& serializer) {
 }
 
 Track::~Track() {
-
+  delete patch;
+  patch = nullptr;
 }
 
 void Track::AddNotes(uint32 noteCount, uint8 noteValue) {
