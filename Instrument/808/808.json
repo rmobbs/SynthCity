@@ -9,7 +9,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.0
                     }
                 ],
                 "sounds": [
@@ -27,7 +27,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.0
                     }
                 ],
                 "sounds": [
@@ -45,7 +45,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.0
                     }
                 ],
                 "sounds": [
@@ -63,7 +63,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.0
                     }
                 ],
                 "sounds": [

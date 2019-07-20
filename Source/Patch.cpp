@@ -114,6 +114,45 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
 
 bool Patch::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
+
+  w.Key(kPatchTag);
+  w.StartObject();
+
+  // Processes
+  w.Key(kProcessesTag);
+  w.StartArray();
+  {
+    w.StartObject();
+    {
+      w.Key(kClassTag);
+      w.String(process->GetProcessClassName().c_str());
+
+      process->SerializeWrite(serializer);
+
+      w.EndObject();
+    }
+    w.EndArray();
+  }
+
+
+  // Sounds
+  w.Key(kSoundsTag);
+  w.StartArray();
+  {
+    w.StartObject();
+    {
+      w.Key(kClassTag);
+      w.String(sound->GetSoundClassName().c_str());
+
+      sound->SerializeWrite(serializer);
+
+      w.EndObject();
+    }
+    w.EndArray();
+  }
+
+  w.EndObject();
+
   return true;
 }
 

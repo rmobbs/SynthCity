@@ -15,8 +15,6 @@ static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
 
-static constexpr const char* kCurrentVersion("0.0.7");
-
 Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
   name(instrumentName),
   numNotes(numNotes) {
@@ -44,7 +42,7 @@ bool Instrument::SerializeRead(const ReadSerializer& serializer) {
   }
   std::string version = d[kVersionTag].GetString();
 
-  if (version != std::string(kCurrentVersion)) {
+  if (version != std::string(kVersionString)) {
     MCLOG(Error, "Invalid instrument file version");
     return false;
   }

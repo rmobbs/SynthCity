@@ -10,13 +10,19 @@ REGISTER_PROCESS(ProcessDecay, "Simple linear decay", DialogProcessDecay);
 
 static constexpr const char* kDecayTag = "decay";
 
-ProcessDecay::ProcessDecay(const ReadSerializer& serializer) {
+ProcessDecay::ProcessDecay(const ReadSerializer& serializer)
+: Process("ProcessDecay") {
   if (!SerializeRead(serializer)) {
     throw std::runtime_error("Unable to serialize process");
   }
 }
 
 bool ProcessDecay::SerializeWrite(const WriteSerializer& serializer) {
+  auto& w = serializer.w;
+
+  w.Key(kDecayTag);
+  w.Double(decay);
+
   return true;
 }
 
