@@ -19,17 +19,15 @@ public:
 
     std::string name;
     std::string desc;
-    std::string dialog;
     FactoryFunction factory;
 
     inline Information() {
 
     }
 
-    inline Information(std::string name, std::string desc, std::string dialog, FactoryFunction factory)
+    inline Information(std::string name, std::string desc, FactoryFunction factory)
       : name(name)
       , desc(desc)
-      , dialog(dialog)
       , factory(factory) {
       SoundFactory::Register(*this);
     }
@@ -59,10 +57,9 @@ public:
   }
 };
 
-#define REGISTER_SOUND(SoundClass, SoundDesc, DialogClass) \
+#define REGISTER_SOUND(SoundClass, SoundDesc) \
   SoundFactory::Information SoundClass##FactoryInfo(#SoundClass, \
     SoundDesc, \
-    #DialogClass, \
     [](const ReadSerializer& serializer) { \
       return new SoundClass(serializer); \
     })

@@ -9,9 +9,10 @@ class WavSound : public Sound {
 public:
   static constexpr const char* kFileNameTag = "filename";
 protected:
-  WavData* wavData;
+  WavData* wavData = nullptr;
 
 public:
+  WavSound() : Sound("WavSound") {};
   WavSound(const std::string& fileName);
   WavSound(const ReadSerializer& serializer);
 
@@ -20,14 +21,12 @@ public:
   SoundInstance* CreateInstance() override;
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
-};
 
-class DialogWavSound : public Dialog {
-protected:
-  std::string fileName;
-public:
-  bool Render() override;
-  bool SerializeWrite(const WriteSerializer& serializer) override;
-  bool SerializeRead(const ReadSerializer& serializer) override;
+  inline const WavData* GetWavData() const {
+    return wavData;
+  }
+  void SetWavData(WavData* newWavData);
+
+  void RenderDialog() override;
 };
 

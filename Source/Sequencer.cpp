@@ -16,7 +16,7 @@
 #include "WavSound.h"
 #include "Instrument.h"
 #include "Patch.h"
-#include "Process.h"
+#include "ProcessDecay.h"
 
 static constexpr float kMetronomeVolume = 0.7f;
 static constexpr const char *kInstrumentTag = "Instrument";

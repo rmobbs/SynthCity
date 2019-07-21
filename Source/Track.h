@@ -14,10 +14,11 @@ protected:
   std::string colorScheme;
   std::vector<uint8> notes;
 
-  Patch* patch;
+  Patch* patch = nullptr;
 
 public:
   Track();
+  Track(const std::string& name);
   Track(const ReadSerializer& serializer);
   ~Track();
 
@@ -27,6 +28,9 @@ public:
 
   inline const std::string& GetColorScheme(void) const {
     return colorScheme;
+  }
+  inline void SetName(const std::string& newName) {
+    name = newName;
   }
   inline const std::string& GetName(void) const {
     return name;
@@ -39,24 +43,9 @@ public:
   bool SerializeWrite(const WriteSerializer& serializer);
   bool SerializeRead(const ReadSerializer& serializer);
 
-  inline const Patch* GetPatch() const {
+  inline Patch* GetPatch() {
     return patch;
   }
-};
-
-class DialogTrack : public Dialog {
-protected:
-  std::string trackName;
-  std::string soundName;
-  Dialog* subDialog = nullptr;
-public:
-  DialogTrack() = default;
-  ~DialogTrack();
-
-  void Open() override;
-  bool Render() override;
-
-  bool SerializeWrite(const WriteSerializer& serializer) override;
-  bool SerializeRead(const ReadSerializer& serializer) override;
+  void SetPatch(Patch* newPatch);
 };
 

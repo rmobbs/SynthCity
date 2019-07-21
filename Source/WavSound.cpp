@@ -12,21 +12,67 @@
 #include <atlbase.h>
 #include <commdlg.h>
 #include <filesystem>
+#include <algorithm>
 
-REGISTER_SOUND(WavSound, "Sound from WAV file", DialogWavSound);
+REGISTER_SOUND(WavSound, "Sound from WAV file");
 WavSound::WavSound(const std::string& fileName)
 : Sound("WavSound") {
   wavData = WavBank::Get().GetWav(fileName);
   if (!wavData) {
     throw std::runtime_error("Unable to load WAV file");
   }
-
 }
 
 WavSound::WavSound(const ReadSerializer& serializer)
   : Sound("WavSound") {
   if (!SerializeRead(serializer)) {
     throw std::runtime_error("Unable to serialize WAV sound");
+  }
+}
+
+void WavSound::RenderDialog() {
+  std::string oldFileName;
+  if (wavData != nullptr) {
+    oldFileName = wavData->fileName;
+    std::transform(oldFileName.begin(), oldFileName.end(), oldFileName.begin(), ::tolower);
+  }
+
+  char fileNameBuf[1024];
+  strcpy_s(fileNameBuf, sizeof(fileNameBuf), oldFileName.c_str());
+  if (ImGui::InputText("File", fileNameBuf, sizeof(fileNameBuf) - 1)) {
+    std::string newFileName(std::filesystem::absolute(fileNameBuf).generic_string());
+    std::transform(newFileName.begin(), oldFileName.end(), newFileName.begin(), ::tolower);
+    std::replace(newFileName.begin(), newFileName.end(), '/', '\\');
+
+    if (newFileName != oldFileName) {
+      SetWavData(WavBank::Get().GetWav(newFileName));
+    }
+  }
+
+  if (ImGui::Button("...")) {
+    WCHAR szFile[FILENAME_MAX] = { 0 };
+    OPENFILENAME ofn = { 0 };
+
+    USES_CONVERSION;
+    ofn.lStructSize = sizeof(ofn);
+
+    ofn.lpstrTitle = A2W("Open WAV");
+    ofn.hwndOwner = GetActiveWindow();
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+    ofn.lpstrFilter = _TEXT("WAV\0*.wav\0");
+    ofn.nFilterIndex = 0;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileName(&ofn)) {
+      std::string newFileName(std::filesystem::absolute(W2A(szFile)).generic_string());
+      std::transform(newFileName.begin(), oldFileName.end(), newFileName.begin(), ::tolower);
+      std::replace(newFileName.begin(), newFileName.end(), '/', '\\');
+
+      if (newFileName != oldFileName) {
+        SetWavData(WavBank::Get().GetWav(newFileName));
+      }
+    }
   }
 }
 
@@ -98,47 +144,11 @@ SoundInstance* WavSound::CreateInstance() {
   return instance;
 }
 
-REGISTER_DIALOG(DialogWavSound);
-bool DialogWavSound::Render() {
-  char fileNameBuf[1024];
-  strcpy_s(fileNameBuf, sizeof(fileNameBuf), fileName.c_str());
-  if (ImGui::InputText("File", fileNameBuf, sizeof(fileNameBuf) - 1)) {
-    fileName = std::string(fileNameBuf);
-  }
-
-  if (ImGui::Button("...")) {
-    WCHAR szFile[FILENAME_MAX] = { 0 };
-    OPENFILENAME ofn = { 0 };
-
-    USES_CONVERSION;
-    ofn.lStructSize = sizeof(ofn);
-
-    ofn.lpstrTitle = A2W("Open WAV");
-    ofn.hwndOwner = GetActiveWindow();
-    ofn.lpstrFile = szFile;
-    ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-    ofn.lpstrFilter = _TEXT("WAV\0*.wav\0");
-    ofn.nFilterIndex = 0;
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-
-    if (GetOpenFileName(&ofn)) {
-      fileName = std::string(W2A(szFile));
-    }
-  }
-
-  return true;
-}
-
-bool DialogWavSound::SerializeWrite(const WriteSerializer& serializer) {
-  auto& w = serializer.w;
-
-  w.Key(WavSound::kFileNameTag);
-  w.String(fileName.c_str());
-
-  return true;
-}
-
-bool DialogWavSound::SerializeRead(const ReadSerializer& serializer) {
-  return false;
+void WavSound::SetWavData(WavData* newWavData) {
+  // TODO: ref count
+  SDL_LockAudio();
+  // Note: will not stop any playing voice
+  wavData = newWavData;
+  SDL_UnlockAudio();
 }
 

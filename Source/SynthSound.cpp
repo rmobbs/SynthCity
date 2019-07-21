@@ -55,39 +55,8 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
   return true;
 }
 
-REGISTER_DIALOG(DialogSynthSound);
-bool DialogSynthSound::Render() {
-  ImGui::Text("DialogSynthSound");
-  return true;
-}
-
-bool DialogSynthSound::SerializeWrite(const WriteSerializer& serializer) {
-  auto& w = serializer.w;
-
-  // Frequency
-  uint32 frequency = 1000;
-  w.Key("frequency");
-  w.Uint(frequency);
-
-  // The time value of the note unit in which our duration is expressed, i.e. half-note, quarter-note
-  // We'll make sure it's between [2,<upper-limit>] and it's even
-  INT den = 4;
-  den = std::min(std::max(static_cast<uint32>(den), 2u), Sequencer::Get().GetMaxSubdivisions()) & ~1u;
-
-  // The number of these notes that defines the duration
-  INT num = 2;
-
-  w.Key("duration");
-  w.Uint(num << 16 | den);
-  return true;
-}
-
-bool DialogSynthSound::SerializeRead(const ReadSerializer& serializer) {
-  return true;
-}
-
 // Sine
-REGISTER_SOUND(SineSynthSound, "Modulated sine wave", DialogSynthSound);
+REGISTER_SOUND(SineSynthSound, "Modulated sine wave");
 SineSynthSound::SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen)
   : SynthSound("SineSynthSound", frequency, durationNum, durationDen) {
 }
@@ -124,4 +93,8 @@ uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 
     return channels;
   }
   return 0;
+}
+
+void SineSynthSound::RenderDialog() {
+  ImGui::Text("DialogSineSynthSound");
 }

@@ -3,14 +3,16 @@
 #include "SerializeImpl.h"
 #include "ProcessFactory.h"
 #include "SoundFactory.h"
-#include "Process.h"
+#include "ProcessDecay.h"
 #include "Sound.h"
+#include "imgui.h"
 
 #include <stdexcept>
 
 static constexpr const char* kPatchTag("patch");
 static constexpr const char* kProcessesTag("processes");
 static constexpr const char* kSoundsTag("sounds");
+static constexpr uint32 kSubDialogPaddingSpacing = 5;
 
 Patch::Patch(const ReadSerializer& serializer) {
   if (!SerializeRead(serializer)) {
@@ -154,5 +156,72 @@ bool Patch::SerializeWrite(const WriteSerializer& serializer) {
   w.EndObject();
 
   return true;
+}
+
+void Patch::RenderDialog() {
+  for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
+    ImGui::Spacing();
+  }
+
+  ImGui::Text("Processes");
+  ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+  if (ImGui::Button("+")) {
+    processName = "ProcessDecay";
+    ImGui::OpenPopup("Add Process");
+  }
+
+  if (ImGui::BeginPopup("Add Process")) {
+    auto const& processInfoMap = ProcessFactory::GetInfoMap();
+    if (ImGui::BeginCombo("Process", processName.c_str())) {
+      for (auto const& processInfo : processInfoMap) {
+        ImGui::PushID(reinterpret_cast<const void*>(&processInfo.second));
+        if (ImGui::Selectable(processInfo.first.c_str(), processInfo.first == processName)) {
+          processName = processInfo.first;
+
+          // TODO: Spawn/add process
+        }
+        ImGui::PopID();
+      }
+      ImGui::EndCombo();
+    }
+
+    ImGui::Spacing();
+
+    ImGui::Button("OK");
+    ImGui::SameLine();
+    ImGui::Button("Cancel");
+
+    ImGui::EndPopup();
+  }
+
+  if (process != nullptr) {
+    ImGui::Separator();
+    ImGui::Text(process->GetProcessClassName().c_str());
+    ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+    ImGui::Button("x");
+    process->RenderDialog();
+    ImGui::Separator();
+  }
+
+  for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
+    ImGui::Spacing();
+  }
+
+  ImGui::Text("Sounds");
+  ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+  ImGui::Button("+");
+
+  if (sound != nullptr) {
+    ImGui::Separator();
+    ImGui::Text(sound->GetSoundClassName().c_str());
+    ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+    ImGui::Button("x");
+    sound->RenderDialog();
+    ImGui::Separator();
+  }
+
+  for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
+    ImGui::Spacing();
+  }
 }
 

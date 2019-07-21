@@ -1,35 +1,33 @@
 #pragma once
 
 #include "BaseTypes.h"
-#include "BaseWindows.h"
 #include "SerializeFwd.h"
 
 #include <string>
 #include <map>
 #include <functional>
 
-class Process;
-
-// Factory for creating processes and related objects
-class ProcessFactory {
+template<class FactoryClass> class Factory {
+  using FactoryFunction = std::function<FactoryClass* (const ReadSerializer& serializer)>;
 public:
   class Information {
   public:
-    using FactoryFunction = std::function<Process* (const ReadSerializer& serializer)>;
 
     std::string name;
     std::string desc;
+    std::string dialog;
     FactoryFunction factory;
 
     inline Information() {
 
     }
 
-    inline Information(std::string name, std::string desc, FactoryFunction factory)
+    inline Information(std::string name, std::string desc, std::string dialog, FactoryFunction factory)
       : name(name)
       , desc(desc)
+      , dialog(dialog)
       , factory(factory) {
-      ProcessFactory::Register(*this);
+      Factory::Register(*this);
     }
   };
 
@@ -40,7 +38,7 @@ public:
   }
 
 public:
-  ProcessFactory() = delete;
+  Factory() = delete;
 
   static bool Register(const Information& info) {
     auto& infoMap = InfoMap();
@@ -58,10 +56,11 @@ public:
   }
 };
 
-#define REGISTER_PROCESS(ProcessClass, ProcessDesc) \
-  ProcessFactory::Information ProcessClass##FactoryInfo(#ProcessClass, \
-    ProcessDesc, \
+#define FACTORY_REGISTER(FactoryName, FactoryClass, ClassDesc, DialogClass) \
+  FactoryName::Information FactoryClass##FactoryInfo(#FactoryClass, \
+    ClassDesc, \
+    #DialogClass, \
     [](const ReadSerializer& serializer) { \
-      return new ProcessClass(serializer); \
-    });
+      return new FactoryClass(serializer); \
+    })
 

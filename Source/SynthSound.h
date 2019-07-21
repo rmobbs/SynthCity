@@ -30,13 +30,6 @@ public:
   bool SerializeRead(const ReadSerializer& serializer) override;
 };
 
-class DialogSynthSound : public Dialog {
-public:
-  bool Render() override;
-  bool SerializeWrite(const WriteSerializer& serializer) override;
-  bool SerializeRead(const ReadSerializer& serializer) override;
-};
-
 class SineSynthSoundInstance : public SoundInstance {
 public:
   float radians = 0;
@@ -51,4 +44,6 @@ public:
 
   SoundInstance* CreateInstance() override;
   uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) override;
+
+  void RenderDialog() override;
 };

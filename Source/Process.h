@@ -29,30 +29,7 @@ public:
   inline const std::string& GetProcessClassName() const {
     return className;
   }
+
+  virtual void RenderDialog() = 0;
 };
 
-// Most basic process is decay
-class ProcessDecay : public Process {
-protected:
-  static constexpr float kVolumeEpsilon = 0.01f;
-
-  float decay = 0.0f;
-public:
-  ProcessDecay()
-    : Process("ProcessDecay") {
-
-  }
-
-  ProcessDecay(float decay)
-    : Process("ProcessDecay")
-    , decay(decay) {
-
-  }
-  ProcessDecay(const ReadSerializer& serializer);
-
-  bool SerializeWrite(const WriteSerializer& serializer) override;
-  bool SerializeRead(const ReadSerializer& serializer) override;
-
-  ProcessInstance* CreateInstance() const override;
-  bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) override;
-};

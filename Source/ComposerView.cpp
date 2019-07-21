@@ -13,6 +13,10 @@
 #include "GlobalRenderData.h"
 #include "ShaderProgram.h"
 #include "Instrument.h"
+#include "DialogTrack.h"
+#include "Patch.h"
+#include "ProcessDecay.h"
+#include "WavSound.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -208,6 +212,36 @@ bool SaveSong() {
   return true;
 }
 
+Track* CreateTrack() {
+  static constexpr const char* kDefaultNewTrackName("NewTrack");
+
+  // Pick an available name
+  std::string trackName = kDefaultNewTrackName;
+  // Just feels weird and shameful to not have an upper bounds ...
+  for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
+    auto& tracks = Sequencer::Get().GetInstrument()->GetTracks();
+
+    uint32 index;
+    for (index = 0; index < tracks.size(); ++index) {
+      if (tracks[index]->GetName() == trackName) {
+        break;
+      }
+    }
+
+    if (index >= tracks.size()) {
+      break;
+    }
+
+    trackName = std::string(kDefaultNewTrackName) + std::to_string(nameSuffix);
+  }
+
+  Track* track = new Track(trackName);
+
+  track->SetPatch(new Patch(new ProcessDecay, new WavSound));
+
+  return track;
+}
+
 void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
 
   if (colorScheme.length()) {
@@ -287,7 +321,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack;
+          pendingDialog = new DialogTrack(CreateTrack());
         }
         ImGui::EndMenu();
       }

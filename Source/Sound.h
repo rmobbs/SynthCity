@@ -32,5 +32,7 @@ public:
 
   virtual bool SerializeWrite(const WriteSerializer& serializer) = 0;
   virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
+
+  virtual void RenderDialog() = 0;
 };
 
