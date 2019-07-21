@@ -41,8 +41,8 @@ bool ProcessDecay::SerializeRead(const ReadSerializer& serializer) {
   return true;
 }
 
-ProcessInstance* ProcessDecay::CreateInstance() const {
-  return new ProcessInstance;
+ProcessInstance* ProcessDecay::CreateInstance() {
+  return new ProcessInstance(this);
 }
 
 bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) {

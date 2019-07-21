@@ -237,7 +237,7 @@ Track* CreateTrack() {
 
   Track* track = new Track(trackName);
 
-  track->SetPatch(new Patch(new ProcessDecay, new WavSound));
+  track->SetPatch(new Patch({ new ProcessDecay }, { new WavSound }));
 
   return track;
 }

@@ -24,7 +24,7 @@ public:
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 
-  ProcessInstance* CreateInstance() const override;
+  ProcessInstance* CreateInstance() override;
   bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) override;
 
   void RenderDialog() override;

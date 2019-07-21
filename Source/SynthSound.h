@@ -35,6 +35,8 @@ public:
   float radians = 0;
   float radstep = 0;
   uint32 duration = 0; // Has to be calculated at instance creation time due to reliance on current BPM
+
+  using SoundInstance::SoundInstance;
 };
 
 class SineSynthSound : public SynthSound {

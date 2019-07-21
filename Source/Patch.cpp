@@ -21,10 +21,15 @@ Patch::Patch(const ReadSerializer& serializer) {
 }
 
 Patch::~Patch() {
-  delete process;
-  process = nullptr;
-  delete sound;
-  sound = nullptr;
+  for (auto& process : processes) {
+    delete process;
+  }
+  processes.clear();
+
+  for (auto& sound : sounds) {
+    delete sound;
+  }
+  sounds.clear();
 }
 
 bool Patch::SerializeRead(const ReadSerializer& serializer) {
@@ -44,52 +49,53 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
   }
   const auto& processesArray = patch[kProcessesTag];
   if (processesArray.Size()) {
-    // Take the first one for now
-    const auto& processEntry = processesArray[0];
+    for (uint32 processIndex = 0; processIndex < processesArray.Size(); ++processIndex) {
+      const auto& processEntry = processesArray[processIndex];
 
-    // Get class
-    if (!processEntry.HasMember(kClassTag) || !processEntry[kClassTag].IsString()) {
-      MCLOG(Error, "No class tag for process");
-      return false;
-    }
+      // Get class
+      if (!processEntry.HasMember(kClassTag) || !processEntry[kClassTag].IsString()) {
+        MCLOG(Error, "No class tag for process");
+        continue;
+      }
 
-    std::string className(processEntry[kClassTag].GetString());
+      std::string className(processEntry[kClassTag].GetString());
 
-    // Get factory
-    const auto& processInfoMap = ProcessFactory::GetInfoMap();
-    const auto& processInfo = processInfoMap.find(className);
-    if (processInfo == processInfoMap.end()) {
-      MCLOG(Error, "Invalid class tag for process");
-      return false;
-    }
+      // Get factory
+      const auto& processInfoMap = ProcessFactory::GetInfoMap();
+      const auto& processInfo = processInfoMap.find(className);
+      if (processInfo == processInfoMap.end()) {
+        MCLOG(Error, "Invalid class tag for process");
+        continue;
+      }
 
-    try {
-      process = processInfo->second.factory({ processEntry });
-    }
-    catch (...) {
-      return false;
+      try {
+        processes.push_back(processInfo->second.factory({ processEntry }));
+      }
+      catch (...) {
+        continue;
+      }
     }
   }
   else {
     // If no process is attached, create a decay 0 process; this will always
     // return true and allow the sound to naturally expire (if it does)
-    process = new ProcessDecay;
+    processes.push_back(new ProcessDecay);
   }
 
   // Sounds
-  if (!patch.HasMember(kSoundsTag) || !patch[kSoundsTag].IsArray()) {
+  if (!patch.HasMember(kSoundsTag) || !patch[kSoundsTag].IsArray() || !patch[kSoundsTag].Size()) {
     MCLOG(Error, "Missing or invalid sound array in patch");
     return false;
   }
   const auto& soundArray = patch[kSoundsTag];
-  if (soundArray.Size()) {
+  for (uint32 soundIndex = 0; soundIndex < soundArray.Size(); ++soundIndex) {
     // Take the first one for now
-    const auto& soundEntry = soundArray[0];
+    const auto& soundEntry = soundArray[soundIndex];
 
     // Get factory
     if (!soundEntry.HasMember(kClassTag) || !soundEntry[kClassTag].IsString()) {
       MCLOG(Error, "No class tag for sound");
-      return false;
+      continue;
     }
     std::string className(soundEntry[kClassTag].GetString());
 
@@ -97,18 +103,15 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
     const auto& soundInfo = soundInfoMap.find(className);
     if (soundInfo == soundInfoMap.end()) {
       MCLOG(Error, "Invalid class tag for sound");
-      return false;
+      continue;
     }
 
     try {
-      sound = soundInfo->second.factory({ soundEntry });
+      sounds.push_back(soundInfo->second.factory({ soundEntry }));
     }
     catch (...) {
-      return false;
+      continue;
     }
-  }
-  else {
-    MCLOG(Warn, "Patch has no sounds");
   }
 
   return true;
@@ -124,14 +127,16 @@ bool Patch::SerializeWrite(const WriteSerializer& serializer) {
   w.Key(kProcessesTag);
   w.StartArray();
   {
-    w.StartObject();
-    {
-      w.Key(kClassTag);
-      w.String(process->GetProcessClassName().c_str());
+    for (auto& process : processes) {
+      w.StartObject();
+      {
+        w.Key(kClassTag);
+        w.String(process->GetProcessClassName().c_str());
 
-      process->SerializeWrite(serializer);
+        process->SerializeWrite(serializer);
 
-      w.EndObject();
+        w.EndObject();
+      }
     }
     w.EndArray();
   }
@@ -141,14 +146,16 @@ bool Patch::SerializeWrite(const WriteSerializer& serializer) {
   w.Key(kSoundsTag);
   w.StartArray();
   {
-    w.StartObject();
-    {
-      w.Key(kClassTag);
-      w.String(sound->GetSoundClassName().c_str());
+    for (auto& sound : sounds) {
+      w.StartObject();
+      {
+        w.Key(kClassTag);
+        w.String(sound->GetSoundClassName().c_str());
 
-      sound->SerializeWrite(serializer);
+        sound->SerializeWrite(serializer);
 
-      w.EndObject();
+        w.EndObject();
+      }
     }
     w.EndArray();
   }
@@ -159,6 +166,9 @@ bool Patch::SerializeWrite(const WriteSerializer& serializer) {
 }
 
 void Patch::RenderDialog() {
+  static std::string processName;
+  static std::string soundName;
+
   for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
     ImGui::Spacing();
   }
@@ -194,14 +204,14 @@ void Patch::RenderDialog() {
     ImGui::EndPopup();
   }
 
-  if (process != nullptr) {
+  for (auto& process : processes) {
     ImGui::Separator();
     ImGui::Text(process->GetProcessClassName().c_str());
     ImGui::SameLine(ImGui::GetWindowWidth() - 30);
     ImGui::Button("x");
     process->RenderDialog();
-    ImGui::Separator();
   }
+  ImGui::Separator();
 
   for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
     ImGui::Spacing();
@@ -211,14 +221,14 @@ void Patch::RenderDialog() {
   ImGui::SameLine(ImGui::GetWindowWidth() - 30);
   ImGui::Button("+");
 
-  if (sound != nullptr) {
+  for (auto& sound : sounds) {
     ImGui::Separator();
     ImGui::Text(sound->GetSoundClassName().c_str());
     ImGui::SameLine(ImGui::GetWindowWidth() - 30);
     ImGui::Button("x");
     sound->RenderDialog();
-    ImGui::Separator();
   }
+  ImGui::Separator();
 
   for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
     ImGui::Spacing();

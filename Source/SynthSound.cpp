@@ -66,7 +66,7 @@ SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
 }
 
 SoundInstance* SineSynthSound::CreateInstance() {
-  SineSynthSoundInstance* instance = new SineSynthSoundInstance;
+  SineSynthSoundInstance* instance = new SineSynthSoundInstance(this);
 
   float durationInSeconds = static_cast<float>(Sequencer::Get().
     GetSecondsPerBeat()) * (static_cast<float>(durationNum) / static_cast<float>(durationDen));

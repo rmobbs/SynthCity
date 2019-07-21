@@ -41,13 +41,16 @@ protected:
     Patch const* patch = nullptr;
 
     // Instances
-    SoundInstance* sound = nullptr;
-    ProcessInstance* process = nullptr;
+    std::vector<SoundInstance*> sounds;
+    std::vector<ProcessInstance*> processes;
 
     // Frame counter
     uint32 frame = 0;
+
+    Voice() = default;
+    ~Voice();
   };
-  std::vector<Voice> voices;
+  std::vector<Voice*> voices;
 
   // Refreshed every frame for thread-safe query
   std::atomic<uint32> numActiveVoices;

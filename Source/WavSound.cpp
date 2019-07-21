@@ -140,8 +140,7 @@ bool WavSound::SerializeRead(const ReadSerializer& serializer) {
 }
 
 SoundInstance* WavSound::CreateInstance() {
-  SoundInstance* instance = new SoundInstance;
-  return instance;
+  return new SoundInstance(this);
 }
 
 void WavSound::SetWavData(WavData* newWavData) {

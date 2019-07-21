@@ -7,6 +7,12 @@
 
 class SoundInstance {
 public:
+  class Sound* sound = nullptr;
+
+  SoundInstance(Sound* sound)
+    : sound(sound) {
+
+  }
 };
 
 class Sound {

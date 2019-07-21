@@ -12,6 +12,7 @@
 #include "Patch.h"
 #include "Process.h"
 #include "Sound.h"
+#include <cassert>
 #include <windows.h>
 #undef min
 #undef max
@@ -19,6 +20,8 @@
 static constexpr uint32	kMaxCallbackSampleFrames = 256;
 static constexpr uint32 kMaxSimultaneousVoices = 64;
 static constexpr float kPeakVolumeRatio = 0.7f;
+static constexpr float kClipMax(0.7f);
+static constexpr float kClipMin(-0.7f);
 
 /* static */
 Mixer* Mixer::singleton = nullptr;
@@ -45,6 +48,18 @@ bool Mixer::TermSingleton() {
   return true;
 }
 
+Mixer::Voice::~Voice() {
+  for (auto& process : processes) {
+    delete process;
+  }
+  processes.clear();
+
+  for (auto& sound : sounds) {
+    delete sound;
+  }
+  sounds.clear();
+}
+
 Mixer::Mixer() {
 
 }
@@ -58,8 +73,7 @@ Mixer::~Mixer() {
   }
 
   for (auto& voice : voices) {
-    delete voice.process;
-    delete voice.sound;
+    delete voice;
   }
   voices.clear();
 
@@ -126,30 +140,37 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
 
   if (voices.size() > 0) {
     // Mix active voices
-    uint32 i = 0;
-    uint32 n = voices.size();
-    while (i < n) {
-      auto& voice = voices[i];
+    uint32 vi = 0;
+    uint32 nv = voices.size();
+    while (vi < nv) {
+      auto& voice = *voices[vi];
+
+      uint32 ns = 0;
+      uint32 np = 0;
 
       for (uint32 frame = 0; frame < numFrames; ++frame) {
         float samples[kDefaultChannels] = { 0 };
 
-        // Get channel count samples from sound(s)
-        if (voice.patch->sound->GetSamplesForFrame(samples,
-          kDefaultChannels, voice.frame, voice.sound) != kDefaultChannels) {
-          // TODO: Defer deletion
-          delete voice.sound;
-          voice.sound = nullptr;
-          break;
+        // Get samples from sound(s)
+        for (auto& s : voice.sounds) {
+          if (s->sound != nullptr) {
+            ++ns;
+            if (s->sound->GetSamplesForFrame(samples,
+              kDefaultChannels, voice.frame, s) != kDefaultChannels) {
+              s->sound = nullptr;
+            }
+          }
         }
 
         // Apply process(es)
-        if (voice.patch->process->ProcessSamples(samples,
-          kDefaultChannels, voice.frame, voice.process) != true) {
-          // TODO: Defer deletion
-          delete voice.process;
-          voice.process = nullptr;
-          break;
+        for (auto& p : voice.processes) {
+          if (p->process != nullptr) {
+            ++np;
+            if (p->process->ProcessSamples(samples,
+              kDefaultChannels, voice.frame, p) != true) {
+              p->process = nullptr;
+            }
+          }
         }
 
         // Add to mix buffer
@@ -161,30 +182,32 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
       }
 
       // Trim voices whose sounds or processes have all ended
-      // TODO: Defer deletion
-      if (voice.sound != nullptr && voice.process != nullptr) {
-        ++i;
+      // NOTE: This requires every sound to have at least one process (default
+      // case is thus to create a decay(0) for every sound)
+      if (ns > 0 && np > 0) {
+        ++vi;
       }
       else {
-        std::swap(voices[i], voices[--n]);
+        std::swap(voices[vi], voices[--nv]);
       }
     }
 
     // Clip so we don't distort
     for (uint32 f = 0; f < numFrames; ++f) {
-      mixBuffer[f * 2 + 0] = std::max(std::min(mixBuffer[f * 2 + 0], 0.7f), -0.7f);
-      mixBuffer[f * 2 + 1] = std::max(std::min(mixBuffer[f * 2 + 1], 0.7f), -0.7f);
+      for (uint32 c = 0; c < kDefaultChannels; ++c) {
+        mixBuffer[f * kDefaultChannels + c] =
+          std::max(std::min(mixBuffer[f * kDefaultChannels + c], kClipMax), kClipMin);
+      }
     };
 
     // Delete expired voices
-    for (uint32 v = n; v < voices.size(); ++v) {
-      delete voices[v].sound;
-      delete voices[v].process;
+    for (uint32 vi = nv; vi < voices.size(); ++vi) {
+      delete voices[vi];
     }
-    voices.resize(n);
+    voices.resize(nv);
 
     // So people can query this without locking
-    numActiveVoices = n;
+    numActiveVoices = nv;
   }
 }
 
@@ -234,12 +257,16 @@ void Mixer::PlayPatch(const Patch* const patch, float volume) {
     MCLOG(Error, "Currently playing max voices; sound dropped");
   }
   else {
-    Voice voice;
+    Voice* voice = new Voice;
 
-    voice.patch = patch;
-    voice.sound = patch->sound->CreateInstance();
-    voice.process = patch->process->CreateInstance();
-    voice.frame = 0;
+    voice->patch = patch;
+    for (const auto& sound : patch->sounds) {
+      voice->sounds.push_back(sound->CreateInstance());
+    }
+    for (const auto& process : patch->processes) {
+      voice->processes.push_back(process->CreateInstance());
+    }
+    voice->frame = 0;
 
     voices.push_back(voice);
   }

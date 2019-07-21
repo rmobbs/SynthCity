@@ -2,21 +2,19 @@
 
 #include "SerializeFwd.h"
 #include <string>
+#include <vector>
 
 // A patch is a combination of sounds and processes that operate on those sounds
 class Process;
 class Sound;
 class Patch {
 public:
-  Process* process;
-  Sound* sound;
+  std::vector<Process*> processes;
+  std::vector<Sound*> sounds;
 
-  std::string processName;
-  std::string soundName;
-
-  inline Patch(Process* process, Sound* sound)
-    : process(process)
-    , sound(sound) {
+  inline Patch(const std::vector<Process*>& processes, const std::vector<Sound*>& sounds)
+    : processes(processes)
+    , sounds(sounds) {
 
   }
 
