@@ -6,6 +6,7 @@
 #include "ProcessDecay.h"
 #include "Sound.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include <stdexcept>
 
@@ -43,43 +44,36 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
   const auto& patch = d[kPatchTag];
 
   // Processes
-  if (!patch.HasMember(kProcessesTag) || !patch[kProcessesTag].IsArray()) {
+  if (!patch.HasMember(kProcessesTag) || !patch[kProcessesTag].IsArray() || !patch[kProcessesTag].Size()) {
     MCLOG(Error, "Missing or invalid process array in patch");
     return false;
   }
   const auto& processesArray = patch[kProcessesTag];
-  if (processesArray.Size()) {
-    for (uint32 processIndex = 0; processIndex < processesArray.Size(); ++processIndex) {
-      const auto& processEntry = processesArray[processIndex];
+  for (uint32 processIndex = 0; processIndex < processesArray.Size(); ++processIndex) {
+    const auto& processEntry = processesArray[processIndex];
 
-      // Get class
-      if (!processEntry.HasMember(kClassTag) || !processEntry[kClassTag].IsString()) {
-        MCLOG(Error, "No class tag for process");
-        continue;
-      }
-
-      std::string className(processEntry[kClassTag].GetString());
-
-      // Get factory
-      const auto& processInfoMap = ProcessFactory::GetInfoMap();
-      const auto& processInfo = processInfoMap.find(className);
-      if (processInfo == processInfoMap.end()) {
-        MCLOG(Error, "Invalid class tag for process");
-        continue;
-      }
-
-      try {
-        processes.push_back(processInfo->second.factory({ processEntry }));
-      }
-      catch (...) {
-        continue;
-      }
+    // Get class
+    if (!processEntry.HasMember(kClassTag) || !processEntry[kClassTag].IsString()) {
+      MCLOG(Error, "No class tag for process");
+      continue;
     }
-  }
-  else {
-    // If no process is attached, create a decay 0 process; this will always
-    // return true and allow the sound to naturally expire (if it does)
-    processes.push_back(new ProcessDecay);
+
+    std::string className(processEntry[kClassTag].GetString());
+
+    // Get factory
+    const auto& processInfoMap = ProcessFactory::GetInfoMap();
+    const auto& processInfo = processInfoMap.find(className);
+    if (processInfo == processInfoMap.end()) {
+      MCLOG(Error, "Invalid class tag for process");
+      continue;
+    }
+
+    try {
+      processes.push_back(processInfo->second.factory({ processEntry }));
+    }
+    catch (...) {
+      continue;
+    }
   }
 
   // Sounds
@@ -175,9 +169,14 @@ void Patch::RenderDialog() {
 
   ImGui::Text("Processes");
   ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+  ImGui::PushID(&processName);
   if (ImGui::Button("+")) {
+    ImGui::PopID();
     processName = "ProcessDecay";
     ImGui::OpenPopup("Add Process");
+  }
+  else {
+    ImGui::PopID();
   }
 
   if (ImGui::BeginPopup("Add Process")) {
@@ -187,8 +186,6 @@ void Patch::RenderDialog() {
         ImGui::PushID(reinterpret_cast<const void*>(&processInfo.second));
         if (ImGui::Selectable(processInfo.first.c_str(), processInfo.first == processName)) {
           processName = processInfo.first;
-
-          // TODO: Spawn/add process
         }
         ImGui::PopID();
       }
@@ -197,19 +194,43 @@ void Patch::RenderDialog() {
 
     ImGui::Spacing();
 
-    ImGui::Button("OK");
+    if (ImGui::Button("OK")) {
+      // Spawn process
+      processName.clear();
+
+      ImGui::CloseCurrentPopup();
+    }
+
     ImGui::SameLine();
-    ImGui::Button("Cancel");
+
+    if (ImGui::Button("Cancel")) {
+      ImGui::CloseCurrentPopup();
+    }
 
     ImGui::EndPopup();
   }
 
-  for (auto& process : processes) {
+  auto processIt = processes.begin();
+  while (processIt != processes.end()) {
     ImGui::Separator();
-    ImGui::Text(process->GetProcessClassName().c_str());
+    ImGui::Text((*processIt)->GetProcessClassName().c_str());
     ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-    ImGui::Button("x");
-    process->RenderDialog();
+    if (processes.size() == 1) {
+      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    }
+    bool remove = ImGui::Button("x");
+    if (processes.size() == 1) {
+      ImGui::PopItemFlag();
+      ImGui::PopStyleVar();
+    }
+    if (remove) {
+      processes.erase(processIt);
+    }
+    else {
+      (*processIt)->RenderDialog();
+      ++processIt;
+    }
   }
   ImGui::Separator();
 
@@ -219,14 +240,68 @@ void Patch::RenderDialog() {
 
   ImGui::Text("Sounds");
   ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-  ImGui::Button("+");
+  ImGui::PushID(&soundName);
+  if (ImGui::Button("+")) {
+    ImGui::PopID();
+    soundName = "WavSound";
+    ImGui::OpenPopup("Add Sound");
+  }
+  else {
+    ImGui::PopID();
+  }
 
-  for (auto& sound : sounds) {
+  if (ImGui::BeginPopup("Add Sound")) {
+    auto const& soundInfoMap = SoundFactory::GetInfoMap();
+    if (ImGui::BeginCombo("Sound", soundName.c_str())) {
+      for (auto const& soundInfo : soundInfoMap) {
+        ImGui::PushID(reinterpret_cast<const void*>(&soundInfo.second));
+        if (ImGui::Selectable(soundInfo.first.c_str(), soundInfo.first == soundName)) {
+          soundName = soundInfo.first;
+        }
+        ImGui::PopID();
+      }
+      ImGui::EndCombo();
+    }
+
+    ImGui::Spacing();
+
+    if (ImGui::Button("OK")) {
+      // Spawn sound
+      soundName.clear();
+
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Cancel")) {
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+  }
+
+  auto soundIt = sounds.begin();
+  while (soundIt != sounds.end()) {
     ImGui::Separator();
-    ImGui::Text(sound->GetSoundClassName().c_str());
+    ImGui::Text((*soundIt)->GetSoundClassName().c_str());
     ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-    ImGui::Button("x");
-    sound->RenderDialog();
+    if (sounds.size() == 1) {
+      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    }
+    bool remove = ImGui::Button("x");
+    if (sounds.size() == 1) {
+      ImGui::PopItemFlag();
+      ImGui::PopStyleVar();
+    }
+    if (remove) {
+      sounds.erase(soundIt);
+    }
+    else {
+      (*soundIt)->RenderDialog();
+      ++soundIt;
+    }
   }
   ImGui::Separator();
 

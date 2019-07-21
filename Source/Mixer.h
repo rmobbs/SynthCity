@@ -47,6 +47,8 @@ protected:
     // Frame counter
     uint32 frame = 0;
 
+    float volume = 1.0f;
+
     Voice() = default;
     ~Voice();
   };

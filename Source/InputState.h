@@ -11,6 +11,7 @@ public:
   int mouseX = 0;
   int mouseY = 0;
   bool downL = false;
+  bool downR = false;
   int scroll = 0;
   std::string inputText;
   std::array<uint8, kMaxKey> wasDown;

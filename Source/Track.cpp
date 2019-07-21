@@ -7,17 +7,16 @@
 #include "Patch.h"
 #include "imgui.h"
 
+#include "ProcessDecay.h"
+#include "WavSound.h"
+
 static constexpr const char* kNameTag("name");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
 
-Track::Track() {
-
-}
-
 Track::Track(const std::string& name)
   : name(name) {
-
+  patch = new Patch({ new ProcessDecay }, { new WavSound });
 }
 
 Track::Track(const ReadSerializer& serializer) {

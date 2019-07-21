@@ -10,8 +10,6 @@ class Sound;
 
 class Instrument {
 public:
-  static constexpr uint32 kNoteVelocityAsUint8 = 255;
-
   std::vector<Track*> tracks;
   std::string name;
   uint32 numNotes;
@@ -19,7 +17,7 @@ public:
   void AddTrack(Track* track);
   void ClearNotes();
   void Clear();
-  void PlayTrack(uint32 trackIndex, float velocity);
+  void PlayTrack(uint32 trackIndex);
   void SetNoteCount(uint32 numNotes);
   void SetTrackNote(uint32 trackIndex, uint32 noteIndex, float velocity);
   bool SaveInstrument(std::string fileName);

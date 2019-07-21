@@ -184,6 +184,9 @@ uint32 Sequencer::NextFrame(void)
   }
 
   for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
+    if (instrument->tracks[trackIndex]->GetMute()) {
+      continue;
+    }
     auto& notes = instrument->tracks[trackIndex]->GetNotes();
     if (currPosition >= static_cast<int32>(notes.size())) {
       continue;
@@ -194,8 +197,7 @@ uint32 Sequencer::NextFrame(void)
       if (notePlayedCallback != nullptr) {
         notePlayedCallback(trackIndex, currPosition, notePlayedPayload);
       }
-      instrument->PlayTrack(trackIndex, static_cast<float>(*d) /
-        static_cast<float>(Instrument::kNoteVelocityAsUint8));
+      instrument->PlayTrack(trackIndex);
     }
   }
 
@@ -287,7 +289,8 @@ bool Sequencer::SaveSong(std::string fileName) {
             w.Key(kTrackTag);
             w.Uint(trackIndex);
             w.Key(kVelocityTag);
-            w.Double(static_cast<float>(n) / static_cast<float>(Instrument::kNoteVelocityAsUint8));
+            // TODO: Should just be on/off
+            w.Double(static_cast<float>(n) / static_cast<float>(255));
             w.EndObject();
           }
         }

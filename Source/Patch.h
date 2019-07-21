@@ -18,6 +18,7 @@ public:
 
   }
 
+  Patch() = default;
   Patch(const ReadSerializer& serializer);
   ~Patch();
 

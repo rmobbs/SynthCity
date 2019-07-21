@@ -13,11 +13,12 @@ protected:
   std::string name;
   std::string colorScheme;
   std::vector<uint8> notes;
+  bool mute = false;
+  float volume = 1.0f;
 
   Patch* patch = nullptr;
 
 public:
-  Track();
   Track(const std::string& name);
   Track(const ReadSerializer& serializer);
   ~Track();
@@ -47,5 +48,18 @@ public:
     return patch;
   }
   void SetPatch(Patch* newPatch);
+
+  inline void SetMute(bool shouldMute) {
+    mute = shouldMute;
+  }
+  inline bool GetMute() {
+    return mute;
+  }
+  inline void SetVolume(float newVolume) {
+    volume = newVolume;
+  }
+  inline float GetVolume() {
+    return volume;
+  }
 };
 

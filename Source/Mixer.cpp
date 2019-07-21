@@ -174,8 +174,9 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         }
 
         // Add to mix buffer
-        mixBuffer[frame * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio;
-        mixBuffer[frame * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio;
+        for (uint32 c = 0; c < kDefaultChannels; ++c) {
+          mixBuffer[frame * kDefaultChannels + c] += samples[c] * voice.volume * masterVolume * kPeakVolumeRatio;
+        }
 
         // Advance frame
         ++voice.frame;
@@ -267,6 +268,7 @@ void Mixer::PlayPatch(const Patch* const patch, float volume) {
       voice->processes.push_back(process->CreateInstance());
     }
     voice->frame = 0;
+    voice->volume = volume;
 
     voices.push_back(voice);
   }

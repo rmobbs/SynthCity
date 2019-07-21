@@ -32,6 +32,7 @@ protected:
   uint32 logResponderId = UINT32_MAX;
   uint32 mainWindowHandle = UINT32_MAX;
   bool wasConsoleOpen = true;
+  Dialog* pendingDialog = nullptr;
   Dialog* activeDialog = nullptr;
   ImGuiRenderable renderable;
 
