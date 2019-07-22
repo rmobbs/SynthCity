@@ -17,6 +17,8 @@ static constexpr const char* kSoundsTag("sounds");
 static constexpr uint32 kSubDialogPaddingSpacing = 5;
 
 Patch::Patch(const Patch& that) {
+  soundDuration = that.soundDuration;
+
   for (const auto& process : that.processes) {
     this->processes.push_back(process->Clone());
   }
@@ -79,7 +81,7 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
     }
 
     try {
-      processes.push_back(processInfo->second.serialize({ processEntry }));
+      AddProcess(processInfo->second.serialize({ processEntry }));
     }
     catch (...) {
       continue;
@@ -111,7 +113,7 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
     }
 
     try {
-      sounds.push_back(soundInfo->second.serialize({ soundEntry }));
+      AddSound(soundInfo->second.serialize({ soundEntry }));
     }
     catch (...) {
       continue;
@@ -169,6 +171,26 @@ bool Patch::SerializeWrite(const WriteSerializer& serializer) {
   return true;
 }
 
+void Patch::AddSound(Sound* sound) {
+  assert(sound);
+
+  sounds.push_back(sound);
+
+  // Get duration
+  soundDuration = 0.0f;
+  for (const auto& sound : sounds) {
+    if (sound->GetDuration() > soundDuration) {
+      soundDuration = sound->GetDuration();
+    }
+  }
+}
+
+void Patch::AddProcess(Process* process) {
+  assert(process);
+
+  processes.push_back(process);
+}
+
 void Patch::RenderDialog() {
   static std::string processName;
   static std::string soundName;
@@ -205,7 +227,7 @@ void Patch::RenderDialog() {
     ImGui::Spacing();
 
     if (ImGui::Button("OK")) {
-      processes.push_back(ProcessFactory::GetInfoMap().find(processName)->second.spawn());
+      AddProcess(ProcessFactory::GetInfoMap().find(processName)->second.spawn());
 
       processName.clear();
 
@@ -289,7 +311,7 @@ void Patch::RenderDialog() {
     ImGui::Spacing();
 
     if (ImGui::Button("OK")) {
-      sounds.push_back(SoundFactory::GetInfoMap().find(soundName)->second.spawn());
+      AddSound(SoundFactory::GetInfoMap().find(soundName)->second.spawn());
 
       soundName.clear();
 

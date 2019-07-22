@@ -7,6 +7,7 @@
 
 class WavData {
 public:
+  float duration = 0.0f;
   std::string fileName;
   uint32 channels = 0;
   std::vector<uint8> data;

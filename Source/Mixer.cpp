@@ -154,10 +154,12 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         // Get samples from sound(s)
         for (auto& s : voice.sounds) {
           if (s->sound != nullptr) {
-            ++ns;
             if (s->sound->GetSamplesForFrame(samples,
               kDefaultChannels, voice.frame, s) != kDefaultChannels) {
               s->sound = nullptr;
+            }
+            else {
+              ++ns;
             }
           }
         }
@@ -165,12 +167,18 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         // Apply process(es)
         for (auto& p : voice.processes) {
           if (p->process != nullptr) {
-            ++np;
             if (p->process->ProcessSamples(samples,
-              kDefaultChannels, voice.frame, p) != true) {
+              kDefaultChannels, voice.frame, (Patch*)voice.patch, p) != true) {
               p->process = nullptr;
             }
+            else {
+              ++np;
+            }
           }
+        }
+
+        if (ns == 0 || np == 0) {
+          break;
         }
 
         // Add to mix buffer
@@ -228,6 +236,7 @@ void Mixer::WriteOutput(float *input, int16 *output, int32 frames) {
 void Mixer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   // 2 channels, 2 bytes/sample = 4 bytes/frame
   length /= 4;
+
   while (length > 0) {
     // Mix and write audio
     int32 frames = std::min(std::min(ticksRemaining,
@@ -267,8 +276,8 @@ void Mixer::StopVoice(int32 voiceId) {
   if (voiceMapEntry != voiceMap.end()) {
     auto voiceEntry = std::find(voices.begin(), voices.end(), voiceMapEntry->second);
     assert(voiceEntry != voices.end());
-    voices.erase(voiceEntry);
     voiceMap.erase(voiceMapEntry);
+    voices.erase(voiceEntry);
   }
   SDL_UnlockAudio();
 }

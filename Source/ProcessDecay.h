@@ -18,7 +18,7 @@ public:
   bool SerializeRead(const ReadSerializer& serializer) override;
 
   ProcessInstance* CreateInstance() override;
-  bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) override;
+  bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, Patch* patch, ProcessInstance* instance) override;
 
   void RenderDialog() override;
 

@@ -24,7 +24,7 @@ WavSound::WavSound()
 WavSound::WavSound(const WavSound& that)
   : Sound(that)
   , wavData(that.wavData) {
-
+  duration = wavData->duration;
 }
 
 WavSound::WavSound(const std::string& fileName)
@@ -33,6 +33,7 @@ WavSound::WavSound(const std::string& fileName)
   if (!wavData) {
     throw std::runtime_error("Unable to load WAV file");
   }
+  duration = wavData->duration;
 }
 
 WavSound::WavSound(const ReadSerializer& serializer)
@@ -40,6 +41,7 @@ WavSound::WavSound(const ReadSerializer& serializer)
   if (!SerializeRead(serializer)) {
     throw std::runtime_error("Unable to serialize WAV sound");
   }
+  duration = wavData->duration;
 }
 
 void WavSound::RenderDialog() {
@@ -171,6 +173,7 @@ void WavSound::SetWavData(WavData* newWavData) {
   SDL_LockAudio();
   // Note: will not stop any playing voice
   wavData = newWavData;
+  duration = wavData->duration;
   SDL_UnlockAudio();
 }
 

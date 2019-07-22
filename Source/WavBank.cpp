@@ -107,6 +107,8 @@ WavData* WavBank::LoadWav(std::string const& fileName) {
 
   wavData->channels = spec.channels;
   wavData->fileName = fileName;
+  wavData->duration = (static_cast<float>(audibleLength) /
+    static_cast<float>(frameSize)) / static_cast<float>(spec.freq);
   wavData->data.assign(data + audibleOffset, data + audibleLength);
 
   SDL_FreeWAV(data);

@@ -17,6 +17,8 @@ public:
   }
 };
 
+class Patch;
+
 // A process is an entity that takes sound data and does something with it; could
 // pitch-shift it, could fade it in/out, could run ADSR, etc.
 class Process {
@@ -36,7 +38,7 @@ public:
 
   virtual ProcessInstance* CreateInstance() = 0;
 
-  virtual bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) = 0;
+  virtual bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, Patch* patch, ProcessInstance* instance) = 0;
 
   inline const std::string& GetProcessClassName() const {
     return className;
