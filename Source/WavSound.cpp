@@ -95,20 +95,23 @@ void WavSound::RenderDialog() {
 uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) {
   // Could eventually use the sound state for ADSR ...
 
-  const uint32 frameSize = sizeof(int16) * wavData->channels;
+  if (wavData != nullptr) {
+    const uint32 frameSize = sizeof(int16) * wavData->channels;
 
-  // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
-  // by the size of our frame
-  if (frame >= wavData->data.size() / frameSize) {
-    return 0;
+    // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
+    // by the size of our frame
+    if (frame >= wavData->data.size() / frameSize) {
+      return 0;
+    }
+
+    for (uint8 channel = 0; channel < channels; ++channel) {
+      samples[channel] = static_cast<float>(reinterpret_cast<int16*>(wavData->
+        data.data() + frame * frameSize)[channel % wavData->channels]) / static_cast<float>(SHRT_MAX);
+    }
+    return channels;
   }
 
-  for (uint8 channel = 0; channel < channels; ++channel) {
-    samples[channel] = static_cast<float>(reinterpret_cast<int16*>(wavData->
-      data.data() + frame * frameSize)[channel % wavData->channels]) / static_cast<float>(SHRT_MAX);
-  }
-
-  return channels;
+  return 0;
 }
 
 bool WavSound::SerializeWrite(const WriteSerializer& serializer) {

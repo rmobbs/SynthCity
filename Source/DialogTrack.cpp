@@ -7,6 +7,7 @@
 #include "Instrument.h"
 #include "Mixer.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
 static constexpr float kDialogWidth(600.0f);
 static constexpr float kDialogHeight(640.0f);
@@ -40,7 +41,14 @@ bool DialogTrack::Render() {
       track->SetName(std::string(nameBuf));
     }
 
-    if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(playButtonTexture), ImVec2(20, 20))) {
+    ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+
+    auto& imGuiStyle = ImGui::GetStyle();
+
+    auto oldItemSpacing = imGuiStyle.ItemSpacing;
+    imGuiStyle.ItemSpacing.x = 2;
+
+    if (ImGui::ArrowButtonEx("PlayButton", ImGuiDir_Right, ImVec2(22, 20), 0)) {
       if (playingVoiceId != -1) {
         Mixer::Get().StopVoice(playingVoiceId);
       }
@@ -49,12 +57,14 @@ bool DialogTrack::Render() {
 
     ImGui::SameLine();
 
-    if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonTexture), ImVec2(20, 20))) {
+    if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonTexture), ImVec2(14, 14))) {
       if (playingVoiceId != -1) {
         Mixer::Get().StopVoice(playingVoiceId);
         playingVoiceId = -1;
       }
     }
+
+    imGuiStyle.ItemSpacing = oldItemSpacing;
 
     track->GetPatch()->RenderDialog();
 
@@ -75,6 +85,11 @@ bool DialogTrack::Render() {
   }
 
   if (!isOpen) {
+    if (playingVoiceId != -1) {
+      Mixer::Get().StopVoice(playingVoiceId);
+      playingVoiceId = -1;
+    }
+
     if (exitedOk) {
       if (trackIndex != -1) {
         instrument->ReplaceTrack(trackIndex, track);

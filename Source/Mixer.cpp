@@ -284,6 +284,8 @@ int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
   voice->volume = volume;
   voice->voiceId = nextVoiceId++;
 
+  voiceMap.insert({ voice->voiceId, voice });
+
   voices.push_back(voice);
 
   SDL_UnlockAudio();

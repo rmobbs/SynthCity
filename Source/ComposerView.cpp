@@ -396,12 +396,13 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
           for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
             auto& track = instrument->GetTracks()[trackIndex];
 
-            // Track label and UI button for manual trigger
             ImVec4 oldColors[ImGuiCol_COUNT];
             memcpy(oldColors, imGuiStyle.Colors, sizeof(oldColors));
 
             uint32 flashColor = kPlayTrackFlashColor;
             SetTrackColors(track->GetColorScheme(), flashColor);
+
+            imGuiStyle.ItemSpacing = oldItemSpacing;
 
             // Hamburger menu
             std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackIndex);
@@ -557,16 +558,16 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
       // Bottom tool bar
       {
-        imGuiStyle.ItemSpacing.x = 0;
+        imGuiStyle.ItemSpacing.x = 2;
 
         // Play/Pause button
         if (sequencer.IsPlaying()) {
-          if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(pauseButtonIconTexture), ImVec2(20, 20))) {
+          if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(pauseButtonIconTexture), ImVec2(14, 14))) {
             sequencer.Pause();
           }
         }
         else {
-          if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(playButtonIconTexture), ImVec2(20, 20))) {
+          if (ImGui::ArrowButtonEx("PlayButton", ImGuiDir_Right, ImVec2(22, 20), 0)) {
             sequencer.Play();
           }
         }
@@ -574,7 +575,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         ImGui::SameLine();
 
         // Stop button
-        if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonIconTexture), ImVec2(20, 20))) {
+        if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonIconTexture), ImVec2(14, 14))) {
           sequencer.Stop();
         }
 
@@ -761,7 +762,7 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, playButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  uint8* iconData = SOIL_load_image("Assets\\icon_play.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  uint8* iconData = SOIL_load_image("Assets\\play_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
   SOIL_free_image_data(iconData);
 
@@ -769,7 +770,7 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, pauseButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  iconData = SOIL_load_image("Assets\\icon_pause.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  iconData = SOIL_load_image("Assets\\pause_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
   SOIL_free_image_data(iconData);
 
@@ -778,7 +779,7 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, stopButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  iconData = SOIL_load_image("Assets\\icon_stop.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  iconData = SOIL_load_image("Assets\\stop_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
   SOIL_free_image_data(iconData);
 
