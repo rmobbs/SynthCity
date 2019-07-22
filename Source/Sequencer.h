@@ -116,6 +116,7 @@ public:
 
   void Play();
   void Pause();
+  void PauseKill();
   void Stop();
   bool LoadInstrument(std::string fileName, std::string mustMatch);
 

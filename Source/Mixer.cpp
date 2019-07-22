@@ -252,6 +252,15 @@ void Mixer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   }
 }
 
+void Mixer::StopAllVoices() {
+  for (auto& voice : voices) {
+    delete voice;
+  }
+  voices.clear();
+
+  numActiveVoices = 0;
+}
+
 void Mixer::StopVoice(int32 voiceId) {
   SDL_LockAudio();
   auto voiceMapEntry = voiceMap.find(voiceId);

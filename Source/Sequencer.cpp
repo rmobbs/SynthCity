@@ -107,8 +107,14 @@ void Sequencer::Pause() {
   isPlaying = false;
 }
 
+void Sequencer::PauseKill() {
+  Pause();
+  Mixer::Get().StopAllVoices();
+}
+
 void Sequencer::Stop() {
   isPlaying = false;
+  Mixer::Get().StopAllVoices();
   SetPosition(0);
 }
 

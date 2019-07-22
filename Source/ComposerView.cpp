@@ -325,6 +325,10 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   }
 
   if (pendingDialog != nullptr) {
+    wasPlaying = Sequencer::Get().IsPlaying();
+
+    Sequencer::Get().PauseKill();
+
     assert(activeDialog == nullptr);
     activeDialog = pendingDialog;
     activeDialog->Open();
@@ -335,6 +339,10 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     if (!activeDialog->Render()) {
       delete activeDialog;
       activeDialog = nullptr;
+
+      if (wasPlaying) {
+        Sequencer::Get().Play();
+      }
     }
   }
 

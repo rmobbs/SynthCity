@@ -78,6 +78,7 @@ public:
   void SetMasterVolume(float masterVolume);
 
   bool Init(uint32 audioBufferSize);
+  void StopAllVoices();
   void StopVoice(int32 voiceId);
   int32 PlayPatch(Patch const* patch, float volume);
   void ApplyInterval(uint32 interval);
