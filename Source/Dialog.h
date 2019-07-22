@@ -16,8 +16,5 @@ public:
   inline bool ExitedOk() const {
     return exitedOk;
   }
-
-  virtual bool SerializeWrite(const WriteSerializer& serializer) = 0;
-  virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
 };
 

@@ -11,7 +11,20 @@
 static constexpr const char* kFrequencyTag("frequency");
 static constexpr const char* kDurationTag("duration");
 
-SynthSound::SynthSound(std::string className, const ReadSerializer& serializer)
+SynthSound::SynthSound(const std::string& className)
+  : Sound(className) {
+
+}
+
+SynthSound::SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
+  : Sound(className)
+  , frequency(frequency)
+  , durationNum(durationNum)
+  , durationDen(durationDen) {
+
+}
+
+SynthSound::SynthSound(const std::string& className, const ReadSerializer& serializer)
   : Sound(className) {
   if (!SerializeRead(serializer)) {
     throw std::runtime_error("Unable to serialize synth sound");
@@ -57,12 +70,26 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
 
 // Sine
 REGISTER_SOUND(SineSynthSound, "Modulated sine wave");
+SineSynthSound::SineSynthSound()
+  : SynthSound("SineSynthSound") {
+
+}
+
+SineSynthSound::SineSynthSound(const SineSynthSound& that)
+  : SynthSound(that) {
+
+}
+
 SineSynthSound::SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen)
   : SynthSound("SineSynthSound", frequency, durationNum, durationDen) {
 }
 
 SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
   : SynthSound("SineSynthSound", serializer) {
+}
+
+Sound* SineSynthSound::Clone() {
+  return new SineSynthSound(*this);
 }
 
 SoundInstance* SineSynthSound::CreateInstance() {

@@ -16,15 +16,9 @@ protected:
   uint32 durationNum = 0;
   uint32 durationDen = 0;
 public:
-  SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
-    : Sound(className)
-    , frequency(frequency)
-    , durationNum(durationNum)
-    , durationDen(durationDen) {
-
-  }
-
-  SynthSound(std::string className, const ReadSerializer& serializer);
+  SynthSound(const std::string& className);
+  SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen);
+  SynthSound(const std::string& className, const ReadSerializer& serializer);
 
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
@@ -41,8 +35,12 @@ public:
 
 class SineSynthSound : public SynthSound {
 public:
+  SineSynthSound();
+  SineSynthSound(const SineSynthSound& that);
   SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen);
   SineSynthSound(const ReadSerializer& serializer);
+
+  Sound* Clone() override;
 
   SoundInstance* CreateInstance() override;
   uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) override;

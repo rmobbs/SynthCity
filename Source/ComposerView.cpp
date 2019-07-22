@@ -17,6 +17,7 @@
 #include "Patch.h"
 #include "ProcessDecay.h"
 #include "WavSound.h"
+#include "Globals.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -44,7 +45,6 @@ static constexpr float kDefaultNoteVelocity = 1.0f;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
-static constexpr float kScrollBarWidth = 15.0f;
 static constexpr float kSequencerWindowToolbarHeight = 64.0f;
 static constexpr float kHamburgerMenuWidth(20.0f);
 static constexpr std::string_view kJsonTag(".json");
@@ -315,7 +315,8 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack(CreateTrack());
+          pendingDialog = new DialogTrack(sequencer.GetInstrument(),
+            -1, CreateTrack(), playButtonIconTexture, stopButtonIconTexture);
         }
         ImGui::EndMenu();
       }
@@ -423,7 +424,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
                 track->SetVolume(volume);
               }
               if (ImGui::Button("Properties...")) {
-                pendingDialog = new DialogTrack(track);
+                // Clone the track so they can change stuff and then cancel
+                pendingDialog = new DialogTrack(instrument, trackIndex,
+                  new Track(*track), playButtonIconTexture, stopButtonIconTexture);
               }
               ImGui::EndPopup();
             }

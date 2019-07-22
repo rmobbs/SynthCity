@@ -33,6 +33,8 @@ public:
     return className;
   }
 
+  virtual Sound* Clone() = 0;
+
   virtual SoundInstance* CreateInstance() = 0;
   virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) = 0;
 

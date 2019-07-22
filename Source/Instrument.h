@@ -15,11 +15,12 @@ public:
   uint32 numNotes;
 
   void AddTrack(Track* track);
+  void ReplaceTrack(uint32 index, Track* track);
   void ClearNotes();
   void Clear();
   void PlayTrack(uint32 trackIndex);
   void SetNoteCount(uint32 numNotes);
-  void SetTrackNote(uint32 trackIndex, uint32 noteIndex, float velocity);
+  void SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff);
   bool SaveInstrument(std::string fileName);
 
   Instrument(const ReadSerializer& r, uint32 numNotes);

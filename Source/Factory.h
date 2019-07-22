@@ -8,25 +8,28 @@
 #include <functional>
 
 template<class FactoryClass> class Factory {
-  using FactoryFunction = std::function<FactoryClass* (const ReadSerializer& serializer)>;
+  using SerializeFunction = std::function<FactoryClass* (const ReadSerializer& serializer)>;
+  using SpawnFunction = std::function<FactoryClass*()>;
 public:
   class Information {
   public:
 
     std::string name;
     std::string desc;
-    std::string dialog;
-    FactoryFunction factory;
+    SerializeFunction serialize;
+    SpawnFunction spawn;
 
     inline Information() {
 
     }
 
-    inline Information(std::string name, std::string desc, std::string dialog, FactoryFunction factory)
+    inline Information(std::string eatme) {}
+
+    inline Information(std::string name, std::string desc, SerializeFunction serialize, SpawnFunction spawn)
       : name(name)
       , desc(desc)
-      , dialog(dialog)
-      , factory(factory) {
+      , serialize(serialize)
+      , spawn(spawn) {
       Factory::Register(*this);
     }
   };
@@ -56,11 +59,13 @@ public:
   }
 };
 
-#define FACTORY_REGISTER(FactoryName, FactoryClass, ClassDesc, DialogClass) \
+#define FACTORY_REGISTER(FactoryName, FactoryClass, ClassDesc) \
   FactoryName::Information FactoryClass##FactoryInfo(#FactoryClass, \
     ClassDesc, \
-    #DialogClass, \
     [](const ReadSerializer& serializer) { \
       return new FactoryClass(serializer); \
+    }, \
+    []() { \
+      return new FactoryClass; \
     })
 

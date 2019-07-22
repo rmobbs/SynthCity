@@ -203,6 +203,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
 
     // Delete expired voices
     for (uint32 vi = nv; vi < voices.size(); ++vi) {
+      voiceMap.erase(voices[vi]->voiceId);
       delete voices[vi];
     }
     voices.resize(nv);
@@ -251,28 +252,42 @@ void Mixer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   }
 }
 
-void Mixer::PlayPatch(const Patch* const patch, float volume) {
+void Mixer::StopVoice(int32 voiceId) {
+  SDL_LockAudio();
+  auto voiceMapEntry = voiceMap.find(voiceId);
+  if (voiceMapEntry != voiceMap.end()) {
+    auto voiceEntry = std::find(voices.begin(), voices.end(), voiceMapEntry->second);
+    assert(voiceEntry != voices.end());
+    voices.erase(voiceEntry);
+    voiceMap.erase(voiceMapEntry);
+  }
+  SDL_UnlockAudio();
+}
+
+int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
   SDL_LockAudio();
 
   if (voices.size() >= kMaxSimultaneousVoices) {
     MCLOG(Error, "Currently playing max voices; sound dropped");
+    return -1;
   }
-  else {
-    Voice* voice = new Voice;
+  Voice* voice = new Voice;
 
-    voice->patch = patch;
-    for (const auto& sound : patch->sounds) {
-      voice->sounds.push_back(sound->CreateInstance());
-    }
-    for (const auto& process : patch->processes) {
-      voice->processes.push_back(process->CreateInstance());
-    }
-    voice->frame = 0;
-    voice->volume = volume;
-
-    voices.push_back(voice);
+  voice->patch = patch;
+  for (const auto& sound : patch->sounds) {
+    voice->sounds.push_back(sound->CreateInstance());
   }
+  for (const auto& process : patch->processes) {
+    voice->processes.push_back(process->CreateInstance());
+  }
+  voice->frame = 0;
+  voice->volume = volume;
+  voice->voiceId = nextVoiceId++;
+
+  voices.push_back(voice);
 
   SDL_UnlockAudio();
+
+  return voice->voiceId;
 }
 

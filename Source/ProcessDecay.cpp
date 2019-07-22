@@ -12,6 +12,23 @@ REGISTER_PROCESS(ProcessDecay, "Simple linear decay");
 
 static constexpr const char* kDecayTag = "decay";
 
+ProcessDecay::ProcessDecay()
+  : Process("ProcessDecay") {
+
+}
+
+ProcessDecay::ProcessDecay(float decay)
+  : Process("ProcessDecay")
+  , decay(decay) {
+
+}
+
+ProcessDecay::ProcessDecay(const ProcessDecay& that)
+  : Process(that)
+  , decay(that.decay) {
+
+}
+
 ProcessDecay::ProcessDecay(const ReadSerializer& serializer)
   : Process("ProcessDecay") {
   if (!SerializeRead(serializer)) {
@@ -45,6 +62,10 @@ ProcessInstance* ProcessDecay::CreateInstance() {
   return new ProcessInstance(this);
 }
 
+Process* ProcessDecay::Clone() {
+  return new ProcessDecay(*this);
+}
+
 bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) {
   if (decay > 0.0f) {
     if (instance->volume < kVolumeEpsilon) {
@@ -61,5 +82,7 @@ bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 fram
 }
 
 void ProcessDecay::RenderDialog() {
+  ImGui::PushID(&decay);
   ImGui::SliderFloat("Decay", &decay, 0.0f, 1.0f);
+  ImGui::PopID();
 }

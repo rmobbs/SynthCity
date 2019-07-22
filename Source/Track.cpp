@@ -14,6 +14,15 @@ static constexpr const char* kNameTag("name");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
 
+Track::Track(const Track& that)
+: name(that.name)
+, colorScheme(that.colorScheme)
+, notes(that.notes)
+, mute(that.mute)
+, volume(that.volume) {
+  patch = new Patch(*that.patch);
+}
+
 Track::Track(const std::string& name)
   : name(name) {
   patch = new Patch({ new ProcessDecay }, { new WavSound });
@@ -59,6 +68,12 @@ void Track::SetPatch(Patch* newPatch) {
   SDL_LockAudio();
   delete patch;
   patch = newPatch;
+  SDL_UnlockAudio();
+}
+
+void Track::SetNotes(const std::vector<uint8>& newNotes) {
+  SDL_LockAudio();
+  notes = newNotes;
   SDL_UnlockAudio();
 }
 

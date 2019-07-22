@@ -12,7 +12,9 @@ public:
   std::vector<Process*> processes;
   std::vector<Sound*> sounds;
 
-  inline Patch(const std::vector<Process*>& processes, const std::vector<Sound*>& sounds)
+  Patch(const Patch& that);
+
+  Patch(const std::vector<Process*>& processes, const std::vector<Sound*>& sounds)
     : processes(processes)
     , sounds(sounds) {
 

@@ -3,6 +3,7 @@
 #include "SerializeImpl.h"
 #include "SoundFactory.h"
 #include "WavBank.h"
+#include "OddsAndEnds.h"
 #include "resource.h"
 
 #include "SDL_audio.h"
@@ -15,6 +16,17 @@
 #include <algorithm>
 
 REGISTER_SOUND(WavSound, "Sound from WAV file");
+WavSound::WavSound()
+  : Sound("WavSound") {
+
+}
+
+WavSound::WavSound(const WavSound& that)
+  : Sound(that)
+  , wavData(that.wavData) {
+
+}
+
 WavSound::WavSound(const std::string& fileName)
 : Sound("WavSound") {
   wavData = WavBank::Get().GetWav(fileName);
@@ -34,21 +46,25 @@ void WavSound::RenderDialog() {
   std::string oldFileName;
   if (wavData != nullptr) {
     oldFileName = wavData->fileName;
-    std::transform(oldFileName.begin(), oldFileName.end(), oldFileName.begin(), ::tolower);
   }
 
   char fileNameBuf[1024];
   strcpy_s(fileNameBuf, sizeof(fileNameBuf), oldFileName.c_str());
+
+  std::string wavSoundUniqueId = std::string("WavSoundUniqueId") +
+    std::to_string(reinterpret_cast<uint32>(&wavData));
+  ImGui::PushID(wavSoundUniqueId.c_str());
   if (ImGui::InputText("File", fileNameBuf, sizeof(fileNameBuf) - 1)) {
     std::string newFileName(std::filesystem::absolute(fileNameBuf).generic_string());
-    std::transform(newFileName.begin(), oldFileName.end(), newFileName.begin(), ::tolower);
     std::replace(newFileName.begin(), newFileName.end(), '/', '\\');
 
-    if (newFileName != oldFileName) {
+    if (!iequals(newFileName, oldFileName)) {
       SetWavData(WavBank::Get().GetWav(newFileName));
     }
   }
+  ImGui::PopID();
 
+  ImGui::PushID(wavSoundUniqueId.c_str());
   if (ImGui::Button("...")) {
     WCHAR szFile[FILENAME_MAX] = { 0 };
     OPENFILENAME ofn = { 0 };
@@ -66,14 +82,14 @@ void WavSound::RenderDialog() {
 
     if (GetOpenFileName(&ofn)) {
       std::string newFileName(std::filesystem::absolute(W2A(szFile)).generic_string());
-      std::transform(newFileName.begin(), oldFileName.end(), newFileName.begin(), ::tolower);
       std::replace(newFileName.begin(), newFileName.end(), '/', '\\');
 
-      if (newFileName != oldFileName) {
+      if (!iequals(newFileName, oldFileName)) {
         SetWavData(WavBank::Get().GetWav(newFileName));
       }
     }
   }
+  ImGui::PopID();
 }
 
 uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) {
@@ -137,6 +153,10 @@ bool WavSound::SerializeRead(const ReadSerializer& serializer) {
   }
 
   return true;
+}
+
+Sound* WavSound::Clone() {
+  return new WavSound(*this);
 }
 
 SoundInstance* WavSound::CreateInstance() {

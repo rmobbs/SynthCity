@@ -19,6 +19,7 @@ protected:
   Patch* patch = nullptr;
 
 public:
+  Track(const Track& that);
   Track(const std::string& name);
   Track(const ReadSerializer& serializer);
   ~Track();
@@ -26,6 +27,7 @@ public:
   void AddNotes(uint32 noteCount, uint8 noteValue = 0);
   void SetNoteCount(uint32 noteCount, uint8 noteValue = 0);
   void SetNote(uint32 noteIndex, uint8 noteValue);
+  void SetNotes(const std::vector<uint8>& newNotes);
 
   inline const std::string& GetColorScheme(void) const {
     return colorScheme;

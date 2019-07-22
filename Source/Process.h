@@ -23,6 +23,8 @@ class Process {
 protected:
   std::string className;
 public:
+  Process(const Process& that);
+
   Process(const std::string& className)
     : className(className) {
 
@@ -30,7 +32,10 @@ public:
   virtual bool SerializeWrite(const WriteSerializer& serializer) = 0;
   virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
 
+  virtual Process* Clone() = 0;
+
   virtual ProcessInstance* CreateInstance() = 0;
+
   virtual bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) = 0;
 
   inline const std::string& GetProcessClassName() const {

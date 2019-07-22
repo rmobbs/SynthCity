@@ -4,10 +4,19 @@
 #include "Patch.h"
 #include "Process.h"
 #include "Sound.h"
+#include "Instrument.h"
+#include "Mixer.h"
 #include "imgui.h"
 
-DialogTrack::DialogTrack(Track* track)
-  : track(track) {
+static constexpr float kDialogWidth(600.0f);
+static constexpr float kDialogHeight(640.0f);
+
+DialogTrack::DialogTrack(Instrument* instrument, int32 trackIndex, Track* track, uint32 playButtonTexture, uint32 stopButtonTexture)
+  : instrument(instrument)
+  , trackIndex(trackIndex)
+  , track(track)
+  , playButtonTexture(playButtonTexture)
+  , stopButtonTexture(stopButtonTexture) {
 
 }
 
@@ -20,7 +29,7 @@ void DialogTrack::Open() {
 }
 
 bool DialogTrack::Render() {
-  ImGui::SetNextWindowSize(ImVec2(400.0f, 400.0f));
+  ImGui::SetNextWindowSize(ImVec2(kDialogWidth, kDialogHeight));
 
   bool isOpen = true;
   if (ImGui::BeginPopupModal("Add Track", &isOpen)) {
@@ -31,31 +40,26 @@ bool DialogTrack::Render() {
       track->SetName(std::string(nameBuf));
     }
 
+    if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(playButtonTexture), ImVec2(20, 20))) {
+      if (playingVoiceId != -1) {
+        Mixer::Get().StopVoice(playingVoiceId);
+      }
+      playingVoiceId = Mixer::Get().PlayPatch(track->GetPatch(), 1.0f);
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonTexture), ImVec2(20, 20))) {
+      if (playingVoiceId != -1) {
+        Mixer::Get().StopVoice(playingVoiceId);
+        playingVoiceId = -1;
+      }
+    }
+
     track->GetPatch()->RenderDialog();
 
     if (ImGui::Button("OK")) {
       exitedOk = true;
-
-      rapidjson::StringBuffer sb;
-      rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
-
-      // Write dialog into JSON buffer
-      SerializeWrite({ w });
-
-      // Read it back into a JSON document
-      rapidjson::Document d;
-      d.Parse(sb.GetString());
-
-      /*
-      // TODO: This is only handling track creation, not editing
-      try {
-        Sequencer::Get().GetInstrument()->AddTrack(new Track({ d }));
-      }
-      catch (...) {
-
-      }
-      */
-
       ImGui::CloseCurrentPopup();
       isOpen = false;
     }
@@ -69,41 +73,20 @@ bool DialogTrack::Render() {
 
     ImGui::EndPopup();
   }
+
+  if (!isOpen) {
+    if (exitedOk) {
+      if (trackIndex != -1) {
+        instrument->ReplaceTrack(trackIndex, track);
+      }
+      else {
+        instrument->AddTrack(track);
+      }
+    }
+    else {
+      delete track;
+    }
+  }
   return isOpen;
 }
-
-bool DialogTrack::SerializeWrite(const WriteSerializer& serializer) {
-#if 0
-  auto& w = serializer.w;
-
-  w.StartObject();
-
-  // Name tag:string
-  w.Key(kNameTag);
-  w.String(trackName.c_str());
-
-  w.Key(kSoundsTag);
-  w.StartArray();
-
-  w.StartObject();
-
-  // Class tag:string
-  w.Key(kClassTag);
-  w.String(soundName.c_str());
-
-  // Write out sub-dialog details into JSON buffer
-  subDialog->SerializeWrite(serializer);
-
-  w.EndObject();
-
-  w.EndArray();
-  w.EndObject();
-#endif
-  return true;
-}
-
-bool DialogTrack::SerializeRead(const ReadSerializer& serializer) {
-  return true;
-}
-
 

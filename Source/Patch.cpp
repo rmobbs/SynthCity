@@ -5,6 +5,7 @@
 #include "SoundFactory.h"
 #include "ProcessDecay.h"
 #include "Sound.h"
+#include "Globals.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -14,6 +15,15 @@ static constexpr const char* kPatchTag("patch");
 static constexpr const char* kProcessesTag("processes");
 static constexpr const char* kSoundsTag("sounds");
 static constexpr uint32 kSubDialogPaddingSpacing = 5;
+
+Patch::Patch(const Patch& that) {
+  for (const auto& process : that.processes) {
+    this->processes.push_back(process->Clone());
+  }
+  for (const auto& sound : that.sounds) {
+    this->sounds.push_back(sound->Clone());
+  }
+}
 
 Patch::Patch(const ReadSerializer& serializer) {
   if (!SerializeRead(serializer)) {
@@ -69,7 +79,7 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
     }
 
     try {
-      processes.push_back(processInfo->second.factory({ processEntry }));
+      processes.push_back(processInfo->second.serialize({ processEntry }));
     }
     catch (...) {
       continue;
@@ -101,7 +111,7 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
     }
 
     try {
-      sounds.push_back(soundInfo->second.factory({ soundEntry }));
+      sounds.push_back(soundInfo->second.serialize({ soundEntry }));
     }
     catch (...) {
       continue;
@@ -195,7 +205,8 @@ void Patch::RenderDialog() {
     ImGui::Spacing();
 
     if (ImGui::Button("OK")) {
-      // Spawn process
+      processes.push_back(ProcessFactory::GetInfoMap().find(processName)->second.spawn());
+
       processName.clear();
 
       ImGui::CloseCurrentPopup();
@@ -210,29 +221,41 @@ void Patch::RenderDialog() {
     ImGui::EndPopup();
   }
 
-  auto processIt = processes.begin();
-  while (processIt != processes.end()) {
+  ImGui::BeginChild("#ProcessScrollingRegion",
+    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, 200.0f),
+    false,
+    ImGuiWindowFlags_HorizontalScrollbar);
+  {
+    auto processIt = processes.begin();
+    while (processIt != processes.end()) {
+      ImGui::Separator();
+      ImGui::Text((*processIt)->GetProcessClassName().c_str());
+      ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+      if (processes.size() == 1) {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+      }
+      std::string removeTag = std::string("RemoveProcess") +
+        std::to_string(reinterpret_cast<uint32>(*processIt));
+      ImGui::PushID(removeTag.c_str());
+      bool remove = ImGui::Button("x");
+      ImGui::PopID();
+      if (processes.size() == 1) {
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+      }
+      if (remove) {
+        delete *processIt;
+        processIt = processes.erase(processIt);
+      }
+      else {
+        (*processIt)->RenderDialog();
+        ++processIt;
+      }
+    }
     ImGui::Separator();
-    ImGui::Text((*processIt)->GetProcessClassName().c_str());
-    ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-    if (processes.size() == 1) {
-      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-    }
-    bool remove = ImGui::Button("x");
-    if (processes.size() == 1) {
-      ImGui::PopItemFlag();
-      ImGui::PopStyleVar();
-    }
-    if (remove) {
-      processes.erase(processIt);
-    }
-    else {
-      (*processIt)->RenderDialog();
-      ++processIt;
-    }
+    ImGui::EndChild();
   }
-  ImGui::Separator();
 
   for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
     ImGui::Spacing();
@@ -266,7 +289,8 @@ void Patch::RenderDialog() {
     ImGui::Spacing();
 
     if (ImGui::Button("OK")) {
-      // Spawn sound
+      sounds.push_back(SoundFactory::GetInfoMap().find(soundName)->second.spawn());
+
       soundName.clear();
 
       ImGui::CloseCurrentPopup();
@@ -281,29 +305,41 @@ void Patch::RenderDialog() {
     ImGui::EndPopup();
   }
 
-  auto soundIt = sounds.begin();
-  while (soundIt != sounds.end()) {
+  ImGui::BeginChild("#SoundsScrollingRegion",
+    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, 200.0f),
+    false,
+    ImGuiWindowFlags_HorizontalScrollbar);
+  {
+    auto soundIt = sounds.begin();
+    while (soundIt != sounds.end()) {
+      ImGui::Separator();
+      ImGui::Text((*soundIt)->GetSoundClassName().c_str());
+      ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+      if (sounds.size() == 1) {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+      }
+      std::string removeTag = std::string("RemoveSound") +
+        std::to_string(reinterpret_cast<uint32>(*soundIt));
+      ImGui::PushID(removeTag.c_str());
+      bool remove = ImGui::Button("x");
+      ImGui::PopID();
+      if (sounds.size() == 1) {
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+      }
+      if (remove) {
+        delete *soundIt;
+        soundIt = sounds.erase(soundIt);
+      }
+      else {
+        (*soundIt)->RenderDialog();
+        ++soundIt;
+      }
+    }
     ImGui::Separator();
-    ImGui::Text((*soundIt)->GetSoundClassName().c_str());
-    ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-    if (sounds.size() == 1) {
-      ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-      ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-    }
-    bool remove = ImGui::Button("x");
-    if (sounds.size() == 1) {
-      ImGui::PopItemFlag();
-      ImGui::PopStyleVar();
-    }
-    if (remove) {
-      sounds.erase(soundIt);
-    }
-    else {
-      (*soundIt)->RenderDialog();
-      ++soundIt;
-    }
+    ImGui::EndChild();
   }
-  ImGui::Separator();
 
   for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
     ImGui::Spacing();

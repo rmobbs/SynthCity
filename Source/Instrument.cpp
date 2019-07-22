@@ -125,15 +125,21 @@ void Instrument::AddTrack(Track* track) {
   tracks.push_back(track);
 }
 
+void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
+  newTrack->SetNotes(tracks[index]->GetNotes());
+  delete tracks[index];
+  tracks[index] = newTrack;
+}
+
 void Instrument::PlayTrack(uint32 trackIndex) {
   Mixer::Get().PlayPatch(tracks[trackIndex]->GetPatch(), tracks[trackIndex]->GetVolume());
 }
 
-void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, float noteVelocity) {
+void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff) {
   if (trackIndex < tracks.size()) {
 
     SDL_LockAudio();
-    tracks[trackIndex]->SetNote(noteIndex, 255);
+    tracks[trackIndex]->SetNote(noteIndex, onOrOff ? 255 : 0);
     SDL_UnlockAudio();
   }
 }
