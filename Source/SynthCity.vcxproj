@@ -193,6 +193,12 @@
     <ClInclude Include="BaseTypes.h" />
     <ClInclude Include="BaseWindows.h" />
     <ClInclude Include="ComposerView.h" />
+    <ClInclude Include="DialogTrack.h" />
+    <ClInclude Include="Factory.h" />
+    <ClInclude Include="Patch.h" />
+    <ClInclude Include="Process.h" />
+    <ClInclude Include="ProcessDecay.h" />
+    <ClInclude Include="ProcessFactory.h" />
     <ClInclude Include="Track.h" />
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="EnumIterator.h" />
@@ -215,6 +221,7 @@
     <ClInclude Include="SoundFactory.h" />
     <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
+    <ClInclude Include="WavBank.h" />
     <ClInclude Include="WavSound.h" />
   </ItemGroup>
   <ItemGroup>
@@ -224,6 +231,11 @@
     <ClCompile Include="3rdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="ComposerView.cpp" />
+    <ClCompile Include="DialogTrack.cpp" />
+    <ClCompile Include="Patch.cpp" />
+    <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ProcessDecay.cpp" />
+    <ClCompile Include="ProcessFactory.cpp" />
     <ClCompile Include="Track.cpp" />
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />
@@ -241,6 +253,7 @@
     <ClCompile Include="SpriteRenderable.cpp" />
     <ClCompile Include="SynthCity.cpp" />
     <ClCompile Include="SynthSound.cpp" />
+    <ClCompile Include="WavBank.cpp" />
     <ClCompile Include="WavSound.cpp" />
   </ItemGroup>
   <ItemGroup>

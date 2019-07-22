@@ -11,7 +11,20 @@
 static constexpr const char* kFrequencyTag("frequency");
 static constexpr const char* kDurationTag("duration");
 
-SynthSound::SynthSound(std::string className, const ReadSerializer& serializer)
+SynthSound::SynthSound(const std::string& className)
+  : Sound(className) {
+
+}
+
+SynthSound::SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
+  : Sound(className)
+  , frequency(frequency)
+  , durationNum(durationNum)
+  , durationDen(durationDen) {
+
+}
+
+SynthSound::SynthSound(const std::string& className, const ReadSerializer& serializer)
   : Sound(className) {
   if (!SerializeRead(serializer)) {
     throw std::runtime_error("Unable to serialize synth sound");
@@ -55,39 +68,18 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
   return true;
 }
 
-REGISTER_DIALOG(DialogSynthSound);
-bool DialogSynthSound::Render() {
-  ImGui::Text("DialogSynthSound");
-  return true;
-}
-
-bool DialogSynthSound::SerializeWrite(const WriteSerializer& serializer) {
-  auto& w = serializer.w;
-
-  // Frequency
-  uint32 frequency = 1000;
-  w.Key("frequency");
-  w.Uint(frequency);
-
-  // The time value of the note unit in which our duration is expressed, i.e. half-note, quarter-note
-  // We'll make sure it's between [2,<upper-limit>] and it's even
-  INT den = 4;
-  den = std::min(std::max(static_cast<uint32>(den), 2u), Sequencer::Get().GetMaxSubdivisions()) & ~1u;
-
-  // The number of these notes that defines the duration
-  INT num = 2;
-
-  w.Key("duration");
-  w.Uint(num << 16 | den);
-  return true;
-}
-
-bool DialogSynthSound::SerializeRead(const ReadSerializer& serializer) {
-  return true;
-}
-
 // Sine
-REGISTER_SOUND(SineSynthSound, "Modulated sine wave", DialogSynthSound);
+REGISTER_SOUND(SineSynthSound, "Modulated sine wave");
+SineSynthSound::SineSynthSound()
+  : SynthSound("SineSynthSound") {
+
+}
+
+SineSynthSound::SineSynthSound(const SineSynthSound& that)
+  : SynthSound(that) {
+
+}
+
 SineSynthSound::SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen)
   : SynthSound("SineSynthSound", frequency, durationNum, durationDen) {
 }
@@ -96,32 +88,40 @@ SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
   : SynthSound("SineSynthSound", serializer) {
 }
 
-Voice* SineSynthSound::CreateVoice() {
-  SineSynthVoice* voice = new SineSynthVoice;
+Sound* SineSynthSound::Clone() {
+  return new SineSynthSound(*this);
+}
+
+SoundInstance* SineSynthSound::CreateInstance() {
+  SineSynthSoundInstance* instance = new SineSynthSoundInstance(this);
 
   float durationInSeconds = static_cast<float>(Sequencer::Get().
     GetSecondsPerBeat()) * (static_cast<float>(durationNum) / static_cast<float>(durationDen));
 
-  voice->duration = static_cast<uint32>(durationInSeconds * static_cast<float>(Mixer::kDefaultFrequency));
+  instance->duration = static_cast<uint32>(durationInSeconds * static_cast<float>(Mixer::kDefaultFrequency));
 
-  voice->radstep = static_cast<float>((2.0 * M_PI *
+  instance->radstep = static_cast<float>((2.0 * M_PI *
     frequency) / static_cast<double>(Mixer::kDefaultFrequency));
-  return voice;
+  return instance;
 }
 
-uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voiceGeneric) {
-  SineSynthVoice* voice = static_cast<SineSynthVoice*>(voiceGeneric);
-  if (frame < voice->duration) {
-    voice->radians += voice->radstep; // * speed
-    while (voice->radians > (2.0 * M_PI)) {
-      voice->radians -= static_cast<float>(2.0 * M_PI);
+uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instanceGeneric) {
+  SineSynthSoundInstance* instance = static_cast<SineSynthSoundInstance*>(instanceGeneric);
+  if (frame < instance->duration) {
+    instance->radians += instance->radstep; // * speed
+    while (instance->radians > (2.0 * M_PI)) {
+      instance->radians -= static_cast<float>(2.0 * M_PI);
     }
 
-    float s = sinf(voice->radians);
+    float s = sinf(instance->radians);
     for (uint8 channel = 0; channel < channels; ++channel) {
       samples[channel] = s;
     }
     return channels;
   }
   return 0;
+}
+
+void SineSynthSound::RenderDialog() {
+  ImGui::Text("DialogSineSynthSound");
 }

@@ -3,11 +3,13 @@
 #include "SDL.h"
 #include "BaseTypes.h"
 #include <string>
-#include <map>
 #include <vector>
+#include <map>
 #include <atomic>
-#include "Sound.h"
 
+class Patch;
+class SoundInstance;
+class ProcessInstance;
 class Mixer {
 public:
   static constexpr uint32 kDefaultFrequency = 44100;
@@ -28,18 +30,37 @@ protected:
   SDL_AudioSpec audioSpec = { 0 };
   SDL_AudioDeviceID audioDeviceId = 0;
 
+  uint32 nextVoiceId = 0;
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
   float masterVolume = kDefaultMasterVolume;
   Controller* controller = nullptr;
-  SoundHandle nextSoundHandle = 0;
+  std::vector<float> mixbuf;
+
+  // A voice is a playing instance of a patch
+  class Voice {
+  public:
+    Patch const* patch = nullptr;
+
+    // Instances
+    std::vector<SoundInstance*> sounds;
+    std::vector<ProcessInstance*> processes;
+
+    // Frame counter
+    uint32 frame = 0;
+
+    float volume = 1.0f;
+
+    int32 voiceId = -1;
+
+    Voice() = default;
+    ~Voice();
+  };
+  std::vector<Voice*> voices;
+  std::map<int32, Voice*> voiceMap;
 
   // Refreshed every frame for thread-safe query
   std::atomic<uint32> numActiveVoices;
-
-  std::vector<float> mixbuf;
-  std::vector<Voice*> voices;
-  std::map<SoundHandle, Sound*> sounds;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
 
@@ -56,21 +77,11 @@ public:
   }
   void SetMasterVolume(float masterVolume);
 
-  SoundHandle AddSound(Sound* sound);
-  void ReleaseSound(SoundHandle soundHandle);
-
   bool Init(uint32 audioBufferSize);
-  void PlaySound(uint32 soundHandle, float volume);
+  void StopVoice(int32 voiceId);
+  int32 PlayPatch(Patch const* patch, float volume);
   void ApplyInterval(uint32 interval);
   void SetController(Controller* controller);
-
-  Sound* GetSound(SoundHandle soundHandle) const {
-    auto sound = sounds.find(soundHandle);
-    if (sound != sounds.end()) {
-      return sound->second;
-    }
-    return nullptr;
-  }
 
    Mixer();
   ~Mixer();

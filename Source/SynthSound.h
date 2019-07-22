@@ -16,39 +16,34 @@ protected:
   uint32 durationNum = 0;
   uint32 durationDen = 0;
 public:
-  SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
-    : Sound(className)
-    , frequency(frequency)
-    , durationNum(durationNum)
-    , durationDen(durationDen) {
-
-  }
-
-  SynthSound(std::string className, const ReadSerializer& serializer);
+  SynthSound(const std::string& className);
+  SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen);
+  SynthSound(const std::string& className, const ReadSerializer& serializer);
 
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 };
 
-class DialogSynthSound : public Dialog {
-public:
-  bool Render() override;
-  bool SerializeWrite(const WriteSerializer& serializer) override;
-  bool SerializeRead(const ReadSerializer& serializer) override;
-};
-
-class SineSynthVoice : public Voice {
+class SineSynthSoundInstance : public SoundInstance {
 public:
   float radians = 0;
   float radstep = 0;
-  uint32 duration = 0; // Has to be calculated at Voice creation time due to reliance on current BPM
+  uint32 duration = 0; // Has to be calculated at instance creation time due to reliance on current BPM
+
+  using SoundInstance::SoundInstance;
 };
 
 class SineSynthSound : public SynthSound {
 public:
+  SineSynthSound();
+  SineSynthSound(const SineSynthSound& that);
   SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen);
   SineSynthSound(const ReadSerializer& serializer);
 
-  Voice* CreateVoice() override;
-  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, Voice* voice) override;
+  Sound* Clone() override;
+
+  SoundInstance* CreateInstance() override;
+  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) override;
+
+  void RenderDialog() override;
 };

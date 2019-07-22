@@ -15,6 +15,8 @@
 #include "SerializeImpl.h"
 #include "WavSound.h"
 #include "Instrument.h"
+#include "Patch.h"
+#include "ProcessDecay.h"
 
 static constexpr float kMetronomeVolume = 0.7f;
 static constexpr const char *kInstrumentTag = "Instrument";
@@ -93,7 +95,7 @@ void Sequencer::FullNoteCallback(bool isMeasure) {
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
     }
-    Mixer::Get().PlaySound(reservedSounds[metronomeSound], kMetronomeVolume);
+    Mixer::Get().PlayPatch(reservedPatches[metronomeSound], kMetronomeVolume);
   }
 }
 
@@ -182,17 +184,20 @@ uint32 Sequencer::NextFrame(void)
   }
 
   for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
-    if (currPosition >= static_cast<int32>(instrument->tracks[trackIndex]->data.size())) {
+    if (instrument->tracks[trackIndex]->GetMute()) {
+      continue;
+    }
+    auto& notes = instrument->tracks[trackIndex]->GetNotes();
+    if (currPosition >= static_cast<int32>(notes.size())) {
       continue;
     }
 
-    uint8* d = instrument->tracks[trackIndex]->data.data() + currPosition;
+    auto d = notes.data() + currPosition;
     if (*d > 0) {
       if (notePlayedCallback != nullptr) {
         notePlayedCallback(trackIndex, currPosition, notePlayedPayload);
       }
-      instrument->PlayTrack(trackIndex, static_cast<float>(*d) /
-        static_cast<float>(Instrument::kNoteVelocityAsUint8));
+      instrument->PlayTrack(trackIndex);
     }
   }
 
@@ -284,7 +289,8 @@ bool Sequencer::SaveSong(std::string fileName) {
             w.Key(kTrackTag);
             w.Uint(trackIndex);
             w.Key(kVelocityTag);
-            w.Double(static_cast<float>(n) / static_cast<float>(Instrument::kNoteVelocityAsUint8));
+            // TODO: Should just be on/off
+            w.Double(static_cast<float>(n) / static_cast<float>(255));
             w.EndObject();
           }
         }
@@ -509,17 +515,17 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   this->maxBeatSubdivisions = maxBeatSubdivisions;
 
   // Load the reserved sounds
-  reservedSounds.resize(static_cast<int32>(ReservedSounds::Count));
+  reservedPatches.resize(static_cast<int32>(ReservedSounds::Count));
   try {
-    reservedSounds[static_cast<int32>(ReservedSounds::MetronomeFull)] =
-      Mixer::Get().AddSound(new WavSound("Assets\\Metronome\\seikosq50_hi.wav"));
+    reservedPatches[static_cast<int32>(ReservedSounds::MetronomeFull)] =
+      new Patch({ new ProcessDecay }, { new WavSound("Assets\\Metronome\\seikosq50_hi.wav") });
   }
   catch (...) {
     MCLOG(Error, "Unable to load downbeat metronome WAV file");
   }
   try {
-    reservedSounds[static_cast<int32>(ReservedSounds::MetronomePartial)] =
-      Mixer::Get().AddSound(new WavSound("Assets\\Metronome\\seikosq50_lo.wav"));
+    reservedPatches[static_cast<int32>(ReservedSounds::MetronomePartial)] =
+      new Patch({ new ProcessDecay }, { new WavSound("Assets\\Metronome\\seikosq50_lo.wav") });
   }
   catch (...) {
     MCLOG(Error, "Unable to load upbeat metronome WAV file");
@@ -528,14 +534,19 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   SetSubdivision(currBeatSubdivision);
   SetBeatsPerMinute(bpm);
 
-  // TODO: Load the default instrument
-
   return true;
 }
 
 Sequencer::~Sequencer() {
   SDL_LockAudio();
+  
   delete instrument;
   instrument = nullptr;
+
+  for (auto& reservedPatch : reservedPatches) {
+    delete reservedPatch;
+  }
+  reservedPatches.clear();
+
   SDL_UnlockAudio();
 }

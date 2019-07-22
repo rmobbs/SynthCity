@@ -7,4 +7,5 @@
 
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string& sourceString);
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string_view& sourceString);
+bool iequals(const std::string& a, const std::string& b);
 

@@ -8,8 +8,8 @@
 #include <string>
 #include <functional>
 
-class Sound;
 class Instrument;
+class Patch;
 
 class Sequencer : public Mixer::Controller {
 private:
@@ -46,7 +46,7 @@ private:
   int32 nextPosition = 0;
   int32 interval = 0;
   Instrument* instrument = nullptr;
-  std::vector<uint32> reservedSounds;
+  std::vector<Patch*> reservedPatches;
   std::function<bool(std::string)> loadInstrumentCallback;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
 

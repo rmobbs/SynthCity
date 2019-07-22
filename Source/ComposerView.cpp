@@ -13,6 +13,11 @@
 #include "GlobalRenderData.h"
 #include "ShaderProgram.h"
 #include "Instrument.h"
+#include "DialogTrack.h"
+#include "Patch.h"
+#include "ProcessDecay.h"
+#include "WavSound.h"
+#include "Globals.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -40,9 +45,10 @@ static constexpr float kDefaultNoteVelocity = 1.0f;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
-static constexpr float kScrollBarWidth = 15.0f;
 static constexpr float kSequencerWindowToolbarHeight = 64.0f;
+static constexpr float kHamburgerMenuWidth(20.0f);
 static constexpr std::string_view kJsonTag(".json");
+static constexpr const char* kDefaultNewTrackName("NewTrack");
 
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
@@ -208,6 +214,30 @@ bool SaveSong() {
   return true;
 }
 
+Track* CreateTrack() {
+  // Pick an available name
+  std::string trackName = kDefaultNewTrackName;
+  // Just feels weird and shameful to not have an upper bounds ...
+  for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
+    auto& tracks = Sequencer::Get().GetInstrument()->GetTracks();
+
+    uint32 index;
+    for (index = 0; index < tracks.size(); ++index) {
+      if (tracks[index]->GetName() == trackName) {
+        break;
+      }
+    }
+
+    if (index >= tracks.size()) {
+      break;
+    }
+
+    trackName = std::string(kDefaultNewTrackName) + std::to_string(nameSuffix);
+  }
+
+  return new Track(trackName);
+}
+
 void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
 
   if (colorScheme.length()) {
@@ -239,7 +269,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
   if (pendingPlayTrack != -1) {
-    sequencer.GetInstrument()->PlayTrack(pendingPlayTrack, kDefaultNoteVelocity);
+    sequencer.GetInstrument()->PlayTrack(pendingPlayTrack);
     pendingPlayTrack = -1;
   }
   SDL_UnlockAudio();
@@ -251,8 +281,6 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
-
-  Dialog* pendingDialog = nullptr;
 
   auto mainMenuBarHeight = 0.0f;
   if (ImGui::BeginMainMenuBar()) {
@@ -287,7 +315,8 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack;
+          pendingDialog = new DialogTrack(sequencer.GetInstrument(),
+            -1, CreateTrack(), playButtonIconTexture, stopButtonIconTexture);
         }
         ImGui::EndMenu();
       }
@@ -297,8 +326,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
   if (pendingDialog != nullptr) {
     assert(activeDialog == nullptr);
-    pendingDialog->Open();
     activeDialog = pendingDialog;
+    activeDialog->Open();
+    pendingDialog = nullptr;
   }
 
   if (activeDialog != nullptr) {
@@ -338,7 +368,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
       auto beatWidth = kFullBeatWidth / sequencer.GetSubdivision();
 
       // Start of the beat label
-      float beatLabelStartX = ImGui::GetCursorPosX() + kKeyboardKeyWidth + imGuiStyle.ItemSpacing.x;
+      float beatLabelStartX = ImGui::GetCursorPosX() + kHamburgerMenuWidth + kKeyboardKeyWidth + imGuiStyle.ItemSpacing.x;
 
       // Beat numbers
       float cursorPosX = beatLabelStartX;
@@ -357,7 +387,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
       // Tracks
       ImGui::BeginChild("##InstrumentScrollingRegion",
         ImVec2(static_cast<float>(canvasSize.x) - kScrollBarWidth,
-          static_cast<float>(sequencerHeight) - kSequencerWindowToolbarHeight - beatLabelStartY),
+        static_cast<float>(sequencerHeight) - kSequencerWindowToolbarHeight - beatLabelStartY),
         false,
         ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
       {
@@ -366,19 +396,56 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
           for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
             auto& track = instrument->GetTracks()[trackIndex];
 
-            // Track label and UI button for manual trigger
             ImVec4 oldColors[ImGuiCol_COUNT];
             memcpy(oldColors, imGuiStyle.Colors, sizeof(oldColors));
 
             uint32 flashColor = kPlayTrackFlashColor;
             SetTrackColors(track->GetColorScheme(), flashColor);
 
+            imGuiStyle.ItemSpacing = oldItemSpacing;
+
+            // Hamburger menu
+            std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackIndex);
+            std::string trackProperties = std::string("TrackProperties") + std::to_string(trackIndex);
+            ImGui::PushID(trackHamburgers.c_str());
+            if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
+              ImGui::PopID();
+              ImGui::OpenPopup(trackProperties.c_str());
+            }
+            else {
+              ImGui::PopID();
+            }
+            if (ImGui::BeginPopup(trackProperties.c_str())) {
+              bool mute = track->GetMute();
+              if (ImGui::Checkbox("Mute", &mute)) {
+                track->SetMute(mute);
+              }
+              float volume = track->GetVolume();
+              if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
+                track->SetVolume(volume);
+              }
+              if (ImGui::Button("Properties...")) {
+                // Clone the track so they can change stuff and then cancel
+                pendingDialog = new DialogTrack(instrument, trackIndex,
+                  new Track(*track), playButtonIconTexture, stopButtonIconTexture);
+              }
+              ImGui::EndPopup();
+            }
+
+            imGuiStyle.ItemSpacing.x = 0.0f;
+            ImGui::SameLine();
+
             auto prevPos = ImGui::GetCursorPos();
+
+            // Track key
             if (ImGui::Button(track->GetName().
               c_str(), ImVec2(kKeyboardKeyWidth, kKeyboardKeyHeight))) {
               // Do it next frame so we only lock audio once per UI loop
               pendingPlayTrack = trackIndex;
             }
+
+            imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
+
             auto currPos = ImGui::GetCursorPos();
 
             // If it's playing, flash it
@@ -491,16 +558,16 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
       // Bottom tool bar
       {
-        imGuiStyle.ItemSpacing.x = 0;
+        imGuiStyle.ItemSpacing.x = 2;
 
         // Play/Pause button
         if (sequencer.IsPlaying()) {
-          if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(pauseButtonIconTexture), ImVec2(20, 20))) {
+          if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(pauseButtonIconTexture), ImVec2(14, 14))) {
             sequencer.Pause();
           }
         }
         else {
-          if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(playButtonIconTexture), ImVec2(20, 20))) {
+          if (ImGui::ArrowButtonEx("PlayButton", ImGuiDir_Right, ImVec2(22, 20), 0)) {
             sequencer.Play();
           }
         }
@@ -508,7 +575,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         ImGui::SameLine();
 
         // Stop button
-        if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonIconTexture), ImVec2(20, 20))) {
+        if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonIconTexture), ImVec2(14, 14))) {
           sequencer.Stop();
         }
 
@@ -695,7 +762,7 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, playButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  uint8* iconData = SOIL_load_image("Assets\\icon_play.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  uint8* iconData = SOIL_load_image("Assets\\play_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
   SOIL_free_image_data(iconData);
 
@@ -703,7 +770,7 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, pauseButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  iconData = SOIL_load_image("Assets\\icon_pause.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  iconData = SOIL_load_image("Assets\\pause_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
   SOIL_free_image_data(iconData);
 
@@ -712,7 +779,7 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, stopButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  iconData = SOIL_load_image("Assets\\icon_stop.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  iconData = SOIL_load_image("Assets\\stop_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
   SOIL_free_image_data(iconData);
 

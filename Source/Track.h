@@ -5,53 +5,63 @@
 #include <functional>
 #include <map>
 
+class Sound;
+class Patch;
+
 class Track {
-public:
+protected:
   std::string name;
   std::string colorScheme;
-  std::vector<uint8> data;
-  int	skip = 0;
-  int	mute = 0;
-  int soundIndex = -1;
-  int voiceIndex = -1;
-  float	decay = 0.0f;
-  float	lvol = 1.0f;
-  float	rvol = 1.0f;
+  std::vector<uint8> notes;
+  bool mute = false;
+  float volume = 1.0f;
 
-  Track();
+  Patch* patch = nullptr;
+
+public:
+  Track(const Track& that);
+  Track(const std::string& name);
   Track(const ReadSerializer& serializer);
   ~Track();
 
   void AddNotes(uint32 noteCount, uint8 noteValue = 0);
   void SetNoteCount(uint32 noteCount, uint8 noteValue = 0);
+  void SetNote(uint32 noteIndex, uint8 noteValue);
+  void SetNotes(const std::vector<uint8>& newNotes);
 
   inline const std::string& GetColorScheme(void) const {
     return colorScheme;
+  }
+  inline void SetName(const std::string& newName) {
+    name = newName;
   }
   inline const std::string& GetName(void) const {
     return name;
   }
   inline const std::vector<uint8>& GetNotes(void) const {
-    return data;
+    return notes;
   }
+  void ClearNotes();
 
   bool SerializeWrite(const WriteSerializer& serializer);
   bool SerializeRead(const ReadSerializer& serializer);
-};
 
-class DialogTrack : public Dialog {
-protected:
-  std::string trackName;
-  std::string soundName;
-  Dialog* subDialog = nullptr;
-public:
-  DialogTrack() = default;
-  ~DialogTrack();
+  inline Patch* GetPatch() {
+    return patch;
+  }
+  void SetPatch(Patch* newPatch);
 
-  void Open() override;
-  bool Render() override;
-
-  bool SerializeWrite(const WriteSerializer& serializer) override;
-  bool SerializeRead(const ReadSerializer& serializer) override;
+  inline void SetMute(bool shouldMute) {
+    mute = shouldMute;
+  }
+  inline bool GetMute() {
+    return mute;
+  }
+  inline void SetVolume(float newVolume) {
+    volume = newVolume;
+  }
+  inline float GetVolume() {
+    return volume;
+  }
 };
 

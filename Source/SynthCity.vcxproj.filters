@@ -21,56 +21,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseTypes.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EnumIterator.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Sequencer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mixer.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MidiSource.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="logging.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SynthSound.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Sound.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WavSound.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderProgram.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OddsAndEnds.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GlobalRenderData.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SpriteRenderable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ComposerView.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InputState.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="BaseWindows.h">
       <Filter>Header Files</Filter>
@@ -117,13 +69,82 @@
     <ClInclude Include="3rdParty\glew\GL\wglew.h">
       <Filter>Source Files\glew</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuiRenderable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Dialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Track.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessFactory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Patch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WavBank.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComposerView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EnumIterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalRenderData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiRenderable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MidiSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mixer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OddsAndEnds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderProgram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SpriteRenderable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SynthSound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WavSound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Factory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DialogTrack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessDecay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -198,6 +219,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Track.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessFactory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Patch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WavBank.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DialogTrack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessDecay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

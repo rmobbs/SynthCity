@@ -26,12 +26,13 @@ protected:
   OutputWindowState outputWindowState;
 
   int32 pendingPlayTrack = -1;
-  GLuint playButtonIconTexture = 0;
-  GLuint stopButtonIconTexture = 0;
-  GLuint pauseButtonIconTexture = 0;
+  uint32 playButtonIconTexture = 0;
+  uint32 stopButtonIconTexture = 0;
+  uint32 pauseButtonIconTexture = 0;
   uint32 logResponderId = UINT32_MAX;
   uint32 mainWindowHandle = UINT32_MAX;
   bool wasConsoleOpen = true;
+  Dialog* pendingDialog = nullptr;
   Dialog* activeDialog = nullptr;
   ImGuiRenderable renderable;
 

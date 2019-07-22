@@ -19,6 +19,7 @@
 #include "InputState.h"
 #include "Mixer.h"
 #include "Globals.h"
+#include "WavBank.h"
 
 #include "SDL_syswm.h"
 #include <windows.h>
@@ -76,13 +77,16 @@ void UpdateInput() {
       break;
     case SDL_MOUSEBUTTONDOWN:
       switch (sdlEvent.button.button) {
-      case 1: // left click
+      case SDL_BUTTON_LEFT:
         inputState.downL = true;
         break;
-      case 4: // scroll up
+      case SDL_BUTTON_RIGHT:
+        inputState.downR = true;
+        break;
+      case SDL_BUTTON_X1: // scroll up
         inputState.scroll = 1;
         break;
-      case 5: // scroll down
+      case SDL_BUTTON_X2: // scroll down
         inputState.scroll = -1;
         break;
       }
@@ -327,6 +331,12 @@ bool Init() {
   InitGL();
   InitImGui();
 
+  // Initialize WAV bank
+  if (!WavBank::InitSingleton()) {
+    MCLOG(Error, "Unable to init WAV bank");
+    return false;
+  }
+
   // Initialize mixer
   if (!Mixer::InitSingleton(kAudioBufferSize)) {
     MCLOG(Error, "Unable to init Mixer.");
@@ -359,6 +369,9 @@ void Term() {
 
   // Term the mixer
   Mixer::TermSingleton();
+
+  // Term the WAV bank
+  WavBank::TermSingleton();
 
   // Term all views
   delete currentView;
