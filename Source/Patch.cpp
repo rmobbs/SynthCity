@@ -244,11 +244,11 @@ void Patch::RenderDialog() {
     ImGui::EndPopup();
   }
 
-//  ImGui::DrawRect(ImVec2(ImGui::GetWindowSize().x -
-//    kScrollBarWidth, 200.0f), ImGui::ColorConvertFloat4ToU32(ImColor(0.6f, 0.6f, 0.6f, 1.0f)));
+  static constexpr float kProcessRegionPercentage = 0.35f;
+  static constexpr float kSoundRegionPercentage = 0.35f;
 
   ImGui::BeginChild("#ProcessScrollingRegion",
-    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, 200.0f),
+    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, ImGui::GetWindowSize().y * kProcessRegionPercentage),
     true,
     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {
@@ -335,7 +335,7 @@ void Patch::RenderDialog() {
   }
 
   ImGui::BeginChild("#SoundsScrollingRegion",
-    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, 200.0f),
+    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, ImGui::GetWindowSize().y * kSoundRegionPercentage),
     true,
     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {

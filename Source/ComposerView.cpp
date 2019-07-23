@@ -360,6 +360,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
       {
         if (instrument != nullptr) {
+          uint32 flashColor;
           uint32 noteGlobalIndex = 0;
           for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
             auto& track = instrument->GetTracks()[trackIndex];
@@ -367,10 +368,10 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
             ImVec4 oldColors[ImGuiCol_COUNT];
             memcpy(oldColors, imGuiStyle.Colors, sizeof(oldColors));
 
-            uint32 flashColor = kPlayTrackFlashColor;
-            SetTrackColors(track->GetColorScheme(), flashColor);
-
             imGuiStyle.ItemSpacing = oldItemSpacing;
+
+            flashColor = kPlayTrackFlashColor;
+            SetTrackColors(track->GetColorScheme(), flashColor);
 
             // Hamburger menu
             std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackIndex);
@@ -383,6 +384,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
             else {
               ImGui::PopID();
             }
+            memcpy(imGuiStyle.Colors, oldColors, sizeof(oldColors));
             if (ImGui::BeginPopup(trackProperties.c_str())) {
               bool mute = track->GetMute();
               if (ImGui::Checkbox("Mute", &mute)) {
@@ -404,6 +406,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
             ImGui::SameLine();
 
             auto prevPos = ImGui::GetCursorPos();
+
+            flashColor = kPlayTrackFlashColor;
+            SetTrackColors(track->GetColorScheme(), flashColor);
 
             // Track key
             if (ImGui::Button(track->GetName().
