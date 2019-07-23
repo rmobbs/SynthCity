@@ -18,6 +18,7 @@ public:
 class Sound {
 protected:
   std::string className;
+  float duration = 0.0f;
 
 public:
   Sound(std::string className)
@@ -42,5 +43,9 @@ public:
   virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
 
   virtual void RenderDialog() = 0;
+
+  inline float GetDuration() const {
+    return duration;
+  }
 };
 

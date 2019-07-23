@@ -8,6 +8,8 @@
 class Process;
 class Sound;
 class Patch {
+protected:
+  float soundDuration = 0.0f;
 public:
   std::vector<Process*> processes;
   std::vector<Sound*> sounds;
@@ -28,6 +30,13 @@ public:
   bool SerializeRead(const ReadSerializer& serializer);
 
   void RenderDialog();
+
+  void AddSound(Sound* sound);
+  void AddProcess(Process* process);
+
+  inline float GetSoundDuration() const {
+    return soundDuration;
+  }
 };
 
 

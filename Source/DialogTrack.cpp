@@ -9,8 +9,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-static constexpr float kDialogWidth(600.0f);
-static constexpr float kDialogHeight(640.0f);
+static constexpr float kMinDialogWidth(600.0f);
+static constexpr float kMinDialogHeight(600.0f);
 
 DialogTrack::DialogTrack(Instrument* instrument, int32 trackIndex, Track* track, uint32 playButtonTexture, uint32 stopButtonTexture)
   : instrument(instrument)
@@ -30,8 +30,7 @@ void DialogTrack::Open() {
 }
 
 bool DialogTrack::Render() {
-  ImGui::SetNextWindowSize(ImVec2(kDialogWidth, kDialogHeight));
-
+  ImGui::SetNextWindowSizeConstraints(ImVec2(kMinDialogWidth, kMinDialogHeight), ImVec2(1.0e9f, 1.0e9f));
   bool isOpen = true;
   if (ImGui::BeginPopupModal("Add Track", &isOpen)) {
     // Track name
@@ -67,6 +66,8 @@ bool DialogTrack::Render() {
     imGuiStyle.ItemSpacing = oldItemSpacing;
 
     track->GetPatch()->RenderDialog();
+
+    ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetItemsLineHeightWithSpacing() * 1.2f);
 
     if (ImGui::Button("OK")) {
       exitedOk = true;
