@@ -67,16 +67,16 @@ Process* ProcessDecay::Clone() {
   return new ProcessDecay(*this);
 }
 
-bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 frame, Patch* patch, ProcessInstance* instance) {
-  // Decay of effectively 0.0 is an unending process
-  if (decay <= std::numeric_limits<float>::epsilon()) {
-    return true;
-  }
+bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) {
+  // Decay is the percentage of the total length of the sound that should be used for a linear fade-out
 
-  // Decay of effectively 1.0 is immediate termination
-  if (decay >= 1.0f - std::numeric_limits<float>::epsilon()) {
+  // Decay of ~0.0 would fade out sound immediately
+  if (decay <= std::numeric_limits<float>::epsilon()) {
     return false;
   }
+
+  instance->volume = std::max(0.0f, 1.0f -
+    static_cast<float>(frame) / (instance->soundDuration * 44100.0f * decay));
 
   // Effectively faded out
   if (instance->volume < std::numeric_limits<float>::epsilon()) {
@@ -86,10 +86,6 @@ bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 fram
   for (uint32 s = 0; s < numSamples; ++s) {
     samples[s] *= instance->volume;
   }
-
-  float pct = static_cast<float>(frame) /
-    (patch->GetSoundDuration() * 44100.0f * (1.0f - decay));
-  instance->volume = std::max(0.0f, 1.0f - pct);
 
   return true;
 }

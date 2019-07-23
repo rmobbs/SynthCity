@@ -18,9 +18,7 @@ SynthSound::SynthSound(const std::string& className)
 
 SynthSound::SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
   : Sound(className)
-  , frequency(frequency)
-  , durationNum(durationNum)
-  , durationDen(durationDen) {
+  , frequency(frequency) {
 
 }
 
@@ -40,7 +38,7 @@ bool SynthSound::SerializeWrite(const WriteSerializer& serializer) {
 
   // Duration tag:uint
   w.Key(kDurationTag);
-  w.Uint(durationNum << 16 | durationDen);
+  w.Double(duration);
 
   return true;
 }
@@ -50,20 +48,17 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
 
   // Frequency
   if (!r.HasMember(kFrequencyTag) || !r[kFrequencyTag].IsUint()) {
-    MCLOG(Warn, "Missing/invalid frequency tag");
+    MCLOG(Warn, "Missing/invalid frequency");
     return false;
   }
   frequency = r[kFrequencyTag].GetUint();
 
   // Duration
-  if (!r.HasMember(kDurationTag) || !r[kDurationTag].IsUint()) {
-    MCLOG(Warn, "Missing/invalid frequency tag");
+  if (!r.HasMember(kDurationTag) || !r[kDurationTag].IsDouble()) {
+    MCLOG(Warn, "Missing/invalid duration");
     return false;
   }
-  uint32 durationMasked = r[kDurationTag].GetUint();
-
-  durationNum = durationMasked >> 16;
-  durationDen = durationMasked & 0xFFFF;
+  duration = static_cast<float>(r[kDurationTag].GetDouble());
 
   return true;
 }
@@ -95,11 +90,6 @@ Sound* SineSynthSound::Clone() {
 SoundInstance* SineSynthSound::CreateInstance() {
   SineSynthSoundInstance* instance = new SineSynthSoundInstance(this);
 
-  float durationInSeconds = static_cast<float>(Sequencer::Get().
-    GetSecondsPerBeat()) * (static_cast<float>(durationNum) / static_cast<float>(durationDen));
-
-  instance->duration = static_cast<uint32>(durationInSeconds * static_cast<float>(Mixer::kDefaultFrequency));
-
   instance->radstep = static_cast<float>((2.0 * M_PI *
     frequency) / static_cast<double>(Mixer::kDefaultFrequency));
   return instance;
@@ -107,7 +97,7 @@ SoundInstance* SineSynthSound::CreateInstance() {
 
 uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instanceGeneric) {
   SineSynthSoundInstance* instance = static_cast<SineSynthSoundInstance*>(instanceGeneric);
-  if (frame < instance->duration) {
+  if (frame < static_cast<uint32>(duration * 44100.0f)) {
     instance->radians += instance->radstep; // * speed
     while (instance->radians > (2.0 * M_PI)) {
       instance->radians -= static_cast<float>(2.0 * M_PI);
@@ -123,5 +113,19 @@ uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 
 }
 
 void SineSynthSound::RenderDialog() {
-  ImGui::Text("DialogSineSynthSound");
+  int frequencyInt = frequency;
+  if (ImGui::InputInt("Frequency", &frequencyInt)) {
+    if (frequencyInt < 1000) {
+      frequencyInt = 1000;
+    }
+    frequency = frequencyInt;
+  }
+
+  float durationTmp = duration;
+  if (ImGui::InputFloat("Duration", &durationTmp)) {
+    if (durationTmp < std::numeric_limits<float>::epsilon()) {
+      durationTmp = std::numeric_limits<float>::epsilon();
+    }
+    duration = durationTmp;
+  }
 }

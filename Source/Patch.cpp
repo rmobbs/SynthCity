@@ -172,11 +172,7 @@ bool Patch::SerializeWrite(const WriteSerializer& serializer) {
   return true;
 }
 
-void Patch::AddSound(Sound* sound) {
-  assert(sound);
-
-  sounds.push_back(sound);
-
+void Patch::UpdateDuration() {
   // Get duration
   soundDuration = 0.0f;
   for (const auto& sound : sounds) {
@@ -186,10 +182,33 @@ void Patch::AddSound(Sound* sound) {
   }
 }
 
+void Patch::AddSound(Sound* sound) {
+  assert(sound);
+
+  sounds.push_back(sound);
+  UpdateDuration();
+}
+
+void Patch::RemoveSound(Sound* sound) {
+  assert(sound);
+  auto soundEntry = std::find(sounds.begin(), sounds.end(), sound);
+  if (soundEntry != sounds.end()) {
+    sounds.erase(soundEntry);
+  }
+}
+
 void Patch::AddProcess(Process* process) {
   assert(process);
 
   processes.push_back(process);
+}
+
+void Patch::RemoveProcess(Process* process) {
+  assert(process);
+  auto processEntry = std::find(processes.begin(), processes.end(), process);
+  if (processEntry != processes.end()) {
+    processes.erase(processEntry);
+  }
 }
 
 void Patch::RenderDialog() {
@@ -252,38 +271,37 @@ void Patch::RenderDialog() {
     true,
     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {
-    auto processIt = processes.begin();
-    while (processIt != processes.end()) {
+    Process* remove = nullptr;
+    for (auto& process : processes) {
       ImGui::Separator();
       ImGui::Spacing();
 
-      ImGui::Text((*processIt)->GetProcessClassName().c_str());
+      ImGui::Text(process->GetProcessClassName().c_str());
       ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
       if (processes.size() == 1) {
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
       }
       std::string removeTag = std::string("RemoveProcess") +
-        std::to_string(reinterpret_cast<uint32>(*processIt));
+        std::to_string(reinterpret_cast<uint32>(process));
       ImGui::PushID(removeTag.c_str());
-      bool remove = ImGui::Button("x");
+      if (ImGui::Button("x")) {
+        remove = process;
+      }
       ImGui::PopID();
       if (processes.size() == 1) {
         ImGui::PopItemFlag();
         ImGui::PopStyleVar();
       }
-      if (remove) {
-        delete *processIt;
-        processIt = processes.erase(processIt);
-      }
-      else {
-        (*processIt)->RenderDialog();
-        ++processIt;
-      }
+      process->RenderDialog();
       ImGui::Spacing();
     }
     ImGui::Separator();
     ImGui::EndChild();
+
+    if (remove) {
+      RemoveProcess(remove);
+    }
   }
 
   for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {
@@ -339,38 +357,37 @@ void Patch::RenderDialog() {
     true,
     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {
-    auto soundIt = sounds.begin();
-    while (soundIt != sounds.end()) {
+    Sound* remove = nullptr;
+    for (auto& sound : sounds) {
       ImGui::Separator();
       ImGui::Spacing();
 
-      ImGui::Text((*soundIt)->GetSoundClassName().c_str());
+      ImGui::Text(sound->GetSoundClassName().c_str());
       ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
       if (sounds.size() == 1) {
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
       }
       std::string removeTag = std::string("RemoveSound") +
-        std::to_string(reinterpret_cast<uint32>(*soundIt));
+        std::to_string(reinterpret_cast<uint32>(sound));
       ImGui::PushID(removeTag.c_str());
-      bool remove = ImGui::Button("x");
+      if (ImGui::Button("x")) {
+        remove = sound;
+      }
       ImGui::PopID();
       if (sounds.size() == 1) {
         ImGui::PopItemFlag();
         ImGui::PopStyleVar();
       }
-      if (remove) {
-        delete *soundIt;
-        soundIt = sounds.erase(soundIt);
-      }
-      else {
-        (*soundIt)->RenderDialog();
-        ++soundIt;
-      }
+      sound->RenderDialog();
       ImGui::Spacing();
     }
     ImGui::Separator();
     ImGui::EndChild();
+
+    if (remove) {
+      RemoveSound(remove);
+    }
   }
 
   for (int i = 0; i < kSubDialogPaddingSpacing; ++i) {

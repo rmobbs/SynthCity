@@ -33,6 +33,9 @@ public:
 
   void AddSound(Sound* sound);
   void AddProcess(Process* process);
+  void RemoveSound(Sound* sound);
+  void RemoveProcess(Process* process);
+  void UpdateDuration();
 
   inline float GetSoundDuration() const {
     return soundDuration;

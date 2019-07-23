@@ -198,6 +198,7 @@
     <ClInclude Include="ImGuiExtensions.h" />
     <ClInclude Include="Patch.h" />
     <ClInclude Include="Process.h" />
+    <ClInclude Include="ProcessAttackSustainDecay.h" />
     <ClInclude Include="ProcessDecay.h" />
     <ClInclude Include="ProcessFactory.h" />
     <ClInclude Include="Track.h" />
@@ -236,6 +237,7 @@
     <ClCompile Include="ImGuiExtensions.cpp" />
     <ClCompile Include="Patch.cpp" />
     <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ProcessAttackSustainDecay.cpp" />
     <ClCompile Include="ProcessDecay.cpp" />
     <ClCompile Include="ProcessFactory.cpp" />
     <ClCompile Include="Track.cpp" />

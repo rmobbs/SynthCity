@@ -30,6 +30,8 @@ void DialogTrack::Open() {
 }
 
 bool DialogTrack::Render() {
+  track->GetPatch()->UpdateDuration();
+
   ImGui::SetNextWindowSizeConstraints(ImVec2(kMinDialogWidth, kMinDialogHeight), ImVec2(1.0e9f, 1.0e9f));
   bool isOpen = true;
   if (ImGui::BeginPopupModal("Add Track", &isOpen)) {

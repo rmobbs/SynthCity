@@ -11,10 +11,6 @@ public:
 protected:
   uint32 frequency = 0;
 
-  // Seems easier to understand to express the duration of a synthesized sound as
-  // the native note unit time value and count of those units, e.g. 1/4, 4/4
-  uint32 durationNum = 0;
-  uint32 durationDen = 0;
 public:
   SynthSound(const std::string& className);
   SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen);

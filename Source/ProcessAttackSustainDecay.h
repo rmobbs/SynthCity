@@ -2,15 +2,16 @@
 
 #include "Process.h"
 
-// Most basic process is decay
-class ProcessDecay : public Process {
+class ProcessAttackSustainDecay : public Process {
 protected:
-  float decay = 0.0f;
+  float attack = 0.0f;
+  float decay = 1.0f;
+  float sustain = 1.0f;
 public:
-  ProcessDecay();
-  ProcessDecay(const ProcessDecay& that);
-  ProcessDecay(float decay);
-  ProcessDecay(const ReadSerializer& serializer);
+  ProcessAttackSustainDecay();
+  ProcessAttackSustainDecay(const ProcessAttackSustainDecay& that);
+  ProcessAttackSustainDecay(float attack, float sustain, float decay);
+  ProcessAttackSustainDecay(const ReadSerializer& serializer);
 
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;

@@ -8,6 +8,7 @@
 class ProcessInstance {
 public:
   float volume = 1.0f;
+  float soundDuration = 0.0f;
 
   class Process* process = nullptr;
 
@@ -38,7 +39,7 @@ public:
 
   virtual ProcessInstance* CreateInstance() = 0;
 
-  virtual bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, Patch* patch, ProcessInstance* instance) = 0;
+  virtual bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) = 0;
 
   inline const std::string& GetProcessClassName() const {
     return className;
