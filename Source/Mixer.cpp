@@ -278,6 +278,7 @@ void Mixer::StopVoice(int32 voiceId) {
     assert(voiceEntry != voices.end());
     voiceMap.erase(voiceMapEntry);
     voices.erase(voiceEntry);
+    numActiveVoices = voices.size();
   }
   SDL_UnlockAudio();
 }

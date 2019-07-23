@@ -8,6 +8,7 @@
 #include "Globals.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "ImGuiExtensions.h"
 
 #include <stdexcept>
 
@@ -243,16 +244,21 @@ void Patch::RenderDialog() {
     ImGui::EndPopup();
   }
 
+//  ImGui::DrawRect(ImVec2(ImGui::GetWindowSize().x -
+//    kScrollBarWidth, 200.0f), ImGui::ColorConvertFloat4ToU32(ImColor(0.6f, 0.6f, 0.6f, 1.0f)));
+
   ImGui::BeginChild("#ProcessScrollingRegion",
     ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, 200.0f),
-    false,
-    ImGuiWindowFlags_HorizontalScrollbar);
+    true,
+    ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {
     auto processIt = processes.begin();
     while (processIt != processes.end()) {
       ImGui::Separator();
+      ImGui::Spacing();
+
       ImGui::Text((*processIt)->GetProcessClassName().c_str());
-      ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+      ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
       if (processes.size() == 1) {
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
@@ -274,6 +280,7 @@ void Patch::RenderDialog() {
         (*processIt)->RenderDialog();
         ++processIt;
       }
+      ImGui::Spacing();
     }
     ImGui::Separator();
     ImGui::EndChild();
@@ -329,14 +336,16 @@ void Patch::RenderDialog() {
 
   ImGui::BeginChild("#SoundsScrollingRegion",
     ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, 200.0f),
-    false,
-    ImGuiWindowFlags_HorizontalScrollbar);
+    true,
+    ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {
     auto soundIt = sounds.begin();
     while (soundIt != sounds.end()) {
       ImGui::Separator();
+      ImGui::Spacing();
+
       ImGui::Text((*soundIt)->GetSoundClassName().c_str());
-      ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+      ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
       if (sounds.size() == 1) {
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
@@ -358,6 +367,7 @@ void Patch::RenderDialog() {
         (*soundIt)->RenderDialog();
         ++soundIt;
       }
+      ImGui::Spacing();
     }
     ImGui::Separator();
     ImGui::EndChild();
