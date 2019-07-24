@@ -150,8 +150,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         // Get samples from sound(s)
         auto soundIter = voice.sounds.begin();
         while (soundIter != voice.sounds.end()) {
-          if ((*soundIter)->sound->GetSamplesForFrame(samples,
-            kDefaultChannels, voice.frame, (*soundIter)) != kDefaultChannels) {
+          if ((*soundIter)->GetSamplesForFrame(samples, kDefaultChannels, voice.frame) != kDefaultChannels) {
             delete *soundIter;
             soundIter = voice.sounds.erase(soundIter);
           }
@@ -163,8 +162,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         // Apply process(es)
         auto procsIter = voice.processes.begin();
         while (procsIter != voice.processes.end()) {
-          if ((*procsIter)->process->ProcessSamples(samples,
-            kDefaultChannels, voice.frame, (*procsIter)) != true) {
+          if ((*procsIter)->ProcessSamples(samples, kDefaultChannels, voice.frame) != true) {
             delete* procsIter;
             procsIter = voice.processes.erase(procsIter);
           }
@@ -281,17 +279,18 @@ int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
     MCLOG(Error, "Currently playing max voices; sound dropped");
     return -1;
   }
+
   Voice* voice = new Voice;
 
   voice->patch = patch;
+
   for (const auto& sound : patch->sounds) {
     voice->sounds.push_back(sound->CreateInstance());
   }
   for (const auto& process : patch->processes) {
-    ProcessInstance* instance = process->CreateInstance();
-    instance->soundDuration = patch->GetSoundDuration();
-    voice->processes.push_back(instance);
+    voice->processes.push_back(process->CreateInstance(patch->GetSoundDuration()));
   }
+
   voice->frame = 0;
   voice->volume = volume;
   voice->voiceId = nextVoiceId++;

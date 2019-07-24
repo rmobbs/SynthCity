@@ -8,6 +8,35 @@
 
 #include <stdexcept>
 
+class ProcessInstanceDecay : public ProcessInstance {
+public:
+  using ProcessInstance::ProcessInstance;
+
+  bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame) override {
+    // Decay is the percentage of the total length of the sound that should be used for a linear fade-out
+    auto derived = static_cast<ProcessDecay*>(process);
+
+    // Decay of ~0.0 would fade out sound immediately
+    if (derived->GetDecay() <= std::numeric_limits<float>::epsilon()) {
+      return false;
+    }
+
+    volume = std::max(0.0f, 1.0f -
+      static_cast<float>(frame) / (patchDuration * derived->GetDecay() * 44100.0f));
+
+    // Effectively faded out
+    if (volume < std::numeric_limits<float>::epsilon()) {
+      return false;
+    }
+
+    for (uint32 s = 0; s < numSamples; ++s) {
+      samples[s] *= volume;
+    }
+
+    return true;
+  }
+};
+
 // Decay process
 REGISTER_PROCESS(ProcessDecay, "Simple linear decay");
 
@@ -59,35 +88,12 @@ bool ProcessDecay::SerializeRead(const ReadSerializer& serializer) {
   return true;
 }
 
-ProcessInstance* ProcessDecay::CreateInstance() {
-  return new ProcessInstance(this);
+ProcessInstance* ProcessDecay::CreateInstance(float patchDuration) {
+  return new ProcessInstanceDecay(this, patchDuration);
 }
 
 Process* ProcessDecay::Clone() {
   return new ProcessDecay(*this);
-}
-
-bool ProcessDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) {
-  // Decay is the percentage of the total length of the sound that should be used for a linear fade-out
-
-  // Decay of ~0.0 would fade out sound immediately
-  if (decay <= std::numeric_limits<float>::epsilon()) {
-    return false;
-  }
-
-  instance->volume = std::max(0.0f, 1.0f -
-    static_cast<float>(frame) / (instance->soundDuration * 44100.0f * decay));
-
-  // Effectively faded out
-  if (instance->volume < std::numeric_limits<float>::epsilon()) {
-    return false;
-  }
-
-  for (uint32 s = 0; s < numSamples; ++s) {
-    samples[s] *= instance->volume;
-  }
-
-  return true;
 }
 
 void ProcessDecay::RenderDialog() {

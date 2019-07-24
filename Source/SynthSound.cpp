@@ -4,7 +4,6 @@
 #include "Mixer.h"
 #include "SoundFactory.h"
 #include "Sequencer.h"
-#include "resource.h"
 #include <algorithm>
 #include "imgui.h"
 
@@ -16,10 +15,10 @@ SynthSound::SynthSound(const std::string& className)
 
 }
 
-SynthSound::SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
+SynthSound::SynthSound(const std::string& className, uint32 frequency, float duration)
   : Sound(className)
   , frequency(frequency) {
-
+  this->duration = duration;
 }
 
 SynthSound::SynthSound(const std::string& className, const ReadSerializer& serializer)
@@ -61,71 +60,4 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
   duration = static_cast<float>(r[kDurationTag].GetDouble());
 
   return true;
-}
-
-// Sine
-REGISTER_SOUND(SineSynthSound, "Modulated sine wave");
-SineSynthSound::SineSynthSound()
-  : SynthSound("SineSynthSound") {
-
-}
-
-SineSynthSound::SineSynthSound(const SineSynthSound& that)
-  : SynthSound(that) {
-
-}
-
-SineSynthSound::SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen)
-  : SynthSound("SineSynthSound", frequency, durationNum, durationDen) {
-}
-
-SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
-  : SynthSound("SineSynthSound", serializer) {
-}
-
-Sound* SineSynthSound::Clone() {
-  return new SineSynthSound(*this);
-}
-
-SoundInstance* SineSynthSound::CreateInstance() {
-  SineSynthSoundInstance* instance = new SineSynthSoundInstance(this);
-
-  instance->radstep = static_cast<float>((2.0 * M_PI *
-    frequency) / static_cast<double>(Mixer::kDefaultFrequency));
-  return instance;
-}
-
-uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instanceGeneric) {
-  SineSynthSoundInstance* instance = static_cast<SineSynthSoundInstance*>(instanceGeneric);
-  if (frame < static_cast<uint32>(duration * 44100.0f)) {
-    instance->radians += instance->radstep; // * speed
-    while (instance->radians > (2.0 * M_PI)) {
-      instance->radians -= static_cast<float>(2.0 * M_PI);
-    }
-
-    float s = sinf(instance->radians);
-    for (uint8 channel = 0; channel < channels; ++channel) {
-      samples[channel] = s;
-    }
-    return channels;
-  }
-  return 0;
-}
-
-void SineSynthSound::RenderDialog() {
-  int frequencyInt = frequency;
-  if (ImGui::InputInt("Frequency", &frequencyInt)) {
-    if (frequencyInt < 1000) {
-      frequencyInt = 1000;
-    }
-    frequency = frequencyInt;
-  }
-
-  float durationTmp = duration;
-  if (ImGui::InputFloat("Duration", &durationTmp)) {
-    if (durationTmp < std::numeric_limits<float>::epsilon()) {
-      durationTmp = std::numeric_limits<float>::epsilon();
-    }
-    duration = durationTmp;
-  }
 }

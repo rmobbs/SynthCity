@@ -201,6 +201,7 @@
     <ClInclude Include="ProcessAttackSustainDecay.h" />
     <ClInclude Include="ProcessDecay.h" />
     <ClInclude Include="ProcessFactory.h" />
+    <ClInclude Include="SineSynthSound.h" />
     <ClInclude Include="Track.h" />
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="EnumIterator.h" />
@@ -240,6 +241,7 @@
     <ClCompile Include="ProcessAttackSustainDecay.cpp" />
     <ClCompile Include="ProcessDecay.cpp" />
     <ClCompile Include="ProcessFactory.cpp" />
+    <ClCompile Include="SineSynthSound.cpp" />
     <ClCompile Include="Track.cpp" />
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />

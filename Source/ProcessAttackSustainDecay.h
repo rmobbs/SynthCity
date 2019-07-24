@@ -16,10 +16,19 @@ public:
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 
-  ProcessInstance* CreateInstance() override;
-  bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* instance) override;
+  ProcessInstance* CreateInstance(float patchDuration) override;
 
   void RenderDialog() override;
 
   Process* Clone() override;
+
+  inline float GetAttack() const {
+    return attack;
+  }
+  inline float GetDecay() const {
+    return decay;
+  }
+  inline float GetSustain() const {
+    return sustain;
+  }
 };

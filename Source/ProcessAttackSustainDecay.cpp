@@ -17,16 +17,67 @@ static constexpr const char* kSustainTag = "sustain";
 static constexpr const char* kDecayTag = "decay";
 
 class ProcessInstanceAttackSustainDecay : public ProcessInstance {
-public:
+protected:
   enum class State {
     Attack,
     Sustain,
     Decay,
   };
+
   State state = State::Attack;
 
-  using ProcessInstance::ProcessInstance;
+  uint32 frameSustain = 0;
+  uint32 frameDecay = 0;
+  uint32 frameEnd = 0;
 
+public:
+
+  ProcessInstanceAttackSustainDecay(Process* process, float patchDuration)
+    : ProcessInstance(process, patchDuration) {
+    frameEnd = static_cast<uint32>(patchDuration * 44100.0f);
+
+    frameSustain = static_cast<uint32>(static_cast<ProcessAttackSustainDecay*>(process)->GetSustain() * frameEnd);
+    frameDecay = static_cast<uint32>(static_cast<ProcessAttackSustainDecay*>(process)->GetDecay() * frameEnd);
+  }
+
+  bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame) override {
+    auto derived = static_cast<ProcessAttackSustainDecay*>(process);
+
+    switch (state) {
+      case State::Attack: {
+        if (frame < frameSustain) {
+          volume = derived->GetSustain() * (frameSustain *
+            static_cast<float>(frame) / static_cast<float>(frameSustain));
+          break;
+        }
+
+        state = State::Sustain;
+      }
+      case State::Sustain: {
+        if (frame < frameDecay) {
+          volume = derived->GetSustain();
+          break;
+        }
+
+        state = ProcessInstanceAttackSustainDecay::State::Decay;
+      }
+      case ProcessInstanceAttackSustainDecay::State::Decay: {
+        if (frame < frameEnd) {
+          volume = derived->GetSustain() * (1.0f - std::min(1.0f,
+            static_cast<float>(frame - frameDecay) / static_cast<float>(frameEnd - frameDecay)));
+          break;
+        }
+
+        return false;
+      }
+    }
+
+    for (uint32 s = 0; s < numSamples; ++s) {
+      samples[s] *= volume;
+    }
+
+    return true;
+  }
 
 };
 
@@ -104,53 +155,6 @@ Process* ProcessAttackSustainDecay::Clone() {
   return new ProcessAttackSustainDecay(*this);
 }
 
-bool ProcessAttackSustainDecay::ProcessSamples(float* samples, uint32 numSamples, uint32 frame, ProcessInstance* genericInstance) {
-  ProcessInstanceAttackSustainDecay* instance = static_cast<ProcessInstanceAttackSustainDecay*>(genericInstance);
-
-  // TODO: Would be great to figure this out somewhere else ...
-  uint32 lastFrame = static_cast<uint32>(instance->soundDuration * 44100.0f);
-  uint32 sustainFrame =  static_cast<uint32>(attack * lastFrame);
-  uint32 decayFrame = static_cast<uint32>(decay * lastFrame);
-
-  switch (instance->state) {
-    case ProcessInstanceAttackSustainDecay::State::Attack: {
-      if (frame < sustainFrame) {
-        instance->volume = sustain * static_cast<float>(frame) / static_cast<float>(sustainFrame);
-        break;
-      }
-
-      instance->state = ProcessInstanceAttackSustainDecay::State::Sustain;
-
-      // Intentional fall-through
-    }
-    case ProcessInstanceAttackSustainDecay::State::Sustain: {
-      if (frame < decayFrame) {
-        instance->volume = sustain;
-        break;
-      }
-
-      instance->state = ProcessInstanceAttackSustainDecay::State::Decay;
-
-      // Intentional fall-through
-    }
-    case ProcessInstanceAttackSustainDecay::State::Decay: {
-      if (frame < lastFrame) {
-        float pct = 1.0f - std::min(1.0f, static_cast<float>(frame - decayFrame) / static_cast<float>(lastFrame - decayFrame));
-        instance->volume = sustain * pct;
-        break;
-      }
-
-      return false;
-    }
-  }
-
-  for (uint32 s = 0; s < numSamples; ++s) {
-    samples[s] *= instance->volume;
-  }
-
-  return true;
-}
-
 void ProcessAttackSustainDecay::RenderDialog() {
   ImGui::PushID(&attack);
   if (ImGui::SliderFloat("Attack", &attack, 0.0f, 1.0f)) {
@@ -173,7 +177,7 @@ void ProcessAttackSustainDecay::RenderDialog() {
   ImGui::PopID();
 }
 
-ProcessInstance* ProcessAttackSustainDecay::CreateInstance() {
-  return new ProcessInstanceAttackSustainDecay(this);
+ProcessInstance* ProcessAttackSustainDecay::CreateInstance(float patchDuration) {
+  return new ProcessInstanceAttackSustainDecay(this, patchDuration);
 }
 

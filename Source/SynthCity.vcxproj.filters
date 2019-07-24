@@ -153,6 +153,9 @@
     <ClInclude Include="ProcessAttackSustainDecay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SineSynthSound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SynthCity.cpp">
@@ -249,6 +252,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProcessAttackSustainDecay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SineSynthSound.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
