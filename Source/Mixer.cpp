@@ -9,6 +9,7 @@
 #include <iostream>
 #include <algorithm>
 #include "OddsAndEnds.h"
+#include "FreeList.h"
 #include "Patch.h"
 #include "Process.h"
 #include "Sound.h"
@@ -72,10 +73,9 @@ Mixer::~Mixer() {
     audioDeviceId = 0;
   }
 
-  for (auto& voice : voices) {
-    delete voice;
-  }
   voices.clear();
+
+  FreeList<Voice>::Term();
 
   SDL_UnlockAudio();
 }
@@ -101,6 +101,8 @@ void Mixer::ApplyInterval(uint32 ticksPerFrame) {
 }
 
 bool Mixer::Init(uint32 audioBufferSize) {
+  FreeList<Voice>::Init(64);
+
   SDL_AudioSpec as = { 0 };
 
   mixbuf.resize(kMaxCallbackSampleFrames * 2);
@@ -135,6 +137,7 @@ bool Mixer::Init(uint32 audioBufferSize) {
 }
 
 void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
+#if 0
   // Clear the buffer
   memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
 
@@ -188,8 +191,9 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
       // NOTE: This requires every sound to have at least one process (default
       // case is thus to create a decay(0) for every sound)
       if (voice.processes.size() == 0 || voice.sounds.size() == 0) {
-        voiceMap.erase((*voiceIter)->voiceId);
-        delete *voiceIter;
+        FreeList<Voice>::Return(&voice);
+
+        voiceMap.erase(voice.voiceId);
         voiceIter = voices.erase(voiceIter);
       }
       else {
@@ -208,6 +212,54 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
     // So people can query this without locking
     numActiveVoices = voices.size();
   }
+#else
+  // Clear the buffer
+  memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
+
+  if (voices.size() > 0) {
+
+    static constexpr float kPeakVolumeRatio = 0.7f;
+    static constexpr float kVolumeEpsilon = 0.01f;
+
+    // Mix active voices
+    auto voiceIter = voices.begin();
+    while (voiceIter != voices.end()) {
+      for (uint32 f = 0; f < numFrames; ++f) {
+        float samples[2] = { 0 }; // Stereo
+
+        SoundInstance* s = (*voiceIter)->sounds[0];
+        if (s->GetSamplesForFrame(samples, 2, (*voiceIter)->frame) != 2 || (*voiceIter)->volume <= kVolumeEpsilon) {
+          (*voiceIter)->sounds[0]->sound = nullptr;
+          break;
+        }
+
+        mixBuffer[f * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio * (*voiceIter)->volume;
+        mixBuffer[f * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio * (*voiceIter)->volume;
+
+        (*voiceIter)->volume -= (*voiceIter)->volume * 0.00004f;
+
+        ++(*voiceIter)->frame;
+      }
+
+      if ((*voiceIter)->sounds[0]->sound != nullptr) {
+        ++voiceIter;
+      }
+      else {
+        FreeList<Voice>::Return(*voiceIter);
+        voiceIter = voices.erase(voiceIter);
+      }
+    }
+
+    // Clip so we don't distort
+    for (uint32 f = 0; f < numFrames; ++f) {
+      mixBuffer[f * 2 + 0] = std::max(std::min(mixBuffer[f * 2 + 0], 0.7f), -0.7f);
+      mixBuffer[f * 2 + 1] = std::max(std::min(mixBuffer[f * 2 + 1], 0.7f), -0.7f);
+    };
+
+    // So people can query this without locking
+    numActiveVoices = voices.size();
+  }
+#endif
 }
 
 void Mixer::WriteOutput(float *input, int16 *output, int32 frames) {
@@ -280,13 +332,14 @@ int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
     return -1;
   }
 
-  Voice* voice = new Voice;
+  Voice* voice = FreeList<Voice>::Borrow();
 
   voice->patch = patch;
-
+  voice->sounds.clear();
   for (const auto& sound : patch->sounds) {
     voice->sounds.push_back(sound->CreateInstance());
   }
+  voice->processes.clear();
   for (const auto& process : patch->processes) {
     voice->processes.push_back(process->CreateInstance(patch->GetSoundDuration()));
   }

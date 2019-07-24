@@ -195,6 +195,7 @@
     <ClInclude Include="ComposerView.h" />
     <ClInclude Include="DialogTrack.h" />
     <ClInclude Include="Factory.h" />
+    <ClInclude Include="FreeList.h" />
     <ClInclude Include="ImGuiExtensions.h" />
     <ClInclude Include="Patch.h" />
     <ClInclude Include="Process.h" />

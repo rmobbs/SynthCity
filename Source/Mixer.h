@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
 #include <atomic>
 
 class Patch;
@@ -56,7 +57,7 @@ protected:
     Voice() = default;
     ~Voice();
   };
-  std::vector<Voice*> voices;
+  std::list<Voice*> voices;
   std::map<int32, Voice*> voiceMap;
 
   // Refreshed every frame for thread-safe query
