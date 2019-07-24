@@ -11,7 +11,7 @@
 #include "soil.h"
 #include "Logging.h"
 #include "Sequencer.h"
-#include "SDL.h"
+#include "AudioGlobals.h"
 #include "GlobalRenderData.h"
 #include "ShaderProgram.h"
 #include "Instrument.h"
@@ -224,7 +224,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
   // Lock out the audio callback to update the shared data
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   playingTrackFlashTimes[0] = playingTrackFlashTimes[1];
   playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
@@ -232,7 +232,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     sequencer.GetInstrument()->PlayTrack(pendingPlayTrack);
     pendingPlayTrack = -1;
   }
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 
   int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
   if (!wasConsoleOpen) {

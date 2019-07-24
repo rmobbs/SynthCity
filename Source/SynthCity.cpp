@@ -364,11 +364,11 @@ bool Init() {
 }
 
 void Term() {
-  // Term the sequencer
-  Sequencer::TermSingleton();
-
   // Term the mixer
   Mixer::TermSingleton();
+
+  // Term the sequencer
+  Sequencer::TermSingleton();
 
   // Term the WAV bank
   WavBank::TermSingleton();

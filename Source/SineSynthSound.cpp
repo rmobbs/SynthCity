@@ -4,6 +4,10 @@
 #include "imgui.h"
 #include <algorithm>
 
+// F's sake, just make a polymorphic constant, C++ standards committee!!
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 // Sine
 class SineSynthSoundInstance : public SoundInstance {
 protected:

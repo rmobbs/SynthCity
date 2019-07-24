@@ -5,6 +5,7 @@
 #include "SoundFactory.h"
 #include "WavSound.h"
 #include "Globals.h"
+#include "AudioGlobals.h"
 
 #include <stdexcept>
 #include <fstream>
@@ -138,9 +139,9 @@ void Instrument::PlayTrack(uint32 trackIndex) {
 void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff) {
   if (trackIndex < tracks.size()) {
 
-    SDL_LockAudio();
+    AudioGlobals::LockAudio();
     tracks[trackIndex]->SetNote(noteIndex, onOrOff ? 255 : 0);
-    SDL_UnlockAudio();
+    AudioGlobals::UnlockAudio();
   }
 }
 

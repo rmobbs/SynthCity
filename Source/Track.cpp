@@ -3,6 +3,7 @@
 #include "Sequencer.h"
 #include "Instrument.h"
 #include "SerializeImpl.h"
+#include "AudioGlobals.h"
 #include "Logging.h"
 #include "Patch.h"
 #include "imgui.h"
@@ -40,15 +41,15 @@ Track::~Track() {
 }
 
 void Track::AddNotes(uint32 noteCount, uint8 noteValue) {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   notes.resize(notes.size() + noteCount, noteValue);
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 void Track::SetNoteCount(uint32 noteCount, uint8 noteValue) {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   notes.resize(noteCount, noteValue);
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 void Track::SetNote(uint32 noteIndex, uint8 noteValue) {
@@ -59,22 +60,22 @@ void Track::SetNote(uint32 noteIndex, uint8 noteValue) {
 }
 
 void Track::ClearNotes() {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   std::fill(notes.begin(), notes.end(), 0);
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 void Track::SetPatch(Patch* newPatch) {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   delete patch;
   patch = newPatch;
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 void Track::SetNotes(const std::vector<uint8>& newNotes) {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   notes = newNotes;
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 bool Track::SerializeWrite(const WriteSerializer& serializer) {

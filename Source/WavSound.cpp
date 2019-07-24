@@ -4,9 +4,8 @@
 #include "SoundFactory.h"
 #include "WavBank.h"
 #include "OddsAndEnds.h"
-#include "resource.h"
+#include "AudioGlobals.h"
 
-#include "SDL_audio.h"
 #include "imgui.h"
 
 #include <iostream>
@@ -175,10 +174,10 @@ SoundInstance* WavSound::CreateInstance() {
 
 void WavSound::SetWavData(WavData* newWavData) {
   // TODO: ref count
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   // Note: will not stop any playing voice
   wavData = newWavData;
   duration = wavData->duration;
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 

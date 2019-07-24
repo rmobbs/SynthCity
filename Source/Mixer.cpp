@@ -5,6 +5,7 @@
 #include "Logging.h"
 #include "Mixer.h"
 #include "SDL_audio.h"
+#include "AudioGlobals.h"
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -13,6 +14,7 @@
 #include "Patch.h"
 #include "Process.h"
 #include "Sound.h"
+#include "SDL.h"
 #include <cassert>
 #include <windows.h>
 #undef min
@@ -66,22 +68,22 @@ Mixer::Mixer() {
 }
 
 Mixer::~Mixer() {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
 
-  if (audioDeviceId != 0) {
-    SDL_CloseAudioDevice(audioDeviceId);
-    audioDeviceId = 0;
+  StopAllVoices();
+
+  if (AudioGlobals::GetAudioDeviceId() != 0) {
+    SDL_CloseAudioDevice(AudioGlobals::GetAudioDeviceId());
+    AudioGlobals::SetAudioDeviceId(0);
   }
 
-  voices.clear();
+  StaticFreeList<Voice>::Term();
 
-  FreeList<Voice>::Term();
-
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 void Mixer::SetController(Controller* controller) {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   if (this->controller) {
     this->controller->OnDisconnect();
   }
@@ -89,7 +91,7 @@ void Mixer::SetController(Controller* controller) {
   if (this->controller) {
     this->controller->OnConnect();
   }
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 void Mixer::SetMasterVolume(float masterVolume) {
@@ -101,7 +103,7 @@ void Mixer::ApplyInterval(uint32 ticksPerFrame) {
 }
 
 bool Mixer::Init(uint32 audioBufferSize) {
-  FreeList<Voice>::Init(64);
+  StaticFreeList<Voice>::Init(64);
 
   SDL_AudioSpec as = { 0 };
 
@@ -112,6 +114,8 @@ bool Mixer::Init(uint32 audioBufferSize) {
     return false;
   }
 
+  SDL_AudioSpec audioSpec = { 0 };
+  SDL_AudioDeviceID audioDeviceId = 0;
   as.freq = Mixer::kDefaultFrequency;
   as.format = AUDIO_S16SYS;
   as.channels = 2;
@@ -126,6 +130,8 @@ bool Mixer::Init(uint32 audioBufferSize) {
     MCLOG(Error, "Couldn't open SDL audio: %s\n", SDL_GetError());
     return false;
   }
+
+  AudioGlobals::SetAudioDeviceId(audioDeviceId);
 
   if (audioSpec.format != AUDIO_S16SYS) {
     MCLOG(Error, "Wrong audio format!");
@@ -191,7 +197,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
       // NOTE: This requires every sound to have at least one process (default
       // case is thus to create a decay(0) for every sound)
       if (voice.processes.size() == 0 || voice.sounds.size() == 0) {
-        FreeList<Voice>::Return(&voice);
+        StaticFreeList<Voice>::Return(&voice);
 
         voiceMap.erase(voice.voiceId);
         voiceIter = voices.erase(voiceIter);
@@ -245,7 +251,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         ++voiceIter;
       }
       else {
-        FreeList<Voice>::Return(*voiceIter);
+        StaticFreeList<Voice>::Return(*voiceIter);
         voiceIter = voices.erase(voiceIter);
       }
     }
@@ -303,16 +309,14 @@ void Mixer::AudioCallback(void *userData, uint8 *stream, int32 length) {
 }
 
 void Mixer::StopAllVoices() {
-  for (auto& voice : voices) {
-    delete voice;
-  }
+  StaticFreeList<Voice>::ReturnAll();
   voices.clear();
 
   numActiveVoices = 0;
 }
 
 void Mixer::StopVoice(int32 voiceId) {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   auto voiceMapEntry = voiceMap.find(voiceId);
   if (voiceMapEntry != voiceMap.end()) {
     auto voiceEntry = std::find(voices.begin(), voices.end(), voiceMapEntry->second);
@@ -321,18 +325,18 @@ void Mixer::StopVoice(int32 voiceId) {
     voices.erase(voiceEntry);
     numActiveVoices = voices.size();
   }
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 
 int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
-  SDL_LockAudio();
-
-  if (voices.size() >= kMaxSimultaneousVoices) {
+  if (numActiveVoices >= kMaxSimultaneousVoices) {
     MCLOG(Error, "Currently playing max voices; sound dropped");
     return -1;
   }
 
-  Voice* voice = FreeList<Voice>::Borrow();
+  AudioGlobals::LockAudio();
+
+  Voice* voice = StaticFreeList<Voice>::Borrow();
 
   voice->patch = patch;
   voice->sounds.clear();
@@ -352,7 +356,7 @@ int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
 
   voices.push_back(voice);
 
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 
   return voice->voiceId;
 }

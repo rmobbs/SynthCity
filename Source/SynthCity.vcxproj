@@ -190,6 +190,7 @@
     <ClInclude Include="3rdParty\imgui\imstb_rectpack.h" />
     <ClInclude Include="3rdParty\imgui\imstb_textedit.h" />
     <ClInclude Include="3rdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="AudioGlobals.h" />
     <ClInclude Include="BaseTypes.h" />
     <ClInclude Include="BaseWindows.h" />
     <ClInclude Include="ComposerView.h" />
@@ -234,6 +235,7 @@
     <ClCompile Include="3rdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="3rdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="AudioGlobals.cpp" />
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="DialogTrack.cpp" />
     <ClCompile Include="ImGuiExtensions.cpp" />

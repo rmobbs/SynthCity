@@ -1,6 +1,5 @@
 #pragma once
 
-#include "SDL.h"
 #include "BaseTypes.h"
 #include <string>
 #include <vector>
@@ -27,9 +26,6 @@ public:
   };
 protected:
   static Mixer* singleton;
-
-  SDL_AudioSpec audioSpec = { 0 };
-  SDL_AudioDeviceID audioDeviceId = 0;
 
   uint32 nextVoiceId = 0;
   int32 ticksPerFrame = 0;
