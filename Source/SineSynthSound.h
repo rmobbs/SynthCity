@@ -11,7 +11,5 @@ public:
 
   Sound* Clone() override;
 
-  SoundInstance* CreateInstance() override;
-
   void RenderDialog() override;
 };

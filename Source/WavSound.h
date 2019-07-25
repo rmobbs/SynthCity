@@ -19,8 +19,6 @@ public:
 
   Sound* Clone() override;
 
-  SoundInstance* CreateInstance() override;
-
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 
@@ -32,3 +30,4 @@ public:
   void RenderDialog() override;
 };
 
+extern SoundInstance* SpawnAWavInstance(Sound* sound);

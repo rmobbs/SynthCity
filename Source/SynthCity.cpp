@@ -385,7 +385,7 @@ void Term() {
 
 int main(int argc, char **argv) {
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
-  //_CrtSetBreakAlloc(262);
+  //_CrtSetBreakAlloc(1600);
 
   if (!Init()) {
     return -1;

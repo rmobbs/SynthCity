@@ -7,6 +7,7 @@
 #include <list>
 #include <atomic>
 
+class Voice;
 class Patch;
 class SoundInstance;
 class ProcessInstance;
@@ -27,32 +28,12 @@ public:
 protected:
   static Mixer* singleton;
 
-  uint32 nextVoiceId = 0;
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
   float masterVolume = kDefaultMasterVolume;
   Controller* controller = nullptr;
   std::vector<float> mixbuf;
 
-  // A voice is a playing instance of a patch
-  class Voice {
-  public:
-    Patch const* patch = nullptr;
-
-    // Instances
-    std::vector<SoundInstance*> sounds;
-    std::vector<ProcessInstance*> processes;
-
-    // Frame counter
-    uint32 frame = 0;
-
-    float volume = 1.0f;
-
-    int32 voiceId = -1;
-
-    Voice() = default;
-    ~Voice();
-  };
   std::list<Voice*> voices;
   std::map<int32, Voice*> voiceMap;
 
@@ -60,6 +41,7 @@ protected:
   std::atomic<uint32> numActiveVoices;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
+  void DrainExpiredPool();
 
 public:
   void AudioCallback(void *userData, uint8 *stream, int32 length);
@@ -77,7 +59,7 @@ public:
   bool Init(uint32 audioBufferSize);
   void StopAllVoices();
   void StopVoice(int32 voiceId);
-  int32 PlayPatch(Patch const* patch, float volume);
+  int32 PlayPatch(const Patch* patch, float volume);
   void ApplyInterval(uint32 interval);
   void SetController(Controller* controller);
 

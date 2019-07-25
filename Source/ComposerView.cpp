@@ -275,7 +275,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack(sequencer.GetInstrument(),
+          pendingDialog = new DialogTrack("Add Track", sequencer.GetInstrument(),
             -1, CreateTrack(), playButtonIconTexture, stopButtonIconTexture);
         }
         ImGui::EndMenu();
@@ -396,7 +396,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
               }
               if (ImGui::Button("Properties...")) {
                 // Clone the track so they can change stuff and then cancel
-                pendingDialog = new DialogTrack(instrument, trackIndex,
+                pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
                   new Track(*track), playButtonIconTexture, stopButtonIconTexture);
               }
               ImGui::EndPopup();
@@ -780,4 +780,8 @@ ComposerView::~ComposerView() {
     Logging::PopResponder(logResponderId);
     logResponderId = UINT32_MAX;
   }
+  delete activeDialog;
+  activeDialog = nullptr;
+  delete pendingDialog;
+  pendingDialog = nullptr;
 }

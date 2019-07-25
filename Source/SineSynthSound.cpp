@@ -60,10 +60,6 @@ Sound* SineSynthSound::Clone() {
   return new SineSynthSound(*this);
 }
 
-SoundInstance* SineSynthSound::CreateInstance() {
-  return new SineSynthSoundInstance(this);
-}
-
 void SineSynthSound::RenderDialog() {
   int frequencyInt = frequency;
   if (ImGui::InputInt("Frequency", &frequencyInt)) {

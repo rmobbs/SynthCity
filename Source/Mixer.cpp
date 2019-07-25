@@ -6,10 +6,12 @@
 #include "Mixer.h"
 #include "SDL_audio.h"
 #include "AudioGlobals.h"
+#include "WavSound.h"
 #include <vector>
 #include <iostream>
 #include <algorithm>
 #include "OddsAndEnds.h"
+#include "SoundFactory.h"
 #include "FreeList.h"
 #include "Patch.h"
 #include "Process.h"
@@ -17,6 +19,8 @@
 #include "SDL.h"
 #include <cassert>
 #include <windows.h>
+#include <array>
+#include <queue>
 #undef min
 #undef max
 
@@ -25,6 +29,61 @@ static constexpr uint32 kMaxSimultaneousVoices = 64;
 static constexpr float kPeakVolumeRatio = 0.7f;
 static constexpr float kClipMax(0.7f);
 static constexpr float kClipMin(-0.7f);
+static constexpr uint32 kMaxSoundsPerVoice = 8;
+static constexpr uint32 kMaxProcessesPerVoice = 8;
+static constexpr uint32 kVoicePreallocCount = 64;
+
+// A voice is a playing instance of a patch
+class Voice {
+private:
+  static int32 nextVoiceId;
+public:
+  // Instances
+  std::array<SoundInstance*, kMaxSoundsPerVoice * 2> sounds = { nullptr };
+  uint32 curSounds = 0;
+  uint32 numSounds = 0;
+  std::array<ProcessInstance*, kMaxProcessesPerVoice * 2> processes = { nullptr };
+  uint32 curProcesses = 0;
+  uint32 numProcesses = 0;
+
+  // Frame counter
+  uint32 frame = 0;
+
+  float volume = 1.0f;
+
+  int32 voiceId = -1;
+
+  Voice() {
+
+  }
+
+  Voice(const Patch* patch, float volume)
+  : volume(volume) {
+    for (uint32 s = 0; s < patch->sounds.size(); ++ s) {
+      sounds[s] = SoundInstanceFreeList::FreeList(patch->sounds[s]->GetSoundClassName()).Borrow(patch->sounds[s]);
+    }
+    curSounds = numSounds = patch->sounds.size();
+
+#if 0
+    for (uint32 p = 0; p < patch->processes.size(); ++ p) {
+      processes[p] = patch->processes[p]->CreateInstance(patch->GetSoundDuration());
+    }
+    curProcesses = numProcesses = patch->processes.size();
+#endif
+    voiceId = nextVoiceId++;
+  }
+
+  ~Voice() {
+    for (auto& process : processes) {
+      delete process;
+    }
+  }
+};
+int32 Voice::nextVoiceId = 0;
+
+static FreeList<Voice, const Patch*, float> voiceFreeList;
+
+std::queue<Voice*> expiredVoices;
 
 /* static */
 Mixer* Mixer::singleton = nullptr;
@@ -51,35 +110,20 @@ bool Mixer::TermSingleton() {
   return true;
 }
 
-Mixer::Voice::~Voice() {
-  for (auto& process : processes) {
-    delete process;
-  }
-  processes.clear();
-
-  for (auto& sound : sounds) {
-    delete sound;
-  }
-  sounds.clear();
-}
 
 Mixer::Mixer() {
 
 }
 
 Mixer::~Mixer() {
-  AudioGlobals::LockAudio();
-
-  StopAllVoices();
-
   if (AudioGlobals::GetAudioDeviceId() != 0) {
     SDL_CloseAudioDevice(AudioGlobals::GetAudioDeviceId());
     AudioGlobals::SetAudioDeviceId(0);
   }
 
-  StaticFreeList<Voice>::Term();
+  StopAllVoices();
 
-  AudioGlobals::UnlockAudio();
+  voiceFreeList.Term();
 }
 
 void Mixer::SetController(Controller* controller) {
@@ -103,7 +147,7 @@ void Mixer::ApplyInterval(uint32 ticksPerFrame) {
 }
 
 bool Mixer::Init(uint32 audioBufferSize) {
-  StaticFreeList<Voice>::Init(64);
+  voiceFreeList.Init(kVoicePreallocCount);
 
   SDL_AudioSpec as = { 0 };
 
@@ -143,85 +187,9 @@ bool Mixer::Init(uint32 audioBufferSize) {
 }
 
 void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
-#if 0
   // Clear the buffer
   memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
-
-  if (voices.size() > 0) {
-    // Mix active voices
-    auto voiceIter = voices.begin();
-    while (voiceIter != voices.end()) {
-      auto& voice = *(*voiceIter);
-
-      for (uint32 frame = 0; frame < numFrames; ++frame) {
-        float samples[kDefaultChannels] = { 0 };
-
-        // Get samples from sound(s)
-        auto soundIter = voice.sounds.begin();
-        while (soundIter != voice.sounds.end()) {
-          if ((*soundIter)->GetSamplesForFrame(samples, kDefaultChannels, voice.frame) != kDefaultChannels) {
-            delete *soundIter;
-            soundIter = voice.sounds.erase(soundIter);
-          }
-          else {
-            ++soundIter;
-          }
-        }
-
-        // Apply process(es)
-        auto procsIter = voice.processes.begin();
-        while (procsIter != voice.processes.end()) {
-          if ((*procsIter)->ProcessSamples(samples, kDefaultChannels, voice.frame) != true) {
-            delete* procsIter;
-            procsIter = voice.processes.erase(procsIter);
-          }
-          else {
-            ++procsIter;
-          }
-        }
-
-        if (voice.processes.size() == 0 || voice.sounds.size() == 0) {
-          break;
-        }
-
-        // Add to mix buffer
-        for (uint32 c = 0; c < kDefaultChannels; ++c) {
-          mixBuffer[frame * kDefaultChannels + c] += samples[c] * voice.volume * masterVolume * kPeakVolumeRatio;
-        }
-
-        // Advance frame
-        ++voice.frame;
-      }
-
-      // Trim voices whose sounds or processes have all ended
-      // NOTE: This requires every sound to have at least one process (default
-      // case is thus to create a decay(0) for every sound)
-      if (voice.processes.size() == 0 || voice.sounds.size() == 0) {
-        StaticFreeList<Voice>::Return(&voice);
-
-        voiceMap.erase(voice.voiceId);
-        voiceIter = voices.erase(voiceIter);
-      }
-      else {
-        ++voiceIter;
-      }
-    }
-
-    // Clip so we don't distort
-    for (uint32 f = 0; f < numFrames; ++f) {
-      for (uint32 c = 0; c < kDefaultChannels; ++c) {
-        mixBuffer[f * kDefaultChannels + c] =
-          std::max(std::min(mixBuffer[f * kDefaultChannels + c], kClipMax), kClipMin);
-      }
-    };
-
-    // So people can query this without locking
-    numActiveVoices = voices.size();
-  }
-#else
-  // Clear the buffer
-  memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
-
+#if 1
   if (voices.size() > 0) {
 
     static constexpr float kPeakVolumeRatio = 0.7f;
@@ -233,25 +201,39 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
       for (uint32 f = 0; f < numFrames; ++f) {
         float samples[2] = { 0 }; // Stereo
 
-        SoundInstance* s = (*voiceIter)->sounds[0];
-        if (s->GetSamplesForFrame(samples, 2, (*voiceIter)->frame) != 2 || (*voiceIter)->volume <= kVolumeEpsilon) {
-          (*voiceIter)->sounds[0]->sound = nullptr;
-          break;
+        auto v = *voiceIter;
+        if (v->curSounds > 0) {
+          for (uint32 i = 0; i < v->numSounds; ++i) {
+            auto s = v->sounds[i];
+            if (s != nullptr) {
+              if (s->GetSamplesForFrame(samples, 2, v->frame) != 2) {
+                std::swap(v->sounds[i], v->sounds[i + v->numSounds]);
+                --v->curSounds;
+              }
+            }
+          }
         }
 
-        mixBuffer[f * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio * (*voiceIter)->volume;
-        mixBuffer[f * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio * (*voiceIter)->volume;
+        if (v->curSounds > 0) {
+          mixBuffer[f * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio * v->volume;
+          mixBuffer[f * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio * v->volume;
 
-        (*voiceIter)->volume -= (*voiceIter)->volume * 0.00004f;
+          v->volume -= v->volume * 0.00004f;
 
-        ++(*voiceIter)->frame;
+          ++v->frame;
+        }
+        else {
+          break;
+        }
       }
 
-      if ((*voiceIter)->sounds[0]->sound != nullptr) {
+      if ((*voiceIter)->curSounds > 0 && (*voiceIter)->volume > kVolumeEpsilon) {
         ++voiceIter;
       }
       else {
-        StaticFreeList<Voice>::Return(*voiceIter);
+        expiredVoices.push(*voiceIter);
+
+        voiceMap.erase((*voiceIter)->voiceId);
         voiceIter = voices.erase(voiceIter);
       }
     }
@@ -309,10 +291,15 @@ void Mixer::AudioCallback(void *userData, uint8 *stream, int32 length) {
 }
 
 void Mixer::StopAllVoices() {
-  StaticFreeList<Voice>::ReturnAll();
-  voices.clear();
+  AudioGlobals::LockAudio();
 
+  voiceFreeList.ReturnAll();
+  voices.clear();
   numActiveVoices = 0;
+
+  DrainExpiredPool();
+
+  AudioGlobals::UnlockAudio();
 }
 
 void Mixer::StopVoice(int32 voiceId) {
@@ -321,14 +308,34 @@ void Mixer::StopVoice(int32 voiceId) {
   if (voiceMapEntry != voiceMap.end()) {
     auto voiceEntry = std::find(voices.begin(), voices.end(), voiceMapEntry->second);
     assert(voiceEntry != voices.end());
-    voiceMap.erase(voiceMapEntry);
     voices.erase(voiceEntry);
+
+    voiceFreeList.Return(voiceMapEntry->second);
+    voiceMap.erase(voiceMapEntry);
+
     numActiveVoices = voices.size();
+
+    DrainExpiredPool();
   }
   AudioGlobals::UnlockAudio();
 }
 
-int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
+void Mixer::DrainExpiredPool() {
+  // Drain the expired pool
+  while (!expiredVoices.empty()) {
+    auto v = expiredVoices.front();
+    expiredVoices.pop();
+    for (uint32 si = 0; si < v->sounds.size(); ++si) {
+      if (v->sounds[si] != nullptr) {
+        SoundInstanceFreeList::FreeList(v->sounds[si]->sound->GetSoundClassName()).Return(v->sounds[si]);
+        v->sounds[si] = nullptr;
+      }
+    }
+    voiceFreeList.Return(v);
+  }
+}
+
+int32 Mixer::PlayPatch(const Patch* patch, float volume) {
   if (numActiveVoices >= kMaxSimultaneousVoices) {
     MCLOG(Error, "Currently playing max voices; sound dropped");
     return -1;
@@ -336,28 +343,16 @@ int32 Mixer::PlayPatch(const Patch* const patch, float volume) {
 
   AudioGlobals::LockAudio();
 
-  Voice* voice = StaticFreeList<Voice>::Borrow();
+  DrainExpiredPool();
 
-  voice->patch = patch;
-  voice->sounds.clear();
-  for (const auto& sound : patch->sounds) {
-    voice->sounds.push_back(sound->CreateInstance());
-  }
-  voice->processes.clear();
-  for (const auto& process : patch->processes) {
-    voice->processes.push_back(process->CreateInstance(patch->GetSoundDuration()));
-  }
-
-  voice->frame = 0;
-  voice->volume = volume;
-  voice->voiceId = nextVoiceId++;
+  Voice* voice = voiceFreeList.Borrow(patch, volume);
 
   voiceMap.insert({ voice->voiceId, voice });
-
   voices.push_back(voice);
+  numActiveVoices = voices.size();
 
   AudioGlobals::UnlockAudio();
-
+  
   return voice->voiceId;
 }
 
