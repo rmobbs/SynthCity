@@ -23,8 +23,6 @@ public:
 
     }
 
-    inline Information(std::string eatme) {}
-
     inline Information(std::string name, std::string desc, SerializeFunction serialize, SpawnFunction spawn)
       : name(name)
       , desc(desc)

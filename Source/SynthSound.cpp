@@ -4,24 +4,27 @@
 #include "Mixer.h"
 #include "SoundFactory.h"
 #include "Sequencer.h"
-#include "resource.h"
 #include <algorithm>
 #include "imgui.h"
 
 static constexpr const char* kFrequencyTag("frequency");
 static constexpr const char* kDurationTag("duration");
 
+SynthSound::SynthSound(const SynthSound& that)
+  : Sound(that)
+  , frequency(that.frequency) {
+  duration = that.duration;
+}
+
 SynthSound::SynthSound(const std::string& className)
   : Sound(className) {
 
 }
 
-SynthSound::SynthSound(const std::string& className, uint32 frequency, uint32 durationNum, uint32 durationDen)
+SynthSound::SynthSound(const std::string& className, uint32 frequency, float duration)
   : Sound(className)
-  , frequency(frequency)
-  , durationNum(durationNum)
-  , durationDen(durationDen) {
-
+  , frequency(frequency) {
+  this->duration = duration;
 }
 
 SynthSound::SynthSound(const std::string& className, const ReadSerializer& serializer)
@@ -40,7 +43,7 @@ bool SynthSound::SerializeWrite(const WriteSerializer& serializer) {
 
   // Duration tag:uint
   w.Key(kDurationTag);
-  w.Uint(durationNum << 16 | durationDen);
+  w.Double(duration);
 
   return true;
 }
@@ -50,78 +53,17 @@ bool SynthSound::SerializeRead(const ReadSerializer& serializer) {
 
   // Frequency
   if (!r.HasMember(kFrequencyTag) || !r[kFrequencyTag].IsUint()) {
-    MCLOG(Warn, "Missing/invalid frequency tag");
+    MCLOG(Warn, "Missing/invalid frequency");
     return false;
   }
   frequency = r[kFrequencyTag].GetUint();
 
   // Duration
-  if (!r.HasMember(kDurationTag) || !r[kDurationTag].IsUint()) {
-    MCLOG(Warn, "Missing/invalid frequency tag");
+  if (!r.HasMember(kDurationTag) || !r[kDurationTag].IsDouble()) {
+    MCLOG(Warn, "Missing/invalid duration");
     return false;
   }
-  uint32 durationMasked = r[kDurationTag].GetUint();
-
-  durationNum = durationMasked >> 16;
-  durationDen = durationMasked & 0xFFFF;
+  duration = static_cast<float>(r[kDurationTag].GetDouble());
 
   return true;
-}
-
-// Sine
-REGISTER_SOUND(SineSynthSound, "Modulated sine wave");
-SineSynthSound::SineSynthSound()
-  : SynthSound("SineSynthSound") {
-
-}
-
-SineSynthSound::SineSynthSound(const SineSynthSound& that)
-  : SynthSound(that) {
-
-}
-
-SineSynthSound::SineSynthSound(uint32 frequency, uint32 durationNum, uint32 durationDen)
-  : SynthSound("SineSynthSound", frequency, durationNum, durationDen) {
-}
-
-SineSynthSound::SineSynthSound(const ReadSerializer& serializer)
-  : SynthSound("SineSynthSound", serializer) {
-}
-
-Sound* SineSynthSound::Clone() {
-  return new SineSynthSound(*this);
-}
-
-SoundInstance* SineSynthSound::CreateInstance() {
-  SineSynthSoundInstance* instance = new SineSynthSoundInstance(this);
-
-  float durationInSeconds = static_cast<float>(Sequencer::Get().
-    GetSecondsPerBeat()) * (static_cast<float>(durationNum) / static_cast<float>(durationDen));
-
-  instance->duration = static_cast<uint32>(durationInSeconds * static_cast<float>(Mixer::kDefaultFrequency));
-
-  instance->radstep = static_cast<float>((2.0 * M_PI *
-    frequency) / static_cast<double>(Mixer::kDefaultFrequency));
-  return instance;
-}
-
-uint8 SineSynthSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instanceGeneric) {
-  SineSynthSoundInstance* instance = static_cast<SineSynthSoundInstance*>(instanceGeneric);
-  if (frame < instance->duration) {
-    instance->radians += instance->radstep; // * speed
-    while (instance->radians > (2.0 * M_PI)) {
-      instance->radians -= static_cast<float>(2.0 * M_PI);
-    }
-
-    float s = sinf(instance->radians);
-    for (uint8 channel = 0; channel < channels; ++channel) {
-      samples[channel] = s;
-    }
-    return channels;
-  }
-  return 0;
-}
-
-void SineSynthSound::RenderDialog() {
-  ImGui::Text("DialogSineSynthSound");
 }

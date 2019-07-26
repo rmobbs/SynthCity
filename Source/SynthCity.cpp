@@ -20,6 +20,7 @@
 #include "Mixer.h"
 #include "Globals.h"
 #include "WavBank.h"
+#include "Process.h"
 
 #include "SDL_syswm.h"
 #include <windows.h>
@@ -337,7 +338,7 @@ bool Init() {
     return false;
   }
 
-  // Initialize mixer
+  // Initialize mixer before sequencer, as sequencer will interact with mixer on load
   if (!Mixer::InitSingleton(kAudioBufferSize)) {
     MCLOG(Error, "Unable to init Mixer.");
     SDL_Quit();
@@ -352,9 +353,9 @@ bool Init() {
     return false;
   }
 
-  // TODO: determine default view
   Mixer::Get().SetController(&Sequencer::Get());
 
+  // TODO: determine default view
   // Initialize the designer view
   currentView = new ComposerView(reinterpret_cast<uint32>(sysWmInfo.info.win.window), []() { wantQuit = true;  });
 
@@ -363,12 +364,16 @@ bool Init() {
   return true;
 }
 
+#include "SoundFactory.h"
+#include "ProcessFactory.h"
+
 void Term() {
+  // Term the mixer first, as it has to clean up sound instances which can refer to
+  // sounds that are being kept alive by the sequencer/instrument
+  Mixer::TermSingleton();
+
   // Term the sequencer
   Sequencer::TermSingleton();
-
-  // Term the mixer
-  Mixer::TermSingleton();
 
   // Term the WAV bank
   WavBank::TermSingleton();
@@ -385,7 +390,7 @@ void Term() {
 
 int main(int argc, char **argv) {
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
-  //_CrtSetBreakAlloc(262);
+  //_CrtSetBreakAlloc(1600);
 
   if (!Init()) {
     return -1;

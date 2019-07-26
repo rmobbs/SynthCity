@@ -16,6 +16,7 @@ public:
 
   void AddTrack(Track* track);
   void ReplaceTrack(uint32 index, Track* track);
+  void RemoveTrack(uint32 index);
   void ClearNotes();
   void Clear();
   void PlayTrack(uint32 trackIndex);

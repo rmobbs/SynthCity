@@ -12,8 +12,9 @@
 static constexpr float kMinDialogWidth(600.0f);
 static constexpr float kMinDialogHeight(600.0f);
 
-DialogTrack::DialogTrack(Instrument* instrument, int32 trackIndex, Track* track, uint32 playButtonTexture, uint32 stopButtonTexture)
-  : instrument(instrument)
+DialogTrack::DialogTrack(std::string title, Instrument* instrument, int32 trackIndex, Track* track, uint32 playButtonTexture, uint32 stopButtonTexture)
+  : title(title)
+  , instrument(instrument)
   , trackIndex(trackIndex)
   , track(track)
   , playButtonTexture(playButtonTexture)
@@ -22,17 +23,20 @@ DialogTrack::DialogTrack(Instrument* instrument, int32 trackIndex, Track* track,
 }
 
 DialogTrack::~DialogTrack() {
-
+  delete track;
+  track = nullptr;
 }
 
 void DialogTrack::Open() {
-  ImGui::OpenPopup("Add Track");
+  ImGui::OpenPopup(title.c_str());
 }
 
 bool DialogTrack::Render() {
+  track->GetPatch()->UpdateDuration();
+
   ImGui::SetNextWindowSizeConstraints(ImVec2(kMinDialogWidth, kMinDialogHeight), ImVec2(1.0e9f, 1.0e9f));
   bool isOpen = true;
-  if (ImGui::BeginPopupModal("Add Track", &isOpen)) {
+  if (ImGui::BeginPopupModal(title.c_str(), &isOpen)) {
     // Track name
     char nameBuf[1024];
     strcpy_s(nameBuf, sizeof(nameBuf), track->GetName().c_str());
@@ -98,9 +102,7 @@ bool DialogTrack::Render() {
       else {
         instrument->AddTrack(track);
       }
-    }
-    else {
-      delete track;
+      track = nullptr;
     }
   }
   return isOpen;

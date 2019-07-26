@@ -11,7 +11,7 @@
 #include "soil.h"
 #include "Logging.h"
 #include "Sequencer.h"
-#include "SDL.h"
+#include "AudioGlobals.h"
 #include "GlobalRenderData.h"
 #include "ShaderProgram.h"
 #include "Instrument.h"
@@ -224,7 +224,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
   // Lock out the audio callback to update the shared data
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   playingTrackFlashTimes[0] = playingTrackFlashTimes[1];
   playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
@@ -232,7 +232,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     sequencer.GetInstrument()->PlayTrack(pendingPlayTrack);
     pendingPlayTrack = -1;
   }
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 
   int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
   if (!wasConsoleOpen) {
@@ -275,7 +275,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack(sequencer.GetInstrument(),
+          pendingDialog = new DialogTrack("Add Track", sequencer.GetInstrument(),
             -1, CreateTrack(), playButtonIconTexture, stopButtonIconTexture);
         }
         ImGui::EndMenu();
@@ -362,6 +362,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         if (instrument != nullptr) {
           uint32 flashColor;
           uint32 noteGlobalIndex = 0;
+          int32 removeTrackIndex = -1;
           for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
             auto& track = instrument->GetTracks()[trackIndex];
 
@@ -396,8 +397,14 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
               }
               if (ImGui::Button("Properties...")) {
                 // Clone the track so they can change stuff and then cancel
-                pendingDialog = new DialogTrack(instrument, trackIndex,
+                pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
                   new Track(*track), playButtonIconTexture, stopButtonIconTexture);
+                ImGui::CloseCurrentPopup();
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Delete")) {
+                removeTrackIndex = trackIndex;
+                ImGui::CloseCurrentPopup();
               }
               ImGui::EndPopup();
             }
@@ -517,6 +524,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
             // Reset old X spacing to offset from keyboard key
             imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
+          }
+          if (removeTrackIndex != -1) {
+            instrument->RemoveTrack(removeTrackIndex);
           }
         }
       }
@@ -780,4 +790,8 @@ ComposerView::~ComposerView() {
     Logging::PopResponder(logResponderId);
     logResponderId = UINT32_MAX;
   }
+  delete activeDialog;
+  activeDialog = nullptr;
+  delete pendingDialog;
+  pendingDialog = nullptr;
 }

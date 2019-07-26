@@ -4,9 +4,8 @@
 #include "SoundFactory.h"
 #include "WavBank.h"
 #include "OddsAndEnds.h"
-#include "resource.h"
+#include "AudioGlobals.h"
 
-#include "SDL_audio.h"
 #include "imgui.h"
 
 #include <iostream>
@@ -14,6 +13,39 @@
 #include <commdlg.h>
 #include <filesystem>
 #include <algorithm>
+
+static constexpr uint32 kWavSoundInstancePoolSize = 128;
+
+class WavSoundInstance : public SoundInstance {
+public:
+  using SoundInstance::SoundInstance;
+
+  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame) override {
+    const WavData*  wavData = static_cast<WavSound*>(sound)->GetWavData();
+
+    if (wavData != nullptr) {
+      const uint32 frameSize = sizeof(int16) * wavData->channels;
+
+      // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
+      // by the size of our frame
+      if (frame >= wavData->data.size() / frameSize) {
+        return 0;
+      }
+
+      for (uint8 channel = 0; channel < channels; ++channel) {
+        samples[channel] = static_cast<float>(reinterpret_cast<const int16*>(wavData->
+          data.data() + frame * frameSize)[channel % wavData->channels]) / static_cast<float>(SHRT_MAX);
+      }
+      return channels;
+    }
+
+    return 0;  
+  }
+};
+
+// The pool size should be relatively big b/c multiple instances can play
+// simultaneously
+REGISTER_SOUND_INSTANCE(WavSoundInstance, WavSound, kWavSoundInstancePoolSize);
 
 REGISTER_SOUND(WavSound, "Sound from WAV file");
 WavSound::WavSound()
@@ -24,7 +56,7 @@ WavSound::WavSound()
 WavSound::WavSound(const WavSound& that)
   : Sound(that)
   , wavData(that.wavData) {
-  duration = wavData->duration;
+
 }
 
 WavSound::WavSound(const std::string& fileName)
@@ -94,28 +126,6 @@ void WavSound::RenderDialog() {
   ImGui::PopID();
 }
 
-uint8 WavSound::GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) {
-  // Could eventually use the sound state for ADSR ...
-
-  if (wavData != nullptr) {
-    const uint32 frameSize = sizeof(int16) * wavData->channels;
-
-    // Recall that the data buffer is uint8s, so to get the number of frames, divide its size
-    // by the size of our frame
-    if (frame >= wavData->data.size() / frameSize) {
-      return 0;
-    }
-
-    for (uint8 channel = 0; channel < channels; ++channel) {
-      samples[channel] = static_cast<float>(reinterpret_cast<int16*>(wavData->
-        data.data() + frame * frameSize)[channel % wavData->channels]) / static_cast<float>(SHRT_MAX);
-    }
-    return channels;
-  }
-
-  return 0;
-}
-
 bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
 
@@ -164,16 +174,12 @@ Sound* WavSound::Clone() {
   return new WavSound(*this);
 }
 
-SoundInstance* WavSound::CreateInstance() {
-  return new SoundInstance(this);
-}
-
 void WavSound::SetWavData(WavData* newWavData) {
   // TODO: ref count
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   // Note: will not stop any playing voice
   wavData = newWavData;
   duration = wavData->duration;
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }
 

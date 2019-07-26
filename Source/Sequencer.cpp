@@ -1,8 +1,7 @@
 #include "Sequencer.h"
-#include "SDL.h"
+#include "AudioGlobals.h"
 #include <iostream>
 #include "Mixer.h"
-#include "SDL_audio.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -219,11 +218,11 @@ bool Sequencer::NewInstrument() {
   Instrument* newInstrument = new Instrument(std::string(kNewInstrumentDefaultName),
     GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
   if (newInstrument) {
-    SDL_LockAudio();
+    AudioGlobals::LockAudio();
     Stop();
     delete instrument;
     instrument = newInstrument;
-    SDL_UnlockAudio();
+    AudioGlobals::UnlockAudio();
     return true;
   }
   return false;
@@ -238,11 +237,11 @@ bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
       delete newInstrument;
     }
     else {
-      SDL_LockAudio();
+      AudioGlobals::LockAudio();
       Stop();
       delete instrument;
       instrument = newInstrument;
-      SDL_UnlockAudio();
+      AudioGlobals::UnlockAudio();
       return true;
     }
   }
@@ -544,7 +543,7 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
 }
 
 Sequencer::~Sequencer() {
-  SDL_LockAudio();
+  AudioGlobals::LockAudio();
   
   delete instrument;
   instrument = nullptr;
@@ -554,5 +553,5 @@ Sequencer::~Sequencer() {
   }
   reservedPatches.clear();
 
-  SDL_UnlockAudio();
+  AudioGlobals::UnlockAudio();
 }

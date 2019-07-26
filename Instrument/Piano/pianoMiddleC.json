@@ -9,7 +9,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -27,7 +27,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -45,7 +45,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -63,7 +63,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -81,7 +81,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -99,7 +99,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -117,7 +117,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -135,7 +135,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -153,7 +153,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -171,7 +171,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -189,7 +189,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [
@@ -207,7 +207,7 @@
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.4
+                        "decay": 0.1
                     }
                 ],
                 "sounds": [

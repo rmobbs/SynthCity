@@ -17,11 +17,7 @@ public:
   WavSound(const std::string& fileName);
   WavSound(const ReadSerializer& serializer);
 
-  uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame, SoundInstance* instance) override;
-
   Sound* Clone() override;
-
-  SoundInstance* CreateInstance() override;
 
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;

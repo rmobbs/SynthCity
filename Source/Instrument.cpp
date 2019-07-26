@@ -5,6 +5,7 @@
 #include "SoundFactory.h"
 #include "WavSound.h"
 #include "Globals.h"
+#include "AudioGlobals.h"
 
 #include <stdexcept>
 #include <fstream>
@@ -102,33 +103,50 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
 }
 
 void Instrument::ClearNotes() {
+  AudioGlobals::LockAudio();
   for (auto& track : tracks) {
     track->ClearNotes();
   }
+  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::Clear() {
+  AudioGlobals::LockAudio();
   for (auto& track : tracks) {
     delete track;
   }
   tracks.clear();
+  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::SetNoteCount(uint32 numNotes) {
+  AudioGlobals::LockAudio();
   for (auto& track : tracks) {
     track->SetNoteCount(numNotes);
   }
+  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::AddTrack(Track* track) {
+  AudioGlobals::LockAudio();
   track->SetNoteCount(numNotes);
   tracks.push_back(track);
+  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
+  AudioGlobals::LockAudio();
   newTrack->SetNotes(tracks[index]->GetNotes());
   delete tracks[index];
   tracks[index] = newTrack;
+  AudioGlobals::UnlockAudio();
+}
+
+void Instrument::RemoveTrack(uint32 index) {
+  AudioGlobals::LockAudio();
+  delete tracks[index];
+  tracks.erase(tracks.begin() + index);
+  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::PlayTrack(uint32 trackIndex) {
@@ -138,9 +156,9 @@ void Instrument::PlayTrack(uint32 trackIndex) {
 void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff) {
   if (trackIndex < tracks.size()) {
 
-    SDL_LockAudio();
+    AudioGlobals::LockAudio();
     tracks[trackIndex]->SetNote(noteIndex, onOrOff ? 255 : 0);
-    SDL_UnlockAudio();
+    AudioGlobals::UnlockAudio();
   }
 }
 
