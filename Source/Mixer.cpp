@@ -30,8 +30,6 @@ static constexpr uint32 kMaxSimultaneousVoices = 64;
 static constexpr float kPeakVolumeRatio = 0.7f;
 static constexpr float kClipMax(0.7f);
 static constexpr float kClipMin(-0.7f);
-static constexpr uint32 kMaxSoundsPerVoice = 8;
-static constexpr uint32 kMaxProcessesPerVoice = 8;
 static constexpr uint32 kVoicePreallocCount = 64;
 
 // A voice is a playing instance of a patch
@@ -40,10 +38,10 @@ private:
   static int32 nextVoiceId;
 public:
   // Instances
-  std::array<SoundInstance*, kMaxSoundsPerVoice * 2> sounds = { nullptr };
+  std::array<SoundInstance*, Patch::kMaxSounds * 2> sounds = { nullptr };
   uint32 curSounds = 0;
   uint32 numSounds = 0;
-  std::array<ProcessInstance*, kMaxProcessesPerVoice * 2> processes = { nullptr };
+  std::array<ProcessInstance*, Patch::kMaxProcesses * 2> processes = { nullptr };
   uint32 curProcesses = 0;
   uint32 numProcesses = 0;
 

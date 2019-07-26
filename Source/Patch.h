@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BaseTypes.h"
 #include "SerializeFwd.h"
 #include <string>
 #include <vector>
@@ -8,6 +9,9 @@
 class Process;
 class Sound;
 class Patch {
+public:
+  static constexpr uint32 kMaxSounds = 8;
+  static constexpr uint32 kMaxProcesses = 8;
 protected:
   float soundDuration = 0.0f;
 public:

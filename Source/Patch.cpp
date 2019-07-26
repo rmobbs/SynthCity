@@ -233,6 +233,11 @@ void Patch::RenderDialog() {
   ImGui::Text("Processes");
   ImGui::SameLine(ImGui::GetWindowWidth() - 30);
   ImGui::PushID(&processName);
+  bool disableAddProcess = processes.size() >= kMaxProcesses;
+  if (disableAddProcess) {
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+  }
   if (ImGui::Button("+")) {
     ImGui::PopID();
     processName = "ProcessDecay";
@@ -240,6 +245,10 @@ void Patch::RenderDialog() {
   }
   else {
     ImGui::PopID();
+  }
+  if (disableAddProcess) {
+    ImGui::PopItemFlag();
+    ImGui::PopStyleVar();
   }
 
   if (ImGui::BeginPopup("Add Process")) {
@@ -299,7 +308,9 @@ void Patch::RenderDialog() {
       process->RenderDialog();
       ImGui::Spacing();
     }
-    ImGui::Separator();
+    if (processes.size()) {
+      ImGui::Separator();
+    }
     ImGui::EndChild();
 
     if (remove) {
@@ -314,6 +325,11 @@ void Patch::RenderDialog() {
   ImGui::Text("Sounds");
   ImGui::SameLine(ImGui::GetWindowWidth() - 30);
   ImGui::PushID(&soundName);
+  bool disableAddSound = sounds.size() >= kMaxSounds;
+  if (disableAddSound) {
+    ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+  }
   if (ImGui::Button("+")) {
     ImGui::PopID();
     soundName = "WavSound";
@@ -321,6 +337,10 @@ void Patch::RenderDialog() {
   }
   else {
     ImGui::PopID();
+  }
+  if (disableAddSound) {
+    ImGui::PopItemFlag();
+    ImGui::PopStyleVar();
   }
 
   if (ImGui::BeginPopup("Add Sound")) {
@@ -377,7 +397,9 @@ void Patch::RenderDialog() {
       sound->RenderDialog();
       ImGui::Spacing();
     }
-    ImGui::Separator();
+    if (sounds.size()) {
+      ImGui::Separator();
+    }
     ImGui::EndChild();
 
     if (remove) {
