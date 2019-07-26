@@ -20,7 +20,7 @@ public:
 
   }
   virtual ~ProcessInstance() {
-
+    int q = 5;
   }
 
   virtual bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame) = 0;
@@ -44,12 +44,14 @@ public:
 
   virtual Process* Clone() = 0;
 
-  virtual ProcessInstance* CreateInstance(float patchDuration) = 0;
-
   inline const std::string& GetProcessClassName() const {
     return className;
   }
 
   virtual void RenderDialog() = 0;
+
+  virtual bool StopPatchOnEnd() {
+    return false;
+  }
 };
 

@@ -221,6 +221,15 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
               if (!p->ProcessSamples(samples, 2, v->frame)) {
                 std::swap(v->processes[i], v->processes[i + v->numProcesses]);
                 --v->curProcesses;
+
+                if (p->process->StopPatchOnEnd()) {
+                  for (uint32 j = 0; j < v->numProcesses; ++j) {
+                    if (v->processes[j]) {
+                      std::swap(v->processes[j], v->processes[j + v->numProcesses]);
+                    }
+                  }
+                  v->curProcesses = 0;
+                }
               }
             }
           }

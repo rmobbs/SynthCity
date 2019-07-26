@@ -23,6 +23,9 @@ DialogTrack::DialogTrack(std::string title, Instrument* instrument, int32 trackI
 }
 
 DialogTrack::~DialogTrack() {
+  // Mixer could be holding on to pending flushes
+  Mixer::Get().StopAllVoices();
+
   delete track;
   track = nullptr;
 }

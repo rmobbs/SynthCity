@@ -91,10 +91,6 @@ bool ProcessDecay::SerializeRead(const ReadSerializer& serializer) {
   return true;
 }
 
-ProcessInstance* ProcessDecay::CreateInstance(float patchDuration) {
-  return new ProcessInstanceDecay(this, patchDuration);
-}
-
 Process* ProcessDecay::Clone() {
   return new ProcessDecay(*this);
 }

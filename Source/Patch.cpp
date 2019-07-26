@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuiExtensions.h"
+#include "Mixer.h"
 
 #include <stdexcept>
 
@@ -198,6 +199,9 @@ void Patch::AddSound(Sound* sound) {
 }
 
 void Patch::RemoveSound(Sound* sound) {
+  // Could be items in the pending freelist, so clear it
+  Mixer::Get().StopAllVoices();
+
   assert(sound);
   auto soundEntry = std::find(sounds.begin(), sounds.end(), sound);
   if (soundEntry != sounds.end()) {
@@ -213,6 +217,9 @@ void Patch::AddProcess(Process* process) {
 }
 
 void Patch::RemoveProcess(Process* process) {
+  // Could be items in the pending freelist, so clear it
+  Mixer::Get().StopAllVoices();
+
   assert(process);
   auto processEntry = std::find(processes.begin(), processes.end(), process);
   if (processEntry != processes.end()) {

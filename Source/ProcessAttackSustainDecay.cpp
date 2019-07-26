@@ -179,7 +179,3 @@ void ProcessAttackSustainDecay::RenderDialog() {
   ImGui::PopID();
 }
 
-ProcessInstance* ProcessAttackSustainDecay::CreateInstance(float patchDuration) {
-  return new ProcessInstanceAttackSustainDecay(this, patchDuration);
-}
-

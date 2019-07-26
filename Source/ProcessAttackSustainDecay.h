@@ -16,8 +16,6 @@ public:
   bool SerializeWrite(const WriteSerializer& serializer) override;
   bool SerializeRead(const ReadSerializer& serializer) override;
 
-  ProcessInstance* CreateInstance(float patchDuration) override;
-
   void RenderDialog() override;
 
   Process* Clone() override;
