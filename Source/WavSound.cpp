@@ -56,7 +56,7 @@ WavSound::WavSound()
 WavSound::WavSound(const WavSound& that)
   : Sound(that)
   , wavData(that.wavData) {
-  duration = wavData->duration;
+
 }
 
 WavSound::WavSound(const std::string& fileName)

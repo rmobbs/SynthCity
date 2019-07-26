@@ -62,13 +62,13 @@ public:
   : volume(volume) {
     for (uint32 s = 0; s < patch->sounds.size(); ++ s) {
       sounds[s] = SoundInstanceFreeList::FreeList(patch->
-        sounds[s]->GetSoundClassName()).Borrow(patch->sounds[s]);
+        sounds[s]->GetClassHash()).Borrow(patch->sounds[s]);
     }
     curSounds = numSounds = patch->sounds.size();
 
     for (uint32 p = 0; p < patch->processes.size(); ++ p) {
       processes[p] = ProcessInstanceFreeList::FreeList(patch->processes[p]->
-        GetProcessClassName()).Borrow(patch->processes[p], patch->GetSoundDuration());
+        GetClassHash()).Borrow(patch->processes[p], patch->GetSoundDuration());
     }
     curProcesses = numProcesses = patch->processes.size();
 
@@ -120,8 +120,6 @@ Mixer::~Mixer() {
     SDL_CloseAudioDevice(AudioGlobals::GetAudioDeviceId());
     AudioGlobals::SetAudioDeviceId(0);
   }
-
-  StopAllVoices();
 
   voiceFreeList.Term();
 }
@@ -345,15 +343,13 @@ void Mixer::DrainExpiredPool() {
     expiredVoices.pop();
     for (uint32 si = 0; si < v->sounds.size(); ++si) {
       if (v->sounds[si] != nullptr) {
-        SoundInstanceFreeList::FreeList(v->sounds[si]->
-          sound->GetSoundClassName()).Return(v->sounds[si]);
+        SoundInstanceFreeList::FreeList(v->sounds[si]->GetSoundHash()).Return(v->sounds[si]);
         v->sounds[si] = nullptr;
       }
     }
     for (uint32 pi = 0; pi < v->processes.size(); ++pi) {
       if (v->processes[pi] != nullptr) {
-        ProcessInstanceFreeList::FreeList(v->processes[pi]->
-          process->GetProcessClassName()).Return(v->processes[pi]);
+        ProcessInstanceFreeList::FreeList(v->processes[pi]->GetProcessHash()).Return(v->processes[pi]);
         v->processes[pi] = nullptr;
       }
     }

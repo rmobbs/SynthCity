@@ -10,6 +10,11 @@
 static constexpr const char* kFrequencyTag("frequency");
 static constexpr const char* kDurationTag("duration");
 
+SynthSound::SynthSound(const SynthSound& that)
+  : Sound(that) {
+
+}
+
 SynthSound::SynthSound(const std::string& className)
   : Sound(className) {
 

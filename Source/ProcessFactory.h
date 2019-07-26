@@ -7,9 +7,9 @@ using ProcessFactory = Factory<class Process>;
 #define REGISTER_PROCESS(ProcessClass, ProcessDesc) FACTORY_REGISTER(ProcessFactory, ProcessClass, ProcessDesc)
 
 
-using ProcessInstanceFreeList = FreeListMapped<class ProcessInstance, class Process*, float>;
+using ProcessInstanceFreeList = MappedFunctorFreeList<uint32, class ProcessInstance, class Process*, float>;
 #define REGISTER_PROCESS_INSTANCE(ProcessInstanceClass, ProcessClass, InitialSize) \
-  ProcessInstanceFreeList::Information FreeList##ProcessInstanceClass(#ProcessClass, InitialSize, \
+  ProcessInstanceFreeList::Information FreeList##ProcessInstanceClass(std::hash<std::string>{}(#ProcessClass), InitialSize, \
     []() { \
       return new ProcessInstanceClass; \
     }, \

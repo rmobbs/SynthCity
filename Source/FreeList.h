@@ -108,7 +108,7 @@ public:
   }
 };
 
-template<class ClassName, typename... Args> class AnotherFreeList {
+template<class ClassName, typename... Args> class FunctorFreeList {
 public:
   using CreateConstructorType = std::function<ClassName* ()>;
   using BorrowConstructorType = std::function<ClassName* (void*, Args...)>;
@@ -118,13 +118,13 @@ private:
   std::list<ClassName*> itemFree;
   std::vector<ClassName*> itemHeap;
 public:
-  AnotherFreeList() = default;
+  FunctorFreeList() = default;
 
-  AnotherFreeList(uint32 startCount, const CreateConstructorType& createConstructor, const BorrowConstructorType& borrowConstructor) {
+  FunctorFreeList(uint32 startCount, const CreateConstructorType& createConstructor, const BorrowConstructorType& borrowConstructor) {
     Init(startCount, createConstructor, borrowConstructor);
   }
 
-  ~AnotherFreeList() {
+  ~FunctorFreeList() {
     Term();
   }
 
@@ -171,27 +171,27 @@ public:
 };
 
 
-template<class ClassName, typename... Args> class FreeListMapped {
+template<typename KeyType, class ClassName, typename... Args> class MappedFunctorFreeList {
 friend class Information;
 public:
-  static std::map<std::string, AnotherFreeList<ClassName, Args...>>& FreeListMap() {
-    static std::map<std::string, AnotherFreeList<ClassName, Args...>> freeListMap;
+  static std::map<KeyType, FunctorFreeList<ClassName, Args...>>& FreeListMap() {
+    static std::map<KeyType, FunctorFreeList<ClassName, Args...>> freeListMap;
     return freeListMap;
   }
 public:
   class Information {
   public:
-    Information(const std::string& className, uint32 startCount,
-      const typename AnotherFreeList<ClassName, Args...>::CreateConstructorType& createConstructor,
-      const typename AnotherFreeList<ClassName, Args...>::BorrowConstructorType& borrowConstructor) {
+    Information(const KeyType& key, uint32 startCount,
+      const typename FunctorFreeList<ClassName, Args...>::CreateConstructorType& createConstructor,
+      const typename FunctorFreeList<ClassName, Args...>::BorrowConstructorType& borrowConstructor) {
       // Odd that doing this in one step crashes ...
-      auto freeList = FreeListMapped<ClassName, Args...>::FreeListMap().insert({ className, { } });
+      auto freeList = MappedFunctorFreeList<KeyType, ClassName, Args...>::FreeListMap().insert({ key, { } });
       freeList.first->second.Init(startCount, createConstructor, borrowConstructor);
     }
   };
 
-  static AnotherFreeList<ClassName, Args...>& FreeList(const std::string& className) {
-    return FreeListMap().find(className)->second;
+  static FunctorFreeList<ClassName, Args...>& FreeList(const KeyType& key) {
+    return FreeListMap().find(key)->second;
   }
 };
 

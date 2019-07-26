@@ -9,18 +9,19 @@ class ProcessInstance {
 protected:
   float volume = 1.0f;
   float patchDuration = 0.0f;
+  uint32 processHash = 0;
 public:
   class Process* process = nullptr;
 
   ProcessInstance() = default;
+  ProcessInstance(Process* process, float patchDuration);
 
-  ProcessInstance(Process* process, float patchDuration)
-    : process(process)
-    , patchDuration(patchDuration) {
+  virtual ~ProcessInstance() {
 
   }
-  virtual ~ProcessInstance() {
-    int q = 5;
+
+  inline uint32 GetProcessHash() const {
+    return processHash;
   }
 
   virtual bool ProcessSamples(float* samples, uint32 numSamples, uint32 frame) = 0;
@@ -31,13 +32,10 @@ public:
 class Process {
 protected:
   std::string className;
+  uint32 classHash = 0;
 public:
   Process(const Process& that);
-
-  Process(const std::string& className)
-    : className(className) {
-
-  }
+  Process(const std::string& className);
 
   virtual bool SerializeWrite(const WriteSerializer& serializer) = 0;
   virtual bool SerializeRead(const ReadSerializer& serializer) = 0;
@@ -46,6 +44,10 @@ public:
 
   inline const std::string& GetProcessClassName() const {
     return className;
+  }
+
+  inline uint32 GetClassHash() const {
+    return classHash;
   }
 
   virtual void RenderDialog() = 0;

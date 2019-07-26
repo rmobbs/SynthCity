@@ -7,17 +7,20 @@
 
 // A SoundInstance is a playing instance of a sound
 class SoundInstance {
+protected:
+  uint32 soundHash = 0;
 public:
   class Sound* sound = nullptr;
 
   SoundInstance() = default;
+  SoundInstance(Sound* sound);
 
-  SoundInstance(Sound* sound)
-    : sound(sound) {
+  virtual ~SoundInstance() {
 
   }
-  virtual ~SoundInstance() {
-    int q = 5;
+
+  inline uint32 GetSoundHash() const {
+    return soundHash;
   }
 
   virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame) = 0;
@@ -28,19 +31,22 @@ class Sound {
 protected:
   std::string className;
   float duration = 0.0f;
-
+  uint32 classHash = 0;
 public:
-  Sound(std::string className)
-    : className(className) {
-  }
+  Sound(const Sound& that);
+  Sound(const std::string& className);
 
   virtual ~Sound() {
-    int q = 5;
+
   }
 
   // Seriously, Windows ...
   inline const std::string& GetSoundClassName() const {
     return className;
+  }
+
+  inline uint32 GetClassHash() const {
+    return classHash;
   }
 
   virtual Sound* Clone() = 0;

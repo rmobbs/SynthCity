@@ -12,6 +12,7 @@ protected:
   uint32 frequency = kDefaultFrequency;
 
 public:
+  SynthSound(const SynthSound& that);
   SynthSound(const std::string& className);
   SynthSound(const std::string& className, uint32 frequency, float duration);
   SynthSound(const std::string& className, const ReadSerializer& serializer);
