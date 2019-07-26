@@ -12,9 +12,14 @@ protected:
 public:
   class Process* process = nullptr;
 
+  ProcessInstance() = default;
+
   ProcessInstance(Process* process, float patchDuration)
     : process(process)
     , patchDuration(patchDuration) {
+
+  }
+  virtual ~ProcessInstance() {
 
   }
 

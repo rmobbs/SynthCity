@@ -5,6 +5,7 @@
 
 #include <string>
 
+// A SoundInstance is a playing instance of a sound
 class SoundInstance {
 public:
   class Sound* sound = nullptr;
@@ -22,6 +23,7 @@ public:
   virtual uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame) = 0;
 };
 
+// A Sound is a collection of data/parameters that generates a sound
 class Sound {
 protected:
   std::string className;
@@ -33,7 +35,7 @@ public:
   }
 
   virtual ~Sound() {
-
+    int q = 5;
   }
 
   // Seriously, Windows ...

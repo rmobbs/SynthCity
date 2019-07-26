@@ -57,67 +57,72 @@ bool Patch::SerializeRead(const ReadSerializer& serializer) {
   const auto& patch = d[kPatchTag];
 
   // Processes
-  if (!patch.HasMember(kProcessesTag) || !patch[kProcessesTag].IsArray() || !patch[kProcessesTag].Size()) {
-    MCLOG(Error, "Missing or invalid process array in patch");
-    return false;
-  }
-  const auto& processesArray = patch[kProcessesTag];
-  for (uint32 processIndex = 0; processIndex < processesArray.Size(); ++processIndex) {
-    const auto& processEntry = processesArray[processIndex];
-
-    // Get class
-    if (!processEntry.HasMember(kClassTag) || !processEntry[kClassTag].IsString()) {
-      MCLOG(Error, "No class tag for process");
-      continue;
+  if (patch.HasMember(kProcessesTag)) {
+    if (!patch[kProcessesTag].IsArray()) {
+      MCLOG(Error, "Invalid process array in patch");
+      return false;
     }
 
-    std::string className(processEntry[kClassTag].GetString());
+    const auto& processesArray = patch[kProcessesTag];
+    for (uint32 processIndex = 0; processIndex < processesArray.Size(); ++processIndex) {
+      const auto& processEntry = processesArray[processIndex];
 
-    // Get factory
-    const auto& processInfoMap = ProcessFactory::GetInfoMap();
-    const auto& processInfo = processInfoMap.find(className);
-    if (processInfo == processInfoMap.end()) {
-      MCLOG(Error, "Invalid class tag for process");
-      continue;
-    }
+      // Get class
+      if (!processEntry.HasMember(kClassTag) || !processEntry[kClassTag].IsString()) {
+        MCLOG(Error, "No class tag for process");
+        continue;
+      }
 
-    try {
-      AddProcess(processInfo->second.serialize({ processEntry }));
-    }
-    catch (...) {
-      continue;
+      std::string className(processEntry[kClassTag].GetString());
+
+      // Get factory
+      const auto& processInfoMap = ProcessFactory::GetInfoMap();
+      const auto& processInfo = processInfoMap.find(className);
+      if (processInfo == processInfoMap.end()) {
+        MCLOG(Error, "Invalid class tag for process");
+        continue;
+      }
+
+      try {
+        AddProcess(processInfo->second.serialize({ processEntry }));
+      }
+      catch (...) {
+        continue;
+      }
     }
   }
 
   // Sounds
-  if (!patch.HasMember(kSoundsTag) || !patch[kSoundsTag].IsArray() || !patch[kSoundsTag].Size()) {
-    MCLOG(Error, "Missing or invalid sound array in patch");
-    return false;
-  }
-  const auto& soundArray = patch[kSoundsTag];
-  for (uint32 soundIndex = 0; soundIndex < soundArray.Size(); ++soundIndex) {
-    // Take the first one for now
-    const auto& soundEntry = soundArray[soundIndex];
-
-    // Get factory
-    if (!soundEntry.HasMember(kClassTag) || !soundEntry[kClassTag].IsString()) {
-      MCLOG(Error, "No class tag for sound");
-      continue;
+  if (patch.HasMember(kSoundsTag)) {
+    if (!patch[kSoundsTag].IsArray()) {
+      MCLOG(Error, "Invalid sound array in patch");
+      return false;
     }
-    std::string className(soundEntry[kClassTag].GetString());
+    const auto& soundArray = patch[kSoundsTag];
+    for (uint32 soundIndex = 0; soundIndex < soundArray.Size(); ++soundIndex) {
+      // Take the first one for now
+      const auto& soundEntry = soundArray[soundIndex];
 
-    const auto& soundInfoMap = SoundFactory::GetInfoMap();
-    const auto& soundInfo = soundInfoMap.find(className);
-    if (soundInfo == soundInfoMap.end()) {
-      MCLOG(Error, "Invalid class tag for sound");
-      continue;
-    }
+      // Get factory
+      if (!soundEntry.HasMember(kClassTag) || !soundEntry[kClassTag].IsString()) {
+        MCLOG(Error, "No class tag for sound");
+        continue;
+      }
+      std::string className(soundEntry[kClassTag].GetString());
 
-    try {
-      AddSound(soundInfo->second.serialize({ soundEntry }));
-    }
-    catch (...) {
-      continue;
+      const auto& soundInfoMap = SoundFactory::GetInfoMap();
+      const auto& soundInfo = soundInfoMap.find(className);
+      if (soundInfo == soundInfoMap.end()) {
+        MCLOG(Error, "Invalid class tag for sound");
+        continue;
+      }
+
+      try {
+        AddSound(soundInfo->second.serialize({ soundEntry }));
+      }
+      catch (...) {
+        continue;
+      }
     }
   }
 
@@ -131,40 +136,43 @@ bool Patch::SerializeWrite(const WriteSerializer& serializer) {
   w.StartObject();
 
   // Processes
-  w.Key(kProcessesTag);
-  w.StartArray();
-  {
-    for (auto& process : processes) {
-      w.StartObject();
-      {
-        w.Key(kClassTag);
-        w.String(process->GetProcessClassName().c_str());
+  if (processes.size()) {
+    w.Key(kProcessesTag);
+    w.StartArray();
+    {
+      for (auto& process : processes) {
+        w.StartObject();
+        {
+          w.Key(kClassTag);
+          w.String(process->GetProcessClassName().c_str());
 
-        process->SerializeWrite(serializer);
+          process->SerializeWrite(serializer);
 
-        w.EndObject();
+          w.EndObject();
+        }
       }
+      w.EndArray();
     }
-    w.EndArray();
   }
 
-
   // Sounds
-  w.Key(kSoundsTag);
-  w.StartArray();
-  {
-    for (auto& sound : sounds) {
-      w.StartObject();
-      {
-        w.Key(kClassTag);
-        w.String(sound->GetSoundClassName().c_str());
+  if (sounds.size()) {
+    w.Key(kSoundsTag);
+    w.StartArray();
+    {
+      for (auto& sound : sounds) {
+        w.StartObject();
+        {
+          w.Key(kClassTag);
+          w.String(sound->GetSoundClassName().c_str());
 
-        sound->SerializeWrite(serializer);
+          sound->SerializeWrite(serializer);
 
-        w.EndObject();
+          w.EndObject();
+        }
       }
+      w.EndArray();
     }
-    w.EndArray();
   }
 
   w.EndObject();
@@ -193,6 +201,7 @@ void Patch::RemoveSound(Sound* sound) {
   assert(sound);
   auto soundEntry = std::find(sounds.begin(), sounds.end(), sound);
   if (soundEntry != sounds.end()) {
+    delete *soundEntry;
     sounds.erase(soundEntry);
   }
 }
@@ -207,6 +216,7 @@ void Patch::RemoveProcess(Process* process) {
   assert(process);
   auto processEntry = std::find(processes.begin(), processes.end(), process);
   if (processEntry != processes.end()) {
+    delete* processEntry;
     processes.erase(processEntry);
   }
 }
@@ -278,10 +288,6 @@ void Patch::RenderDialog() {
 
       ImGui::Text(process->GetProcessClassName().c_str());
       ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
-      if (processes.size() == 1) {
-        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-      }
       std::string removeTag = std::string("RemoveProcess") +
         std::to_string(reinterpret_cast<uint32>(process));
       ImGui::PushID(removeTag.c_str());
@@ -289,10 +295,6 @@ void Patch::RenderDialog() {
         remove = process;
       }
       ImGui::PopID();
-      if (processes.size() == 1) {
-        ImGui::PopItemFlag();
-        ImGui::PopStyleVar();
-      }
       process->RenderDialog();
       ImGui::Spacing();
     }
@@ -364,10 +366,6 @@ void Patch::RenderDialog() {
 
       ImGui::Text(sound->GetSoundClassName().c_str());
       ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
-      if (sounds.size() == 1) {
-        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-      }
       std::string removeTag = std::string("RemoveSound") +
         std::to_string(reinterpret_cast<uint32>(sound));
       ImGui::PushID(removeTag.c_str());
@@ -375,10 +373,6 @@ void Patch::RenderDialog() {
         remove = sound;
       }
       ImGui::PopID();
-      if (sounds.size() == 1) {
-        ImGui::PopItemFlag();
-        ImGui::PopStyleVar();
-      }
       sound->RenderDialog();
       ImGui::Spacing();
     }

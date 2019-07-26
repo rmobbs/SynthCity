@@ -9,9 +9,6 @@
 
 #include <stdexcept>
 
-// Decay process
-REGISTER_PROCESS(ProcessAttackSustainDecay, "Attack/sustain/decay envelope");
-
 static constexpr const char* kAttackTag = "attack";
 static constexpr const char* kSustainTag = "sustain";
 static constexpr const char* kDecayTag = "decay";
@@ -31,12 +28,13 @@ protected:
   uint32 frameEnd = 0;
 
 public:
+  using ProcessInstance::ProcessInstance;
 
   ProcessInstanceAttackSustainDecay(Process* process, float patchDuration)
     : ProcessInstance(process, patchDuration) {
     frameEnd = static_cast<uint32>(patchDuration * 44100.0f);
 
-    frameSustain = static_cast<uint32>(static_cast<ProcessAttackSustainDecay*>(process)->GetSustain() * frameEnd);
+    frameSustain = static_cast<uint32>(static_cast<ProcessAttackSustainDecay*>(process)->GetAttack() * frameEnd);
     frameDecay = static_cast<uint32>(static_cast<ProcessAttackSustainDecay*>(process)->GetDecay() * frameEnd);
   }
 
@@ -46,8 +44,8 @@ public:
     switch (state) {
       case State::Attack: {
         if (frame < frameSustain) {
-          volume = derived->GetSustain() * (frameSustain *
-            static_cast<float>(frame) / static_cast<float>(frameSustain));
+          volume = derived->GetSustain() *
+            (static_cast<float>(frame) / static_cast<float>(frameSustain));
           break;
         }
 
@@ -81,6 +79,10 @@ public:
 
 };
 
+static constexpr uint32 kProcessAttackSustainDecayInstancePoolSize = 128;
+REGISTER_PROCESS_INSTANCE(ProcessInstanceAttackSustainDecay, ProcessAttackSustainDecay, kProcessAttackSustainDecayInstancePoolSize);
+
+REGISTER_PROCESS(ProcessAttackSustainDecay, "Attack/sustain/decay envelope");
 ProcessAttackSustainDecay::ProcessAttackSustainDecay()
   : Process("ProcessAttackSustainDecay") {
 

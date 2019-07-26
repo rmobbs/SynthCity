@@ -8,12 +8,16 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+static constexpr uint32 kSineSynthSoundInstancePoolSize = 128;
+
 // Sine
 class SineSynthSoundInstance : public SoundInstance {
 protected:
   float radians = 0;
   float radstep = 0;
 public:
+  using SoundInstance::SoundInstance;
+
   SineSynthSoundInstance(Sound* sound)
     : SoundInstance(sound) {
     radstep = static_cast<float>((2.0 * M_PI * static_cast<double>
@@ -36,6 +40,10 @@ public:
     return 0;
   }
 };
+
+// The pool size should be relatively big b/c multiple instances can play
+// simultaneously
+REGISTER_SOUND_INSTANCE(SineSynthSoundInstance, SineSynthSound, kSineSynthSoundInstancePoolSize);
 
 REGISTER_SOUND(SineSynthSound, "Modulated sine wave");
 SineSynthSound::SineSynthSound()

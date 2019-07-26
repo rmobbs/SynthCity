@@ -12,6 +12,7 @@
 #include <algorithm>
 #include "OddsAndEnds.h"
 #include "SoundFactory.h"
+#include "ProcessFactory.h"
 #include "FreeList.h"
 #include "Patch.h"
 #include "Process.h"
@@ -60,23 +61,22 @@ public:
   Voice(const Patch* patch, float volume)
   : volume(volume) {
     for (uint32 s = 0; s < patch->sounds.size(); ++ s) {
-      sounds[s] = SoundInstanceFreeList::FreeList(patch->sounds[s]->GetSoundClassName()).Borrow(patch->sounds[s]);
+      sounds[s] = SoundInstanceFreeList::FreeList(patch->
+        sounds[s]->GetSoundClassName()).Borrow(patch->sounds[s]);
     }
     curSounds = numSounds = patch->sounds.size();
 
-#if 0
     for (uint32 p = 0; p < patch->processes.size(); ++ p) {
-      processes[p] = patch->processes[p]->CreateInstance(patch->GetSoundDuration());
+      processes[p] = ProcessInstanceFreeList::FreeList(patch->processes[p]->
+        GetProcessClassName()).Borrow(patch->processes[p], patch->GetSoundDuration());
     }
     curProcesses = numProcesses = patch->processes.size();
-#endif
+
     voiceId = nextVoiceId++;
   }
 
   ~Voice() {
-    for (auto& process : processes) {
-      delete process;
-    }
+
   }
 };
 int32 Voice::nextVoiceId = 0;
@@ -189,7 +189,7 @@ bool Mixer::Init(uint32 audioBufferSize) {
 void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
   // Clear the buffer
   memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
-#if 1
+
   if (voices.size() > 0) {
 
     static constexpr float kPeakVolumeRatio = 0.7f;
@@ -214,11 +214,21 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
           }
         }
 
-        if (v->curSounds > 0) {
-          mixBuffer[f * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio * v->volume;
-          mixBuffer[f * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio * v->volume;
+        if (v->curProcesses > 0) {
+          for (uint32 i = 0; i < v->numProcesses; ++i) {
+            auto p = v->processes[i];
+            if (p != nullptr) {
+              if (!p->ProcessSamples(samples, 2, v->frame)) {
+                std::swap(v->processes[i], v->processes[i + v->numProcesses]);
+                --v->curProcesses;
+              }
+            }
+          }
+        }
 
-          v->volume -= v->volume * 0.00004f;
+        if (v->curSounds > 0 && (v->curProcesses > 0 || !v->numProcesses)) {
+          mixBuffer[f * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio;
+          mixBuffer[f * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio;
 
           ++v->frame;
         }
@@ -227,7 +237,7 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         }
       }
 
-      if ((*voiceIter)->curSounds > 0 && (*voiceIter)->volume > kVolumeEpsilon) {
+      if ((*voiceIter)->curSounds > 0 && ((*voiceIter)->curProcesses > 0 || !(*voiceIter)->numProcesses)) {
         ++voiceIter;
       }
       else {
@@ -247,7 +257,6 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
     // So people can query this without locking
     numActiveVoices = voices.size();
   }
-#endif
 }
 
 void Mixer::WriteOutput(float *input, int16 *output, int32 frames) {
@@ -327,8 +336,16 @@ void Mixer::DrainExpiredPool() {
     expiredVoices.pop();
     for (uint32 si = 0; si < v->sounds.size(); ++si) {
       if (v->sounds[si] != nullptr) {
-        SoundInstanceFreeList::FreeList(v->sounds[si]->sound->GetSoundClassName()).Return(v->sounds[si]);
+        SoundInstanceFreeList::FreeList(v->sounds[si]->
+          sound->GetSoundClassName()).Return(v->sounds[si]);
         v->sounds[si] = nullptr;
+      }
+    }
+    for (uint32 pi = 0; pi < v->processes.size(); ++pi) {
+      if (v->processes[pi] != nullptr) {
+        ProcessInstanceFreeList::FreeList(v->processes[pi]->
+          process->GetProcessClassName()).Return(v->processes[pi]);
+        v->processes[pi] = nullptr;
       }
     }
     voiceFreeList.Return(v);

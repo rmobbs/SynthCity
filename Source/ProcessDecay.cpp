@@ -37,6 +37,9 @@ public:
   }
 };
 
+static constexpr uint32 kProcessDecayInstancePoolSize = 128;
+REGISTER_PROCESS_INSTANCE(ProcessInstanceDecay, ProcessDecay, kProcessDecayInstancePoolSize);
+
 // Decay process
 REGISTER_PROCESS(ProcessDecay, "Simple linear decay");
 

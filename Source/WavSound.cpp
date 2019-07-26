@@ -14,6 +14,8 @@
 #include <filesystem>
 #include <algorithm>
 
+static constexpr uint32 kWavSoundInstancePoolSize = 128;
+
 class WavSoundInstance : public SoundInstance {
 public:
   using SoundInstance::SoundInstance;
@@ -41,20 +43,9 @@ public:
   }
 };
 
-SoundInstance* SpawnAWavInstance(Sound* sound) {
-  return new WavSoundInstance(sound);
-}
-
 // The pool size should be relatively big b/c multiple instances can play
 // simultaneously
-//REGISTER_SOUND_INSTANCE(WavSoundInstance, WavSound, 1);
-SoundInstanceFreeList::Information FreeListWavSoundInstance("WavSound", 0,
-    []() {
-      return new WavSoundInstance;
-    },
-    [](void* memory, Sound* sound) {
-      return new (memory) WavSoundInstance(sound);
-    });
+REGISTER_SOUND_INSTANCE(WavSoundInstance, WavSound, kWavSoundInstancePoolSize);
 
 REGISTER_SOUND(WavSound, "Sound from WAV file");
 WavSound::WavSound()

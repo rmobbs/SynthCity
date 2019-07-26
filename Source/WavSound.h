@@ -30,4 +30,3 @@ public:
   void RenderDialog() override;
 };
 
-extern SoundInstance* SpawnAWavInstance(Sound* sound);
