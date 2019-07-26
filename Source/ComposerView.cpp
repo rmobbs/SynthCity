@@ -362,6 +362,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         if (instrument != nullptr) {
           uint32 flashColor;
           uint32 noteGlobalIndex = 0;
+          int32 removeTrackIndex = -1;
           for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
             auto& track = instrument->GetTracks()[trackIndex];
 
@@ -398,6 +399,12 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
                 // Clone the track so they can change stuff and then cancel
                 pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
                   new Track(*track), playButtonIconTexture, stopButtonIconTexture);
+                ImGui::CloseCurrentPopup();
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Delete")) {
+                removeTrackIndex = trackIndex;
+                ImGui::CloseCurrentPopup();
               }
               ImGui::EndPopup();
             }
@@ -517,6 +524,9 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
             // Reset old X spacing to offset from keyboard key
             imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
+          }
+          if (removeTrackIndex != -1) {
+            instrument->RemoveTrack(removeTrackIndex);
           }
         }
       }
