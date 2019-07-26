@@ -227,8 +227,8 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
         }
 
         if (v->curSounds > 0 && (v->curProcesses > 0 || !v->numProcesses)) {
-          mixBuffer[f * 2 + 0] += samples[0] * masterVolume * kPeakVolumeRatio;
-          mixBuffer[f * 2 + 1] += samples[1] * masterVolume * kPeakVolumeRatio;
+          mixBuffer[f * 2 + 0] += samples[0] * masterVolume * v->volume * kPeakVolumeRatio;
+          mixBuffer[f * 2 + 1] += samples[1] * masterVolume * v->volume * kPeakVolumeRatio;
 
           ++v->frame;
         }

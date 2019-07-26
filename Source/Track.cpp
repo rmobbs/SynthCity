@@ -26,7 +26,7 @@ Track::Track(const Track& that)
 
 Track::Track(const std::string& name)
   : name(name) {
-  patch = new Patch({ new ProcessDecay }, { new WavSound });
+  patch = new Patch;
 }
 
 Track::Track(const ReadSerializer& serializer) {
