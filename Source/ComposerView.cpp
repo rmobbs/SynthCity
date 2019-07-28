@@ -174,9 +174,9 @@ bool SaveSong() {
   return true;
 }
 
-Track* CreateTrack() {
+std::string GetNewTrackName(const std::string& trackNameBase) {
   // Pick an available name
-  std::string trackName = kDefaultNewTrackName;
+  std::string trackName = trackNameBase;
   // Just feels weird and shameful to not have an upper bounds ...
   for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
     auto& tracks = Sequencer::Get().GetInstrument()->GetTracks();
@@ -192,10 +192,9 @@ Track* CreateTrack() {
       break;
     }
 
-    trackName = std::string(kDefaultNewTrackName) + std::to_string(nameSuffix);
+    trackName = std::string(trackNameBase) + std::string(" (") + std::to_string(nameSuffix) + std::string(")");
   }
-
-  return new Track(trackName);
+  return trackName;
 }
 
 void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
@@ -276,7 +275,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
           pendingDialog = new DialogTrack("Add Track", sequencer.GetInstrument(),
-            -1, CreateTrack(), playButtonIconTexture, stopButtonIconTexture);
+            -1, new Track(GetNewTrackName(kDefaultNewTrackName)), playButtonIconTexture, stopButtonIconTexture);
         }
         ImGui::EndMenu();
       }
@@ -363,6 +362,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
           uint32 flashColor;
           uint32 noteGlobalIndex = 0;
           int32 removeTrackIndex = -1;
+          int32 cloneTrackIndex = -1;
           for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
             auto& track = instrument->GetTracks()[trackIndex];
 
@@ -395,15 +395,19 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
               if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
                 track->SetVolume(volume);
               }
-              if (ImGui::Button("Properties...")) {
-                // Clone the track so they can change stuff and then cancel
-                pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
-                  new Track(*track), playButtonIconTexture, stopButtonIconTexture);
+              if (ImGui::Button("Duplicate")) {
+                cloneTrackIndex = trackIndex;
                 ImGui::CloseCurrentPopup();
               }
               ImGui::SameLine();
               if (ImGui::Button("Delete")) {
                 removeTrackIndex = trackIndex;
+                ImGui::CloseCurrentPopup();
+              }
+              if (ImGui::Button("Properties...")) {
+                // Clone the track so they can change stuff and then cancel
+                pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
+                  new Track(*track), playButtonIconTexture, stopButtonIconTexture);
                 ImGui::CloseCurrentPopup();
               }
               ImGui::EndPopup();
@@ -527,6 +531,12 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
           }
           if (removeTrackIndex != -1) {
             instrument->RemoveTrack(removeTrackIndex);
+          }
+          if (cloneTrackIndex != -1) {
+            auto oldTrack = instrument->GetTracks()[cloneTrackIndex];
+            auto newTrack = new Track(*oldTrack);
+            newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
+            instrument->AddTrack(newTrack);
           }
         }
       }
