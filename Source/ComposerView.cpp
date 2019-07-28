@@ -224,12 +224,18 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
   // Lock out the audio callback to update the shared data
   AudioGlobals::LockAudio();
-  playingTrackFlashTimes[0] = playingTrackFlashTimes[1];
-  playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
+  {
+    playingTrackFlashTimes[0] = playingTrackFlashTimes[1];
+    playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
 
-  if (pendingPlayTrack != -1) {
-    sequencer.GetInstrument()->PlayTrack(pendingPlayTrack);
-    pendingPlayTrack = -1;
+    auto instrument = sequencer.GetInstrument();
+    if (instrument != nullptr) {
+      if (pendingPlayTrack != -1) {
+        instrument->PlayTrack(pendingPlayTrack);
+        pendingPlayTrack = -1;
+      }
+      instrument->SetSoloTrack(pendingSoloTrack);
+    }
   }
   AudioGlobals::UnlockAudio();
 
@@ -255,15 +261,6 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
       if (ImGui::MenuItem("Save Instrument")) {
         SaveInstrument();
       }
-      if (ImGui::MenuItem("New Song")) {
-
-      }
-      if (ImGui::MenuItem("Load Song")) {
-        LoadSong();
-      }
-      if (ImGui::MenuItem("Save Song")) {
-        SaveSong();
-      }
       if (ImGui::MenuItem("Exit")) {
         if (exitFunction != nullptr) {
           exitFunction();
@@ -276,6 +273,18 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         if (ImGui::MenuItem("Add Track")) {
           pendingDialog = new DialogTrack("Add Track", sequencer.GetInstrument(),
             -1, new Track(GetNewTrackName(kDefaultNewTrackName)), playButtonIconTexture, stopButtonIconTexture);
+        }
+        ImGui::EndMenu();
+      }
+      if (ImGui::BeginMenu("Song")) {
+        if (ImGui::MenuItem("New Song")) {
+          sequencer.GetInstrument()->ClearNotes();
+        }
+        if (ImGui::MenuItem("Load Song")) {
+          LoadSong();
+        }
+        if (ImGui::MenuItem("Save Song")) {
+          SaveSong();
         }
         ImGui::EndMenu();
       }
@@ -387,9 +396,21 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
             }
             memcpy(imGuiStyle.Colors, oldColors, sizeof(oldColors));
             if (ImGui::BeginPopup(trackProperties.c_str())) {
+              bool closePopup = false;
+
               bool mute = track->GetMute();
               if (ImGui::Checkbox("Mute", &mute)) {
                 track->SetMute(mute);
+              }
+              ImGui::SameLine();
+              bool solo = instrument->GetSoloTrack() == trackIndex;
+              if (ImGui::Checkbox("Solo", &solo)) {
+                if (solo) {
+                  pendingSoloTrack = trackIndex;
+                }
+                else {
+                  pendingSoloTrack = -1;
+                }
               }
               float volume = track->GetVolume();
               if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
@@ -397,17 +418,28 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
               }
               if (ImGui::Button("Duplicate")) {
                 cloneTrackIndex = trackIndex;
-                ImGui::CloseCurrentPopup();
+                closePopup = true;
               }
               ImGui::SameLine();
               if (ImGui::Button("Delete")) {
                 removeTrackIndex = trackIndex;
-                ImGui::CloseCurrentPopup();
+                closePopup = true;
               }
+              ImGui::SameLine();
               if (ImGui::Button("Properties...")) {
                 // Clone the track so they can change stuff and then cancel
                 pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
                   new Track(*track), playButtonIconTexture, stopButtonIconTexture);
+                closePopup = true;
+              }
+
+              ImGui::Spacing();
+              ImGui::Spacing();
+              ImGui::Spacing();
+
+              closePopup |= ImGui::Button("OK");
+
+              if (closePopup) {
                 ImGui::CloseCurrentPopup();
               }
               ImGui::EndPopup();

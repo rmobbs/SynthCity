@@ -13,6 +13,7 @@ public:
   std::vector<Track*> tracks;
   std::string name;
   uint32 numNotes;
+  int32 soloTrack = -1;
 
   void AddTrack(Track* track);
   void ReplaceTrack(uint32 index, Track* track);
@@ -36,6 +37,12 @@ public:
   inline const std::vector<Track*>& GetTracks(void) const {
     return tracks;
   }
+
+  inline int32 GetSoloTrack() const {
+    return soloTrack;
+  }
+
+  void SetSoloTrack(int32 trackIndex);
 
   static Instrument* LoadInstrument(std::string fileName, uint32 numNotes);
 

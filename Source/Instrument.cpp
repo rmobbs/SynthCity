@@ -149,6 +149,13 @@ void Instrument::RemoveTrack(uint32 index) {
   AudioGlobals::UnlockAudio();
 }
 
+void Instrument::SetSoloTrack(int32 trackIndex) {
+  soloTrack = trackIndex;
+  if (trackIndex != -1) {
+    tracks[trackIndex]->SetMute(false);
+  }
+}
+
 void Instrument::PlayTrack(uint32 trackIndex) {
   Mixer::Get().PlayPatch(tracks[trackIndex]->GetPatch(), tracks[trackIndex]->GetVolume());
 }

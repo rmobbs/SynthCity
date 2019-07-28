@@ -192,6 +192,11 @@ uint32 Sequencer::NextFrame(void)
     if (instrument->tracks[trackIndex]->GetMute()) {
       continue;
     }
+    auto soloTrackIndex = instrument->GetSoloTrack();
+    if (soloTrackIndex != -1 && soloTrackIndex != trackIndex) {
+      continue;
+    }
+
     auto& notes = instrument->tracks[trackIndex]->GetNotes();
     if (currPosition >= static_cast<int32>(notes.size())) {
       continue;
