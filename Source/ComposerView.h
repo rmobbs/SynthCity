@@ -26,7 +26,7 @@ protected:
   OutputWindowState outputWindowState;
 
   bool wasPlaying = false;
-  int32 pendingSoloTrack = -1;
+  int32 pendingSoloTrack = -2;
   int32 pendingPlayTrack = -1;
   uint32 playButtonIconTexture = 0;
   uint32 stopButtonIconTexture = 0;

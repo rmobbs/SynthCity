@@ -234,7 +234,10 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
         instrument->PlayTrack(pendingPlayTrack);
         pendingPlayTrack = -1;
       }
-      instrument->SetSoloTrack(pendingSoloTrack);
+      if (pendingSoloTrack != -2) {
+        instrument->SetSoloTrack(pendingSoloTrack);
+        pendingSoloTrack = -2;
+      }
     }
   }
   AudioGlobals::UnlockAudio();
