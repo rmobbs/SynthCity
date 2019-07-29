@@ -144,6 +144,9 @@ void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
 
 void Instrument::RemoveTrack(uint32 index) {
   AudioGlobals::LockAudio();
+  if (soloTrack == index) {
+    soloTrack = -1;
+  }
   delete tracks[index];
   tracks.erase(tracks.begin() + index);
   AudioGlobals::UnlockAudio();
