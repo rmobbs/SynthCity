@@ -55,7 +55,7 @@ static GLuint fontTextureId;
 void UpdateInput() {
   SDL_Event sdlEvent;
 
-  auto& inputState = InputState::get();
+  auto& inputState = InputState::Get();
 
   while (SDL_PollEvent(&sdlEvent)) {
     switch (sdlEvent.type) {
@@ -131,19 +131,15 @@ void UpdateInput() {
   }
   inputState.scroll = 0;
 
+
+  // Update ImGui keys and record key press events
   for (auto k = 0; k < InputState::kMaxKey; ++k) {
     imGuiIo.KeysDown[k] = inputState.keyDown[k] != 0;
+    inputState.pressed[k] = inputState.keyDown[k] != 0 && inputState.wasDown[k] == 0;
   }
 
-  auto isKeyPress = [=](uint8 keyValue) {
-    return (inputState.keyDown[keyValue] && !inputState.wasDown[keyValue]);
-  };
-
-  // Key events
-  if (isKeyPress(SDLK_SPACE)) {
-    imGuiIo.MouseDown[0] = true;
-  }
   inputState.wasDown = inputState.keyDown;
+  inputState.modState = SDL_GetModState();
 
   imGuiIo.KeyShift = (SDL_GetModState() & KMOD_SHIFT) != 0;
   imGuiIo.KeyCtrl = (SDL_GetModState() & KMOD_CTRL) != 0;

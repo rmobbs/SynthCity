@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuiExtensions.h"
+#include "SDL.h"
 #include "soil.h"
 #include "Logging.h"
 #include "Sequencer.h"
@@ -20,6 +21,7 @@
 #include "ProcessDecay.h"
 #include "WavSound.h"
 #include "Globals.h"
+#include "InputState.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -51,6 +53,10 @@ static constexpr float kSequencerWindowToolbarHeight = 64.0f;
 static constexpr float kHamburgerMenuWidth(20.0f);
 static constexpr std::string_view kJsonTag(".json");
 static constexpr const char* kDefaultNewTrackName("NewTrack");
+static constexpr const char* kModeStrings[] = {
+  "Normal",
+  "Markup",
+};
 
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
@@ -219,6 +225,36 @@ void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
   }
 }
 
+void ComposerView::HandleInput() {
+  auto& inputState = InputState::Get();
+
+  // Saving tired right index fingers since 2018
+  if (inputState.pressed[SDLK_SPACE]) {
+    ImGui::GetIO().MouseDown[0] = true;
+  }
+
+  switch (mode) {
+    case Mode::Normal: {
+      if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
+        mode = Mode::Markup;
+      }
+      break;
+    }
+    case Mode::Markup: {
+      if (inputState.pressed[SDLK_1]) {
+        if (hoveredNoteIndex != -1) {
+          MCLOG(Warn, "Track %d note %d is now on fret 1", hoveredNoteTrack, hoveredNoteIndex);
+        }
+      }
+      if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
+        mode = Mode::Normal;
+      }
+      break;
+    }
+  }
+
+}
+
 void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
@@ -242,6 +278,12 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   }
   AudioGlobals::UnlockAudio();
 
+  HandleInput();
+
+  hoveredNoteTrack = -1;
+  hoveredNoteIndex = -1;
+
+  // Resize the main window based on console being open/closed
   int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
   if (!wasConsoleOpen) {
     outputWindowHeight = 20;
@@ -319,8 +361,6 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
   auto const sequencerHeight = static_cast<int32>(canvasSize.y - outputWindowHeight - mainMenuBarHeight);
 
-  // Lock the instrument for the duration
-  //std::lock_guard<std::mutex> lockInstrument(mutexInstrument);
   auto instrument = sequencer.GetInstrument();
 
   if (instrument != nullptr) {
@@ -517,6 +557,10 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
                     floatTrackNote = kDefaultNoteVelocity;
                   }
                   instrument->SetTrackNote(trackIndex, noteLocalIndex, floatTrackNote);
+                }
+                if (trackNote != 0 && ImGui::IsItemHovered()) {
+                  hoveredNoteTrack = trackIndex;
+                  hoveredNoteIndex = noteLocalIndex;
                 }
 
                 // Draw filled note
@@ -739,6 +783,8 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
     }
     ImGui::SameLine();
     ImGui::Text("Voices: %d", Mixer::Get().GetNumActiveVoices());
+    ImGui::SameLine();
+    ImGui::Text("Mode: %s", kModeStrings[static_cast<uint32>(mode)]);
     ImGui::Separator();
 
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);

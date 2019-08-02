@@ -12,6 +12,10 @@
 class Dialog;
 class ComposerView {
 protected:
+  enum class Mode {
+    Normal,
+    Markup,
+  };
   class  OutputWindowState {
   public:
     std::vector<std::string> displayHistory;
@@ -28,6 +32,8 @@ protected:
   bool wasPlaying = false;
   int32 pendingSoloTrack = -2;
   int32 pendingPlayTrack = -1;
+  int32 hoveredNoteTrack = -1;
+  int32 hoveredNoteIndex = -1;
   uint32 playButtonIconTexture = 0;
   uint32 stopButtonIconTexture = 0;
   uint32 pauseButtonIconTexture = 0;
@@ -41,9 +47,11 @@ protected:
   std::map<int, double> playingTrackFlashTimes[2];
   std::map<int, double> playingNotesFlashTimes[2];
   std::function<void()> exitFunction;
+  Mode mode = Mode::Normal;
 
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);
+  void HandleInput();
 
 public:
   ComposerView(uint32 mainWindowHandle, std::function<void()> exitFunction);
