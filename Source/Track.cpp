@@ -40,23 +40,27 @@ Track::~Track() {
   patch = nullptr;
 }
 
-void Track::AddNotes(uint32 noteCount, uint8 noteValue) {
+void Track::AddNotes(uint32 noteCount) {
   AudioGlobals::LockAudio();
-  notes.resize(notes.size() + noteCount, noteValue);
+  notes.resize(notes.size() + noteCount);
   AudioGlobals::UnlockAudio();
 }
 
-void Track::SetNoteCount(uint32 noteCount, uint8 noteValue) {
+void Track::SetNoteCount(uint32 noteCount) {
   AudioGlobals::LockAudio();
-  notes.resize(noteCount, noteValue);
+  notes.resize(noteCount);
   AudioGlobals::UnlockAudio();
 }
 
-void Track::SetNote(uint32 noteIndex, uint8 noteValue) {
+void Track::SetNote(uint32 noteIndex, const Note& note) {
   if (noteIndex >= notes.size()) {
-    notes.resize(noteIndex + 1, 0);
+    notes.resize(noteIndex + 1);
   }
-  notes[noteIndex] = noteValue;
+  notes[noteIndex] = note;
+}
+
+Note& Track::GetNote(uint32 noteIndex) {
+  return notes[noteIndex];
 }
 
 void Track::ClearNotes() {
@@ -72,7 +76,7 @@ void Track::SetPatch(Patch* newPatch) {
   AudioGlobals::UnlockAudio();
 }
 
-void Track::SetNotes(const std::vector<uint8>& newNotes) {
+void Track::SetNotes(const std::vector<Note>& newNotes) {
   AudioGlobals::LockAudio();
   notes = newNotes;
   AudioGlobals::UnlockAudio();

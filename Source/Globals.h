@@ -1,4 +1,8 @@
 #pragma once
 
-static constexpr const char* kVersionString("0.0.7");
-static constexpr float kScrollBarWidth = 15.0f;
+namespace Globals {
+  static constexpr const char* kVersionString("0.0.7");
+  static constexpr float kScrollBarWidth = 15.0f;
+
+  extern double currentTime;
+}

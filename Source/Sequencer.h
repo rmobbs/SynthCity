@@ -27,7 +27,7 @@ public:
     std::vector<uint32> trackIndices; // Tracks to flatten into single song
   };
 
-  typedef void(*NotePlayedCallback)(int32 trackIndex, int32 noteIndex, void* payload);
+  typedef void(*NotePlayedCallback)(uint32 trackIndex, uint32 noteIndex, void* payload);
 
 private:
   static Sequencer* singleton;
@@ -40,7 +40,7 @@ private:
   bool isPlaying = false;
   bool isMetrononeOn = false;
   std::atomic<bool> isLooping = true;
-  NotePlayedCallback notePlayedCallback = nullptr;
+  std::vector<std::pair<NotePlayedCallback, void*>> notePlayedCallbacks;
   void* notePlayedPayload = nullptr;
   int32 currPosition = 0;
   int32 nextPosition = 0;
@@ -148,7 +148,7 @@ public:
   bool Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision);
 
   void SetPosition(uint32 newPosition);
-  void SetNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
+  void AddNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
   bool NewInstrument();
 
    Sequencer() {}

@@ -8,11 +8,13 @@
 class Sound;
 class Patch;
 
+using Note = uint8;
+
 class Track {
 protected:
   std::string name;
   std::string colorScheme;
-  std::vector<uint8> notes;
+  std::vector<Note> notes;
   bool mute = false;
   float volume = 1.0f;
 
@@ -24,10 +26,13 @@ public:
   Track(const ReadSerializer& serializer);
   ~Track();
 
-  void AddNotes(uint32 noteCount, uint8 noteValue = 0);
-  void SetNoteCount(uint32 noteCount, uint8 noteValue = 0);
-  void SetNote(uint32 noteIndex, uint8 noteValue);
-  void SetNotes(const std::vector<uint8>& newNotes);
+  void AddNotes(uint32 noteCount);
+  void SetNoteCount(uint32 noteCount);
+  uint32 GetNoteCount() const {
+    return notes.size();
+  }
+  void SetNote(uint32 noteIndex, const Note& note);
+  void SetNotes(const std::vector<Note>& newNotes);
 
   inline const std::string& GetColorScheme(void) const {
     return colorScheme;
@@ -42,6 +47,7 @@ public:
     return notes;
   }
   void ClearNotes();
+  Note& GetNote(uint32 noteIndex);
 
   bool SerializeWrite(const WriteSerializer& serializer);
   bool SerializeRead(const ReadSerializer& serializer);

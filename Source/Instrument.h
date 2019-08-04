@@ -41,6 +41,7 @@ public:
   inline int32 GetSoloTrack() const {
     return soloTrack;
   }
+  Track* GetTrack(uint32 trackIndex);
 
   void SetSoloTrack(int32 trackIndex);
 

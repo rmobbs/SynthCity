@@ -204,8 +204,8 @@ uint32 Sequencer::NextFrame(void)
 
     auto d = notes.data() + currPosition;
     if (*d > 0) {
-      if (notePlayedCallback != nullptr) {
-        notePlayedCallback(trackIndex, currPosition, notePlayedPayload);
+      for (auto& notePlayedCallback : notePlayedCallbacks) {
+        notePlayedCallback.first(trackIndex, currPosition, notePlayedCallback.second);
       }
       instrument->PlayTrack(trackIndex);
     }
@@ -214,9 +214,8 @@ uint32 Sequencer::NextFrame(void)
   return interval;
 }
 
-void Sequencer::SetNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
-  this->notePlayedCallback = notePlayedCallback;
-  this->notePlayedPayload = notePlayedPayload;
+void Sequencer::AddNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
+  notePlayedCallbacks.push_back({ notePlayedCallback, notePlayedPayload });
 }
 
 bool Sequencer::NewInstrument() {

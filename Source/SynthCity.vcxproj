@@ -238,6 +238,7 @@
     <ClCompile Include="AudioGlobals.cpp" />
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="DialogTrack.cpp" />
+    <ClCompile Include="Globals.cpp" />
     <ClCompile Include="ImGuiExtensions.cpp" />
     <ClCompile Include="Patch.cpp" />
     <ClCompile Include="Process.cpp" />

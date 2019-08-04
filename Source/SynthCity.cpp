@@ -40,7 +40,6 @@ static constexpr uint32 kDefaultBpm = 120;
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
 static constexpr int kAudioBufferSize = 2048;
 
-static double currentTime = 0;
 static bool wantQuit = false;
 static SDL_SysWMinfo sysWmInfo;
 
@@ -114,10 +113,10 @@ void UpdateInput() {
   ImGuiIO& imGuiIo = ImGui::GetIO();
 
   // Update time
-  currentTime = static_cast<double>(SDL_GetTicks()) / 1000.0;
+  Globals::currentTime = static_cast<double>(SDL_GetTicks()) / 1000.0;
   static double lastUpdateTime = 0.0;
-  imGuiIo.DeltaTime = std::max(1.0f / 120.0f, static_cast<float>(currentTime - lastUpdateTime));
-  lastUpdateTime = currentTime;
+  imGuiIo.DeltaTime = std::max(1.0f / 120.0f, static_cast<float>(Globals::currentTime - lastUpdateTime));
+  lastUpdateTime = Globals::currentTime;
 
   // Update mouse
   imGuiIo.MousePos = ImVec2(static_cast<float>(inputState.mouseX), static_cast<float>(inputState.mouseY));
@@ -172,8 +171,7 @@ void MainLoop() {
     GlobalRenderData::get().setMatrix(GlobalRenderData::MatrixType::ScreenOrthographic, screenOrtho);
   }
 
-  currentView->Render(currentTime,
-    ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
+  currentView->Render(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
 
   SDL_GL_SwapWindow(sdlWindow);
 }
@@ -355,7 +353,7 @@ bool Init() {
   // Initialize the designer view
   currentView = new ComposerView(reinterpret_cast<uint32>(sysWmInfo.info.win.window), []() { wantQuit = true;  });
 
-  MCLOG(Info, "SynthCity %s", kVersionString);
+  MCLOG(Info, "SynthCity %s", Globals::kVersionString);
 
   return true;
 }

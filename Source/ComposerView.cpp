@@ -242,8 +242,8 @@ void ComposerView::HandleInput() {
     }
     case Mode::Markup: {
       if (inputState.pressed[SDLK_1]) {
-        if (hoveredNoteIndex != -1) {
-          MCLOG(Warn, "Track %d note %d is now on fret 1", hoveredNoteTrack, hoveredNoteIndex);
+        if (hoveredNote.second != -1) {
+          MCLOG(Warn, "Track %d note %d is now on fret 1", hoveredNote.first, hoveredNote.second);
         }
       }
       if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
@@ -255,33 +255,55 @@ void ComposerView::HandleInput() {
 
 }
 
-void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
+void ComposerView::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
-  // Lock out the audio callback to update the shared data
+  // Lock out the audio callback to modify the shared data
   AudioGlobals::LockAudio();
   {
-    playingTrackFlashTimes[0] = playingTrackFlashTimes[1];
-    playingNotesFlashTimes[0] = playingNotesFlashTimes[1];
+    // Newly triggered notes are written to entry 1 in the audio callback
+    playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
+    playingNotesFlashTimes[0].merge(playingNotesFlashTimes[1]);
 
     auto instrument = sequencer.GetInstrument();
     if (instrument != nullptr) {
+      // This adds a voice to the playing voices
       if (pendingPlayTrack != -1) {
         instrument->PlayTrack(pendingPlayTrack);
         pendingPlayTrack = -1;
       }
+
+      // This mutes all voices except the solo track
       if (pendingSoloTrack != -2) {
         instrument->SetSoloTrack(pendingSoloTrack);
         pendingSoloTrack = -2;
       }
+
+      // This toggles a note on/off
+      if (toggledNote.second != -1) {
+        auto track = instrument->GetTrack(toggledNote.first);
+
+        auto note = track->GetNote(toggledNote.second);
+        if (note != 0) {
+          note = 0;
+        }
+        else {
+          note = 1;
+        }
+        track->SetNote(toggledNote.second, note);
+
+        toggledNote = { -1, -1 };
+      }
+
+      // This changes a note's fret index
+
     }
   }
   AudioGlobals::UnlockAudio();
 
   HandleInput();
 
-  hoveredNoteTrack = -1;
-  hoveredNoteIndex = -1;
+  hoveredNote = { -1, -1 };
 
   // Resize the main window based on console being open/closed
   int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
@@ -405,7 +427,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
 
       // Tracks
       ImGui::BeginChild("##InstrumentScrollingRegion",
-        ImVec2(static_cast<float>(canvasSize.x) - kScrollBarWidth,
+        ImVec2(static_cast<float>(canvasSize.x) - Globals::kScrollBarWidth,
         static_cast<float>(sequencerHeight) - kSequencerWindowToolbarHeight - beatLabelStartY),
         false,
         ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
@@ -512,7 +534,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
             {
               auto flashTime = playingTrackFlashTimes[0].find(trackIndex);
               if (flashTime != playingTrackFlashTimes[0].end()) {
-                auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayTrackFlashDuration);
+                auto pct = static_cast<float>((Globals::currentTime - flashTime->second) / kPlayTrackFlashDuration);
                 if (pct >= 1.0f) {
                   playingTrackFlashTimes[0].erase(flashTime);
                 }
@@ -552,15 +574,11 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
                 imGuiStyle.ItemSpacing.x = 0.0f;
                 imGuiStyle.ItemSpacing.y = 0.0f;
                 if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote != 0, beatWidth, kKeyboardKeyHeight)) {
-                  float floatTrackNote = 0.0f;
-                  if (trackNote == 0) {
-                    floatTrackNote = kDefaultNoteVelocity;
-                  }
-                  instrument->SetTrackNote(trackIndex, noteLocalIndex, floatTrackNote);
+                  toggledNote = { trackIndex, noteLocalIndex };
                 }
+
                 if (trackNote != 0 && ImGui::IsItemHovered()) {
-                  hoveredNoteTrack = trackIndex;
-                  hoveredNoteIndex = noteLocalIndex;
+                  hoveredNote = { trackIndex, noteLocalIndex };
                 }
 
                 // Draw filled note
@@ -575,7 +593,7 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
                   {
                     auto flashTime = playingNotesFlashTimes[0].find(noteGlobalIndex);
                     if (flashTime != playingNotesFlashTimes[0].end()) {
-                      auto pct = static_cast<float>((currentTime - flashTime->second) / kPlayNoteFlashDuration);
+                      auto pct = static_cast<float>((Globals::currentTime - flashTime->second) / kPlayNoteFlashDuration);
                       if (pct >= 1.0f) {
                         playingNotesFlashTimes[0].erase(flashTime);
                       }
@@ -825,6 +843,12 @@ void ComposerView::Render(double currentTime, ImVec2 canvasSize) {
   renderable.Render();
 }
 
+void ComposerView::NotePlayedCallback(uint32 trackIndex, uint32 noteIndex) {
+  playingTrackFlashTimes[1].insert({ trackIndex, Globals::currentTime });
+  playingNotesFlashTimes[1].insert({ Sequencer::Get().GetInstrument()->
+    GetTrack(trackIndex)->GetNoteCount() * trackIndex + noteIndex, Globals::currentTime });
+}
+
 void ComposerView::InitResources() {
   // Backup GL state
   GLint lastTexture;
@@ -874,6 +898,11 @@ ComposerView::ComposerView(uint32 mainWindowHandle, std::function<void()> exitFu
     [mainWindowHandle](std::string instrumentName) {
       return LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle), instrumentName);
     });
+
+  Sequencer::Get().AddNotePlayedCallback(
+    [](uint32 trackIndex, uint32 noteIndex, void* payload) {
+      reinterpret_cast<ComposerView*>(payload)->NotePlayedCallback(trackIndex, noteIndex);
+    }, this);
 }
 
 ComposerView::~ComposerView() {

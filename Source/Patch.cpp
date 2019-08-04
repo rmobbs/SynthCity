@@ -287,7 +287,7 @@ void Patch::RenderDialog() {
   static constexpr float kSoundRegionPercentage = 0.35f;
 
   ImGui::BeginChild("#ProcessScrollingRegion",
-    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, ImGui::GetWindowSize().y * kProcessRegionPercentage),
+    ImVec2(ImGui::GetWindowSize().x - Globals::kScrollBarWidth, ImGui::GetWindowSize().y * kProcessRegionPercentage),
     true,
     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {
@@ -297,7 +297,7 @@ void Patch::RenderDialog() {
       ImGui::Spacing();
 
       ImGui::Text(process->GetProcessClassName().c_str());
-      ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
+      ImGui::SameLine(ImGui::GetWindowSize().x - Globals::kScrollBarWidth - 22.0f);
       std::string removeTag = std::string("RemoveProcess") +
         std::to_string(reinterpret_cast<uint32>(process));
       ImGui::PushID(removeTag.c_str());
@@ -376,7 +376,7 @@ void Patch::RenderDialog() {
   }
 
   ImGui::BeginChild("#SoundsScrollingRegion",
-    ImVec2(ImGui::GetWindowSize().x - kScrollBarWidth, ImGui::GetWindowSize().y * kSoundRegionPercentage),
+    ImVec2(ImGui::GetWindowSize().x - Globals::kScrollBarWidth, ImGui::GetWindowSize().y * kSoundRegionPercentage),
     true,
     ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
   {
@@ -386,7 +386,7 @@ void Patch::RenderDialog() {
       ImGui::Spacing();
 
       ImGui::Text(sound->GetSoundClassName().c_str());
-      ImGui::SameLine(ImGui::GetWindowSize().x - kScrollBarWidth - 22.0f);
+      ImGui::SameLine(ImGui::GetWindowSize().x - Globals::kScrollBarWidth - 22.0f);
       std::string removeTag = std::string("RemoveSound") +
         std::to_string(reinterpret_cast<uint32>(sound));
       ImGui::PushID(removeTag.c_str());

@@ -43,7 +43,7 @@ bool Instrument::SerializeRead(const ReadSerializer& serializer) {
   }
   std::string version = d[kVersionTag].GetString();
 
-  if (version != std::string(kVersionString)) {
+  if (version != std::string(Globals::kVersionString)) {
     MCLOG(Error, "Invalid instrument file version");
     return false;
   }
@@ -81,7 +81,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
 
   // Version tag:string
   w.Key(kVersionTag);
-  w.String(kVersionString);
+  w.String(Globals::kVersionString);
 
   // Name tag:string
   w.Key(kNameTag);
@@ -167,9 +167,13 @@ void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff)
   if (trackIndex < tracks.size()) {
 
     AudioGlobals::LockAudio();
-    tracks[trackIndex]->SetNote(noteIndex, onOrOff ? 255 : 0);
+    tracks[trackIndex]->SetNote(noteIndex, onOrOff ? 1 : 0);
     AudioGlobals::UnlockAudio();
   }
+}
+
+Track* Instrument::GetTrack(uint32 trackIndex) {
+  return tracks[trackIndex];
 }
 
 bool Instrument::SaveInstrument(std::string fileName) {

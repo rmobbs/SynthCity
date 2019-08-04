@@ -30,10 +30,11 @@ protected:
   OutputWindowState outputWindowState;
 
   bool wasPlaying = false;
+
   int32 pendingSoloTrack = -2;
   int32 pendingPlayTrack = -1;
-  int32 hoveredNoteTrack = -1;
-  int32 hoveredNoteIndex = -1;
+  std::pair<int32, int32> toggledNote = { -1, -1 };
+  std::pair<int32, int32> hoveredNote = { -1, -1 };
   uint32 playButtonIconTexture = 0;
   uint32 stopButtonIconTexture = 0;
   uint32 pauseButtonIconTexture = 0;
@@ -52,10 +53,11 @@ protected:
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);
   void HandleInput();
+  void NotePlayedCallback(uint32 trackIndex, uint32 noteIndex);
 
 public:
   ComposerView(uint32 mainWindowHandle, std::function<void()> exitFunction);
   ~ComposerView();
 
-  void Render(double currentTime, ImVec2 canvasSize);
+  void Render(ImVec2 canvasSize);
 };
