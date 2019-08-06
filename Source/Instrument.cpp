@@ -173,7 +173,10 @@ void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff)
 }
 
 Track* Instrument::GetTrack(uint32 trackIndex) {
-  return tracks[trackIndex];
+  if (trackIndex < tracks.size()) {
+    return tracks[trackIndex];
+  }
+  return nullptr;
 }
 
 bool Instrument::SaveInstrument(std::string fileName) {

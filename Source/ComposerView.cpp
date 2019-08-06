@@ -253,63 +253,128 @@ void ComposerView::HandleInput() {
     }
   }
 
+  hoveredNote = { -1, -1 };
 }
 
-void ComposerView::Render(ImVec2 canvasSize) {
+void ComposerView::ProcessPendingActions() {
   auto& sequencer = Sequencer::Get();
 
-  // Lock out the audio callback to modify the shared data
   AudioGlobals::LockAudio();
   {
     // Newly triggered notes are written to entry 1 in the audio callback
     playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
     playingNotesFlashTimes[0].merge(playingNotesFlashTimes[1]);
 
+    // Number of measures changed
+    if (pendingNumMeasures != -1) {
+      sequencer.SetNumMeasures(pendingNumMeasures);
+    }
+
+    // Beats per measure changed
+    if (pendingBeatsPerMeasure != -1) {
+      sequencer.SetBeatsPerMeasure(pendingBeatsPerMeasure);
+    }
+
+    // Subdivision changed
+    if (pendingSubdivision != -1) {
+      sequencer.SetSubdivision(pendingSubdivision);
+    }
+
+    // Beats per minute changed
+    if (pendingBeatsPerMinute != -1) {
+      sequencer.SetBeatsPerMinute(pendingBeatsPerMinute);
+    }
+
+    // Master volume changed
+    if (pendingMasterVolume >= 0.0f) {
+      Mixer::Get().SetMasterVolume(pendingMasterVolume);
+    }
+
     auto instrument = sequencer.GetInstrument();
     if (instrument != nullptr) {
-      // This adds a voice to the playing voices
+      // Track volume changed
+      if (pendingTrackVolume.first != -1) {
+        auto track = instrument->GetTrack(pendingTrackVolume.first);
+        if (track != nullptr) {
+          track->SetVolume(pendingTrackVolume.second);
+        }
+      }
+
+      // Track mute state changed
+      if (pendingTrackMute.first != -1) {
+        auto track = instrument->GetTrack(pendingTrackMute.first);
+        if (track != nullptr) {
+          track->SetMute(pendingTrackMute.second);
+        }
+      }
+
+      // Track spawns voice
       if (pendingPlayTrack != -1) {
         instrument->PlayTrack(pendingPlayTrack);
-        pendingPlayTrack = -1;
       }
 
-      // This mutes all voices except the solo track
+      // Mute all voices except the solo track
       if (pendingSoloTrack != -2) {
         instrument->SetSoloTrack(pendingSoloTrack);
-        pendingSoloTrack = -2;
       }
 
-      // This toggles a note on/off
+      // Toggle a note on/off
       if (toggledNote.second != -1) {
         auto track = instrument->GetTrack(toggledNote.first);
-
-        auto note = track->GetNote(toggledNote.second);
-        if (note != 0) {
-          note = 0;
+        if (track != nullptr) {
+          auto note = track->GetNote(toggledNote.second);
+          if (note != 0) {
+            note = 0;
+          }
+          else {
+            note = 1;
+          }
+          track->SetNote(toggledNote.second, note);
         }
-        else {
-          note = 1;
-        }
-        track->SetNote(toggledNote.second, note);
-
-        toggledNote = { -1, -1 };
       }
 
-      // This changes a note's fret index
+      // Change a note's fret index
 
+      // Track cloned via dialog previous frame
+      if (pendingCloneTrack != -1) {
+        auto oldTrack = instrument->GetTrack(pendingCloneTrack);
+        if (oldTrack != nullptr) {
+          auto newTrack = new Track(*oldTrack);
+          newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
+          instrument->AddTrack(newTrack);
+        }
+      }
+
+      // Track removed via dialog previous frame
+      // NOTE: This is the last delayed track operation just in case
+      if (pendingRemoveTrack != -1) {
+        instrument->RemoveTrack(pendingRemoveTrack);
+      }
     }
-  }
-  AudioGlobals::UnlockAudio();
 
+    AudioGlobals::UnlockAudio();
+  }
+
+  // Reset all pendings
+  pendingNumMeasures = -1;
+  pendingBeatsPerMeasure = -1;
+  pendingSubdivision = -1;
+  pendingBeatsPerMinute = -1;
+  pendingMasterVolume = -1.0f;
+  pendingTrackVolume = { -1, 0.0f };
+  pendingTrackMute = { -1, false };
+  pendingPlayTrack = -1;
+  pendingRemoveTrack = -1;
+  pendingCloneTrack = -1;
+  pendingSoloTrack = -2;
+  toggledNote = { -1, -1 };
+}
+
+void ComposerView::Render(ImVec2 canvasSize) {
+  auto& sequencer = Sequencer::Get();
+
+  ProcessPendingActions();
   HandleInput();
-
-  hoveredNote = { -1, -1 };
-
-  // Resize the main window based on console being open/closed
-  int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
-  if (!wasConsoleOpen) {
-    outputWindowHeight = 20;
-  }
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
@@ -320,7 +385,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("New Instrument")) {
-        Sequencer::Get().NewInstrument();
+        sequencer.NewInstrument();
       }
       if (ImGui::MenuItem("Load Instrument")) {
         LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle));
@@ -381,6 +446,11 @@ void ComposerView::Render(ImVec2 canvasSize) {
     }
   }
 
+  // Resize the main window based on console being open/closed
+  int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
+  if (!wasConsoleOpen) {
+    outputWindowHeight = 20;
+  }
   auto const sequencerHeight = static_cast<int32>(canvasSize.y - outputWindowHeight - mainMenuBarHeight);
 
   auto instrument = sequencer.GetInstrument();
@@ -435,8 +505,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
         if (instrument != nullptr) {
           uint32 flashColor;
           uint32 noteGlobalIndex = 0;
-          int32 removeTrackIndex = -1;
-          int32 cloneTrackIndex = -1;
           for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
             auto& track = instrument->GetTracks()[trackIndex];
 
@@ -465,11 +533,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
               bool mute = track->GetMute();
               if (ImGui::Checkbox("Mute", &mute)) {
-                track->SetMute(mute);
+                // @Delay
+                pendingTrackMute = { trackIndex, mute };
               }
               ImGui::SameLine();
               bool solo = instrument->GetSoloTrack() == trackIndex;
               if (ImGui::Checkbox("Solo", &solo)) {
+                // @Delay
                 if (solo) {
                   pendingSoloTrack = trackIndex;
                 }
@@ -479,20 +549,22 @@ void ComposerView::Render(ImVec2 canvasSize) {
               }
               float volume = track->GetVolume();
               if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
-                track->SetVolume(volume);
+                // @Delay
+                pendingTrackVolume = { trackIndex, volume };
               }
               if (ImGui::Button("Duplicate")) {
-                cloneTrackIndex = trackIndex;
+                // @Delay
+                pendingCloneTrack = trackIndex;
                 closePopup = true;
               }
               ImGui::SameLine();
               if (ImGui::Button("Delete")) {
-                removeTrackIndex = trackIndex;
+                // @Delay
+                pendingRemoveTrack = trackIndex;
                 closePopup = true;
               }
               ImGui::SameLine();
               if (ImGui::Button("Properties...")) {
-                // Clone the track so they can change stuff and then cancel
                 pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
                   new Track(*track), playButtonIconTexture, stopButtonIconTexture);
                 closePopup = true;
@@ -521,7 +593,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             // Track key
             if (ImGui::Button(track->GetName().
               c_str(), ImVec2(kKeyboardKeyWidth, kKeyboardKeyHeight))) {
-              // Do it next frame so we only lock audio once per UI loop
+              // @Delay
               pendingPlayTrack = trackIndex;
             }
 
@@ -574,6 +646,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 imGuiStyle.ItemSpacing.x = 0.0f;
                 imGuiStyle.ItemSpacing.y = 0.0f;
                 if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote != 0, beatWidth, kKeyboardKeyHeight)) {
+                  // @Delay
                   toggledNote = { trackIndex, noteLocalIndex };
                 }
 
@@ -626,15 +699,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
             // Reset old X spacing to offset from keyboard key
             imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
           }
-          if (removeTrackIndex != -1) {
-            instrument->RemoveTrack(removeTrackIndex);
-          }
-          if (cloneTrackIndex != -1) {
-            auto oldTrack = instrument->GetTracks()[cloneTrackIndex];
-            auto newTrack = new Track(*oldTrack);
-            newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
-            instrument->AddTrack(newTrack);
-          }
         }
       }
       ImGui::EndChild();
@@ -653,11 +717,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // Play/Pause button
         if (sequencer.IsPlaying()) {
           if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(pauseButtonIconTexture), ImVec2(14, 14))) {
+            // @Atomic
             sequencer.Pause();
           }
         }
         else {
           if (ImGui::ArrowButtonEx("PlayButton", ImGuiDir_Right, ImVec2(22, 20), 0)) {
+            // @Atomic
             sequencer.Play();
           }
         }
@@ -666,6 +732,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
         // Stop button
         if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonIconTexture), ImVec2(14, 14))) {
+          // @Atomic
           sequencer.Stop();
         }
 
@@ -676,8 +743,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::PushItemWidth(100);
         int numMeasures = sequencer.GetNumMeasures();
         if (ImGui::InputInt("Measures", &numMeasures)) {
-          numMeasures = std::max(std::min(static_cast<uint32>(numMeasures), kMaxMeasures), kMinMeasures);
-          sequencer.SetNumMeasures(numMeasures);
+          // @Delay
+          pendingNumMeasures = std::max(std::min(static_cast<uint32>(numMeasures), kMaxMeasures), kMinMeasures);
         }
         ImGui::PopItemWidth();
 
@@ -686,9 +753,9 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::PushItemWidth(100);
         int beatsPerMeasure = sequencer.GetBeatsPerMeasure();
         if (ImGui::InputInt("BeatsPerMeasure", &beatsPerMeasure)) {
-          beatsPerMeasure = std::max(std::min(static_cast<uint32>
+          // @Delay
+          pendingBeatsPerMeasure = std::max(std::min(static_cast<uint32>
             (beatsPerMeasure), kMaxBeatsPerMeasure), kMinBeatsPerMeasure);
-          sequencer.SetBeatsPerMeasure(beatsPerMeasure);
         }
         ImGui::PopItemWidth();
 
@@ -699,7 +766,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
           for (size_t s = 0; s < TimelineDivisions.size(); ++s) {
             bool isSelected = (sequencer.GetSubdivision() == TimelineDivisions[s]);
             if (ImGui::Selectable(std::to_string(TimelineDivisions[s]).c_str(), isSelected)) {
-              sequencer.SetSubdivision(TimelineDivisions[s]);
+              // @Delay
+              pendingSubdivision = TimelineDivisions[s];
             }
             else {
               ImGui::SetItemDefaultFocus();
@@ -714,7 +782,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::PushItemWidth(100);
         int currentBpm = sequencer.GetBeatsPerMinute();
         if (ImGui::InputInt("BPM", &currentBpm)) {
-          sequencer.SetBeatsPerMinute(currentBpm);
+          // @Delay
+          pendingBeatsPerMinute = currentBpm;
         }
         ImGui::PopItemWidth();
 
@@ -723,6 +792,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::PushItemWidth(100);
         bool isLooping = sequencer.IsLooping();
         if (ImGui::Checkbox("Loop", &isLooping)) {
+          // @Atomic
           sequencer.SetLooping(isLooping);
         }
         ImGui::PopItemWidth();
@@ -732,6 +802,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::PushItemWidth(100);
         bool isMetronomeOn = sequencer.IsMetronomeOn();
         if (ImGui::Checkbox("Metronome", &isMetronomeOn)) {
+          // @Atomic
           sequencer.EnableMetronome(isMetronomeOn);
         }
         ImGui::PopItemWidth();
@@ -741,6 +812,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::PushItemWidth(100);
         float masterVolume = Mixer::Get().GetMasterVolume();
         if (ImGui::SliderFloat("Master", &masterVolume, 0.0f, 1.0f)) {
+          // @Atomic
           Mixer::Get().SetMasterVolume(masterVolume);
         }
       }

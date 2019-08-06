@@ -30,7 +30,7 @@ protected:
 
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
-  float masterVolume = kDefaultMasterVolume;
+  std::atomic<float> masterVolume = kDefaultMasterVolume;
   Controller* controller = nullptr;
   std::vector<float> mixbuf;
 

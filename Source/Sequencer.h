@@ -37,8 +37,8 @@ private:
   uint32 maxBeatSubdivisions = 0;
   uint32 currBeatSubdivision = 0;
   uint32 currentBpm = kDefaultTempo;
-  bool isPlaying = false;
-  bool isMetrononeOn = false;
+  std::atomic<bool> isPlaying = false;
+  std::atomic<bool> isMetrononeOn = false;
   std::atomic<bool> isLooping = true;
   std::vector<std::pair<NotePlayedCallback, void*>> notePlayedCallbacks;
   void* notePlayedPayload = nullptr;
