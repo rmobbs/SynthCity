@@ -1,12 +1,39 @@
 {
-  "Instrument": "Roland TR-808",
-  "Tempo": 80,
-  "Measures": 1,
-  "BeatsPerMeasure": 4,
-  "Notes": [
-    { "Beat": 1, "Track":  0, "Velocity": 0.75 },
-    { "Beat": 2, "Track":  1, "Velocity": 0.75 },
-    { "Beat": 3, "Track":  0, "Velocity": 0.75 },
-    { "Beat": 4, "Track":  1, "Velocity": 0.75 }
-  ]
+    "version": "0.0.7",
+    "Instrument": "Roland TR-808",
+    "Tempo": 80,
+    "Measures": 1,
+    "BeatsPerMeasure": 4,
+    "Tracks": [
+        {
+            "Notes": [
+                {
+                    "Beat": 0,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 16,
+                    "Fret": -1
+                }
+            ]
+        },
+        {
+            "Notes": [
+                {
+                    "Beat": 8,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 24,
+                    "Fret": -1
+                }
+            ]
+        },
+        {
+            "Notes": []
+        },
+        {
+            "Notes": []
+        }
+    ]
 }

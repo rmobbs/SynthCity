@@ -323,11 +323,11 @@ void ComposerView::ProcessPendingActions() {
         auto track = instrument->GetTrack(toggledNote.first);
         if (track != nullptr) {
           auto note = track->GetNote(toggledNote.second);
-          if (note != 0) {
-            note = 0;
+          if (note.enabled) {
+            note.enabled = false;
           }
           else {
-            note = 1;
+            note.enabled = true;
           }
           track->SetNote(toggledNote.second, note);
         }
@@ -645,17 +645,17 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 // Toggle notes that are clicked
                 imGuiStyle.ItemSpacing.x = 0.0f;
                 imGuiStyle.ItemSpacing.y = 0.0f;
-                if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote != 0, beatWidth, kKeyboardKeyHeight)) {
+                if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote.enabled, beatWidth, kKeyboardKeyHeight)) {
                   // @Delay
                   toggledNote = { trackIndex, noteLocalIndex };
                 }
 
-                if (trackNote != 0 && ImGui::IsItemHovered()) {
+                if (trackNote.enabled && ImGui::IsItemHovered()) {
                   hoveredNote = { trackIndex, noteLocalIndex };
                 }
 
                 // Draw filled note
-                if (trackNote != 0) {
+                if (trackNote.enabled) {
                   auto currentPos = ImGui::GetCursorPos();
 
                   ImGui::SetCursorPos(cursorPos);

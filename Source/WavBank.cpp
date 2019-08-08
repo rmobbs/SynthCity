@@ -65,14 +65,14 @@ WavData* WavBank::LoadWav(std::string const& fileName) {
 
   // TODO: FIX THIS
   if (spec.channels != 1) {
-    MCLOG(Error, "WavBank: %s has %r channels. Only mono "
+    MCLOG(Error, "WavBank: %s has %d channels. Only mono "
       "WAV files are currently supported", fileName.c_str(), spec.channels);
     return false;
   }
 
   // TODO: Support more formats
   if (spec.format != AUDIO_S16SYS) {
-    MCLOG(Error, "WavBank: %s has an unsupported format %r", fileName.c_str(), spec.format);
+    MCLOG(Error, "WavBank: %s has an unsupported format %d", fileName.c_str(), spec.format);
     return false;
   }
 

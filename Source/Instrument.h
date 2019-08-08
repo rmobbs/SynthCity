@@ -22,7 +22,6 @@ public:
   void Clear();
   void PlayTrack(uint32 trackIndex);
   void SetNoteCount(uint32 numNotes);
-  void SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff);
   bool SaveInstrument(std::string fileName);
 
   Instrument(const ReadSerializer& r, uint32 numNotes);

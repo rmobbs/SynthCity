@@ -1,88 +1,88 @@
 {
+    "version": "0.0.7",
     "Instrument": "Roland TR-808",
     "Tempo": 120,
     "Measures": 2,
     "BeatsPerMeasure": 4,
-    "Notes": [
+    "Tracks": [
         {
-            "Beat": 1.0,
-            "Track": 0,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 0,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 16,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 32,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 48,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 1.5,
-            "Track": 3,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 8,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 24,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 40,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 56,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 2.0,
-            "Track": 1,
-            "Velocity": 1.0
+            "Notes": []
         },
         {
-            "Beat": 2.5,
-            "Track": 3,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 3.0,
-            "Track": 0,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 3.5,
-            "Track": 3,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 4.0,
-            "Track": 1,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 4.5,
-            "Track": 3,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 5.0,
-            "Track": 0,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 5.5,
-            "Track": 3,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 6.0,
-            "Track": 1,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 6.5,
-            "Track": 3,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 7.0,
-            "Track": 0,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 7.5,
-            "Track": 3,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 8.0,
-            "Track": 1,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 8.5,
-            "Track": 3,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 4,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 12,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 20,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 28,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 36,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 44,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 52,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 60,
+                    "Fret": -1
+                }
+            ]
         }
     ]
 }

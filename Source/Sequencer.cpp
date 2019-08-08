@@ -1,5 +1,6 @@
 #include "Sequencer.h"
 #include "AudioGlobals.h"
+#include "Globals.h"
 #include <iostream>
 #include "Mixer.h"
 #include <stdlib.h>
@@ -23,6 +24,8 @@ static constexpr const char *kTempoTag = "Tempo";
 static constexpr const char *kMeasuresTag = "Measures";
 static constexpr const char *kBeatsPerMeasureTag = "BeatsPerMeasure";
 static constexpr const char *kNotesTag = "Notes";
+static constexpr const char* kTracksTag = "Tracks";
+static constexpr const char* kFretTag = "Fret";
 static constexpr const char *kBeatTag = "Beat";
 static constexpr const char *kTrackTag = "Track";
 static constexpr const char *kVelocityTag = "Velocity";
@@ -203,7 +206,7 @@ uint32 Sequencer::NextFrame(void)
     }
 
     auto d = notes.data() + currPosition;
-    if (*d > 0) {
+    if (d->enabled) {
       for (auto& notePlayedCallback : notePlayedCallbacks) {
         notePlayedCallback.first(trackIndex, currPosition, notePlayedCallback.second);
       }
@@ -268,49 +271,53 @@ bool Sequencer::SaveSong(std::string fileName) {
   rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
 
   w.StartObject();
+  // Version tag:string
+  w.Key(Globals::kVersionTag);
+  w.String(Globals::kVersionString);
+
   w.Key(kInstrumentTag);
   w.String(instrument->GetName().c_str());
+
   w.Key(kTempoTag);
   w.Uint(GetBeatsPerMinute());
+
   w.Key(kMeasuresTag);
   w.Uint(GetNumMeasures());
+
   w.Key(kBeatsPerMeasureTag);
   w.Uint(GetBeatsPerMeasure());
   
-  w.Key(kNotesTag);
+  w.Key(kTracksTag);
   w.StartArray();
+  for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
+    auto track = instrument->GetTrack(trackIndex);
+    if (track->GetNoteCount()) {
+      w.StartObject();
 
-  // Write notes
-  uint32 wholeBeatIndex = 0;
-  uint32 subdivisionIndex = 0;
-  for (size_t m = 0; m < GetNumMeasures(); ++m) {
-    for (size_t b = 0; b < GetBeatsPerMeasure(); ++b) {
-      for (size_t s = 0; s < GetMaxSubdivisions(); ++s) {
-        for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
-          auto& track = instrument->GetTracks()[trackIndex];
-          auto n = track->GetNotes()[subdivisionIndex];
-          if (n != 0) {
-            float floatBeat = static_cast<float>(wholeBeatIndex) + 1.0f +
-              (static_cast<float>(s) / static_cast<float>(GetMaxSubdivisions()));
-            w.StartObject();
-            w.Key(kBeatTag);
-            w.Double(floatBeat);
-            w.Key(kTrackTag);
-            w.Uint(trackIndex);
-            w.Key(kVelocityTag);
-            // TODO: Should just be on/off
-            w.Double(static_cast<float>(n) / static_cast<float>(255));
-            w.EndObject();
-          }
+      w.Key(kNotesTag);
+      w.StartArray();
+      
+      // TODO: It's possible the song could have been saved with a different number of
+      // max subdivisions ...
+      for (size_t n = 0; n < track->GetNoteCount(); ++n) {
+        auto& note = track->GetNote(n);
+        if (note.enabled) {
+          w.StartObject();
+
+          w.Key(kBeatTag);
+          w.Uint(n);
+          w.Key(kFretTag);
+          w.Int(note.fretIndex);
+
+          w.EndObject();
         }
-        ++subdivisionIndex;
       }
-      ++wholeBeatIndex;
+
+      w.EndArray();
+      w.EndObject();
     }
   }
-
-  w.EndArray();
-  
+  w.EndArray();  
   w.EndObject();
 
   std::string outputString(sb.GetString());
@@ -374,7 +381,7 @@ void Sequencer::LoadSongMidi(std::string fileName) {
           ++numMeasures;
         }
         
-        instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f); // TODO: Need velocity
+        //instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f); // TODO: Need velocity
       }
 
       // Currently capping number of loaded measures as unlimited measures are not properly
@@ -416,6 +423,20 @@ void Sequencer::LoadSongJson(std::string fileName) {
 
   if (!document.IsObject()) {
     MCLOG(Warn, "Failure parsing JSON in file %s", fileName.c_str());
+    return;
+  }
+
+  instrument->ClearNotes();
+
+  // Version
+  if (!document.HasMember(Globals::kVersionTag) || !document[Globals::kVersionTag].IsString()) {
+    MCLOG(Error, "Missing/invalid version tag in song file");
+    return;
+  }
+  std::string version = document[Globals::kVersionTag].GetString();
+
+  if (version != std::string(Globals::kVersionString)) {
+    MCLOG(Error, "Invalid song file version");
     return;
   }
 
@@ -473,35 +494,38 @@ void Sequencer::LoadSongJson(std::string fileName) {
   auto beatsPerMeasure = document[kBeatsPerMeasureTag].GetUint();
   SetBeatsPerMeasure(beatsPerMeasure);
 
-  // Read notes
-  if (!document.HasMember(kNotesTag) || !document[kNotesTag].IsArray()) {
-    MCLOG(Warn, "Invalid notes array in song file %s", fileName.c_str());
-    return;
-  }
+  // Read tracks (can have none)
+  if (document.HasMember(kTracksTag) && document[kTracksTag].IsArray()) {
+    const auto& tracksArray = document[kTracksTag];
+    for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
+      const auto& trackEntry = tracksArray[trackArrayIndex];
 
-  const auto& notesArray = document[kNotesTag];
-  for (rapidjson::SizeType noteArrayIndex = 0; noteArrayIndex < notesArray.Size(); ++noteArrayIndex) {
-    const auto& noteEntry = notesArray[noteArrayIndex];
-    if (!noteEntry.HasMember(kBeatTag) || (!noteEntry[kBeatTag].IsFloat() && !noteEntry[kBeatTag].IsUint())) {
-      MCLOG(Warn, "Invalid note in notes array!");
-      continue;
+      // Read notes (can have none)
+      if (!trackEntry.HasMember(kNotesTag) || !trackEntry[kNotesTag].IsArray()) {
+        continue;
+      }
+
+      auto track = instrument->GetTrack(trackArrayIndex);
+      if (!track) {
+        MCLOG(Warn, "Song references invalid track index!");
+        continue;
+      }
+
+      const auto& notesArray = trackEntry[kNotesTag];
+      for (rapidjson::SizeType noteArrayIndex = 0; noteArrayIndex < notesArray.Size(); ++noteArrayIndex) {
+        const auto& noteEntry = notesArray[noteArrayIndex];
+        if (!noteEntry.HasMember(kBeatTag) || !noteEntry[kBeatTag].IsUint()) {
+          MCLOG(Warn, "Invalid beat for note in notes array!");
+          continue;
+        }
+        if (!noteEntry.HasMember(kFretTag) || !noteEntry[kFretTag].IsInt()) {
+          MCLOG(Warn, "Invalid fret for note in notes array!");
+          continue;
+        }
+
+        track->SetNote(noteEntry[kBeatTag].GetUint(), { true, noteEntry[kFretTag].GetInt() });
+      }
     }
-
-    auto beatIndex = static_cast<uint32>((noteEntry[kBeatTag].GetFloat() - 1.0f) * maxBeatSubdivisions);
-
-    if (!noteEntry.HasMember(kTrackTag) || !noteEntry[kTrackTag].IsUint()) {
-      MCLOG(Warn, "Invalid track in notes array!");
-      continue;
-    }
-    auto trackIndex = noteEntry[kTrackTag].GetUint();
-
-    if (!noteEntry.HasMember(kVelocityTag) || !noteEntry[kVelocityTag].IsFloat()) {
-      MCLOG(Warn, "Invalid velocity in notes array!");
-      continue;
-    }
-
-    auto noteVelocity = noteEntry[kVelocityTag].GetFloat();
-    instrument->SetTrackNote(trackIndex, beatIndex, noteVelocity);
   }
 }
 

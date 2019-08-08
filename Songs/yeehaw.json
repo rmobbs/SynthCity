@@ -1,118 +1,144 @@
 {
+    "version": "0.0.7",
     "Instrument": "Middle C Piano",
     "Tempo": 120,
     "Measures": 2,
     "BeatsPerMeasure": 4,
-    "Notes": [
+    "Tracks": [
         {
-            "Beat": 1.0,
-            "Track": 0,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 0,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 40,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 1.0,
-            "Track": 1,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 0,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 40,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 1.0,
-            "Track": 3,
-            "Velocity": 1.0
+            "Notes": []
         },
         {
-            "Beat": 1.5,
-            "Track": 4,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 0,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 34,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 40,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 1.75,
-            "Track": 5,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 4,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 32,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 2.0,
-            "Track": 6,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 6,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 30,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 2.25,
-            "Track": 7,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 8,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 28,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 2.5,
-            "Track": 8,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 10,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 26,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 2.75,
-            "Track": 9,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 12,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 24,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 3.0,
-            "Track": 10,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 14,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 22,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 3.25,
-            "Track": 11,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 16,
+                    "Fret": -1
+                },
+                {
+                    "Beat": 20,
+                    "Fret": -1
+                }
+            ]
         },
         {
-            "Beat": 3.5,
-            "Track": 10,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 3.75,
-            "Track": 9,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 4.0,
-            "Track": 8,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 4.25,
-            "Track": 7,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 4.5,
-            "Track": 6,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 4.75,
-            "Track": 5,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 5.0,
-            "Track": 4,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 5.25,
-            "Track": 3,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 6.0,
-            "Track": 0,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 6.0,
-            "Track": 1,
-            "Velocity": 1.0
-        },
-        {
-            "Beat": 6.0,
-            "Track": 3,
-            "Velocity": 1.0
+            "Notes": [
+                {
+                    "Beat": 18,
+                    "Fret": -1
+                }
+            ]
         }
     ]
 }

@@ -59,13 +59,13 @@ void Track::SetNote(uint32 noteIndex, const Note& note) {
   notes[noteIndex] = note;
 }
 
-Note& Track::GetNote(uint32 noteIndex) {
+Track::Note& Track::GetNote(uint32 noteIndex) {
   return notes[noteIndex];
 }
 
 void Track::ClearNotes() {
   AudioGlobals::LockAudio();
-  std::fill(notes.begin(), notes.end(), 0);
+  std::fill(notes.begin(), notes.end(), Note());
   AudioGlobals::UnlockAudio();
 }
 

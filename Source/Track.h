@@ -8,9 +8,15 @@
 class Sound;
 class Patch;
 
-using Note = uint8;
+//using Note = uint8;
 
 class Track {
+public:
+  class Note {
+  public:
+    bool enabled = false;
+    int32 fretIndex = -1;
+  };
 protected:
   std::string name;
   std::string colorScheme;
@@ -43,7 +49,7 @@ public:
   inline const std::string& GetName(void) const {
     return name;
   }
-  inline const std::vector<uint8>& GetNotes(void) const {
+  inline const std::vector<Note>& GetNotes(void) const {
     return notes;
   }
   void ClearNotes();

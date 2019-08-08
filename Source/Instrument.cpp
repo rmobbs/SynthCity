@@ -10,7 +10,6 @@
 #include <stdexcept>
 #include <fstream>
 
-static constexpr const char* kVersionTag("version");
 static constexpr const char* kNameTag("name");
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
@@ -37,11 +36,11 @@ bool Instrument::SerializeRead(const ReadSerializer& serializer) {
   auto& d = serializer.d;
 
   // Version
-  if (!d.HasMember(kVersionTag) || !d[kVersionTag].IsString()) {
+  if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsString()) {
     MCLOG(Error, "Missing/invalid version tag in instrument file");
     return false;
   }
-  std::string version = d[kVersionTag].GetString();
+  std::string version = d[Globals::kVersionTag].GetString();
 
   if (version != std::string(Globals::kVersionString)) {
     MCLOG(Error, "Invalid instrument file version");
@@ -80,7 +79,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
   w.StartObject();
 
   // Version tag:string
-  w.Key(kVersionTag);
+  w.Key(Globals::kVersionTag);
   w.String(Globals::kVersionString);
 
   // Name tag:string
@@ -161,15 +160,6 @@ void Instrument::SetSoloTrack(int32 trackIndex) {
 
 void Instrument::PlayTrack(uint32 trackIndex) {
   Mixer::Get().PlayPatch(tracks[trackIndex]->GetPatch(), tracks[trackIndex]->GetVolume());
-}
-
-void Instrument::SetTrackNote(uint32 trackIndex, uint32 noteIndex, bool onOrOff) {
-  if (trackIndex < tracks.size()) {
-
-    AudioGlobals::LockAudio();
-    tracks[trackIndex]->SetNote(noteIndex, onOrOff ? 1 : 0);
-    AudioGlobals::UnlockAudio();
-  }
 }
 
 Track* Instrument::GetTrack(uint32 trackIndex) {
