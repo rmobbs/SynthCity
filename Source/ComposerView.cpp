@@ -58,6 +58,14 @@ static constexpr const char* kModeStrings[] = {
   "Markup",
 };
 
+static const ImVec4 kDefaultNoteColor(1.0f, 1.0f, 1.0f, 1.0f);
+static const ImVec4 kFretColors[] = {
+  ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
+  ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
+  ImVec4(0.0f, 0.0f, 1.0f, 1.0f),
+  ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
+};
+
 // 32 divisions per beat, viewable as 1/2,1/4,1/8,1/16
 static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
 
@@ -241,11 +249,38 @@ void ComposerView::HandleInput() {
       break;
     }
     case Mode::Markup: {
-      if (inputState.pressed[SDLK_1]) {
-        if (hoveredNote.second != -1) {
-          MCLOG(Warn, "Track %d note %d is now on fret 1", hoveredNote.first, hoveredNote.second);
+      if (hoveredNote.second != -1) {
+        int32 newFretIndex = -2;
+
+        if (inputState.pressed[SDLK_1]) {
+          newFretIndex = 0;
+        }
+        else if (inputState.pressed[SDLK_2]) {
+          newFretIndex = 1;
+        }
+        else if (inputState.pressed[SDLK_3]) {
+          newFretIndex = 2;
+        }
+        else if (inputState.pressed[SDLK_4]) {
+          newFretIndex = 3;
+        }
+        else if (inputState.pressed[SDLK_DELETE]) {
+          newFretIndex = -1;
+        }
+
+        if (newFretIndex != -2) {
+          auto instrument = Sequencer::Get().GetInstrument();
+          if (instrument != nullptr) {
+            auto track = instrument->GetTrack(hoveredNote.first);
+            if (track != nullptr) {
+              MCLOG(Warn, "Track %d note %d is now on fret %d",
+                hoveredNote.first, hoveredNote.second, newFretIndex);
+              track->GetNote(hoveredNote.second).fretIndex = newFretIndex;
+            }
+          }
         }
       }
+
       if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
         mode = Mode::Normal;
       }
@@ -659,7 +694,14 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   auto currentPos = ImGui::GetCursorPos();
 
                   ImGui::SetCursorPos(cursorPos);
-                  ImGui::FillRect(ImVec2(beatWidth, kKeyboardKeyHeight), 0xFFFFFFFF);
+
+                  ImVec4 noteColor = kDefaultNoteColor;
+                  if (trackNote.fretIndex >= 0 && trackNote.fretIndex < _countof(kFretColors)) {
+                    noteColor = kFretColors[trackNote.fretIndex];
+                  }
+
+                  ImGui::FillRect(ImVec2(beatWidth,
+                    kKeyboardKeyHeight), ImGui::ColorConvertFloat4ToU32(noteColor));
 
                   // If it's playing, flash it
                   float flashPct = 0.0f;

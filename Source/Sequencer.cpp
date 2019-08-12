@@ -551,14 +551,14 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   reservedPatches.resize(static_cast<int32>(ReservedSounds::Count));
   try {
     reservedPatches[static_cast<int32>(ReservedSounds::MetronomeFull)] =
-      new Patch({ new ProcessDecay }, { new WavSound("Assets\\Metronome\\seikosq50_hi.wav") });
+      new Patch({ }, { new WavSound("Assets\\Metronome\\seikosq50_hi.wav") });
   }
   catch (...) {
     MCLOG(Error, "Unable to load downbeat metronome WAV file");
   }
   try {
     reservedPatches[static_cast<int32>(ReservedSounds::MetronomePartial)] =
-      new Patch({ new ProcessDecay }, { new WavSound("Assets\\Metronome\\seikosq50_lo.wav") });
+      new Patch({ }, { new WavSound("Assets\\Metronome\\seikosq50_lo.wav") });
   }
   catch (...) {
     MCLOG(Error, "Unable to load upbeat metronome WAV file");
