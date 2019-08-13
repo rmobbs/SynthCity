@@ -37,7 +37,7 @@ static constexpr uint32 kDefaultNumMeasures = 2;
 static constexpr uint32 kDefaultBeatsPerMeasure = 4;
 static constexpr uint32 kDefaultSubdivisions = 4;
 static constexpr uint32 kDefaultBpm = 120;
-static const std::vector<uint32> TimelineDivisions = { 2, 4, 8 };
+static constexpr uint32 kMaxSubdivisions = 8;
 static constexpr int kAudioBufferSize = 2048;
 
 static bool wantQuit = false;
@@ -51,16 +51,39 @@ static ComposerView* currentView = nullptr;
 
 static GLuint fontTextureId;
 
+InputState::MouseButton SdlMouseButtonToInputMouseButton(uint8 sdlMouseButton) {
+  switch (sdlMouseButton) {
+    case SDL_BUTTON_LEFT:
+      return InputState::MouseButton::Left;
+    case SDL_BUTTON_RIGHT:
+      return InputState::MouseButton::Right;
+    default:
+      break;
+  }
+  return InputState::MouseButton::Count;
+}
+
+int32 SdlMouseButtonToInputMouseIndex(uint8 sdlMouseButton) {
+  auto inputMouseButton = SdlMouseButtonToInputMouseButton(sdlMouseButton);
+  if (inputMouseButton != InputState::MouseButton::Count) {
+    return static_cast<int32>(inputMouseButton);
+  }
+  return -1;
+}
+
 void UpdateInput() {
   SDL_Event sdlEvent;
 
   auto& inputState = InputState::Get();
 
+  inputState.BeginFrame();
+
   while (SDL_PollEvent(&sdlEvent)) {
     switch (sdlEvent.type) {
     case SDL_KEYDOWN:
       if (sdlEvent.key.keysym.sym < InputState::kMaxKey) {
-        inputState.keyDown[sdlEvent.key.keysym.sym] = 1;
+        inputState.pressed[sdlEvent.key.keysym.sym] = true;
+        inputState.keyDown[sdlEvent.key.keysym.sym] = true;
       }
       break;
     case SDL_KEYUP:
@@ -75,33 +98,28 @@ void UpdateInput() {
       inputState.mouseX = sdlEvent.motion.x;
       inputState.mouseY = sdlEvent.motion.y;
       break;
-    case SDL_MOUSEBUTTONDOWN:
-      switch (sdlEvent.button.button) {
-      case SDL_BUTTON_LEFT:
-        inputState.downL = true;
-        break;
-      case SDL_BUTTON_RIGHT:
-        inputState.downR = true;
-        break;
-      case SDL_BUTTON_X1: // scroll up
-        inputState.scroll = 1;
-        break;
-      case SDL_BUTTON_X2: // scroll down
-        inputState.scroll = -1;
-        break;
+    case SDL_MOUSEBUTTONDOWN: {
+      auto buttonIndex = SdlMouseButtonToInputMouseIndex(sdlEvent.button.button);
+      if (buttonIndex != -1) {
+        inputState.mouseButtonDown[buttonIndex] = true;
+        inputState.mouseButtonPress[buttonIndex] = true;
       }
       break;
-    case SDL_MOUSEBUTTONUP:
-      if (sdlEvent.button.button == 1) {
-        inputState.downL = false;
+    }
+    case SDL_MOUSEBUTTONUP: {
+      auto buttonIndex = SdlMouseButtonToInputMouseIndex(sdlEvent.button.button);
+      if (buttonIndex != -1) {
+        inputState.mouseButtonDown[buttonIndex] = false;
+        inputState.mouseButtonRelease[buttonIndex] = true;
       }
       break;
+    }
     case SDL_MOUSEWHEEL:
       if (sdlEvent.wheel.y > 0) {
-        inputState.scroll = 1;
+        inputState.mouseScrollSign = 1;
       }
       else if (sdlEvent.wheel.y < 0) {
-        inputState.scroll = -1;
+        inputState.mouseScrollSign = -1;
       }
       break;
     case SDL_QUIT:
@@ -109,6 +127,8 @@ void UpdateInput() {
       break;
     }
   }
+
+  inputState.modState = SDL_GetModState();
 
   ImGuiIO& imGuiIo = ImGui::GetIO();
 
@@ -120,25 +140,18 @@ void UpdateInput() {
 
   // Update mouse
   imGuiIo.MousePos = ImVec2(static_cast<float>(inputState.mouseX), static_cast<float>(inputState.mouseY));
-  imGuiIo.MouseDown[0] = inputState.downL;
-  imGuiIo.MouseDown[1] = false;
-  imGuiIo.MouseWheel += static_cast<float>(inputState.scroll) * 0.5f;
+  imGuiIo.MouseDown[0] = inputState.mouseButtonDown[InputState::MouseButton::Left];
+  imGuiIo.MouseDown[1] = inputState.mouseButtonDown[InputState::MouseButton::Right];
+  imGuiIo.MouseWheel += static_cast<float>(inputState.mouseScrollSign) * 0.5f;
 
   if (inputState.inputText.length()) {
     imGuiIo.AddInputCharactersUTF8(inputState.inputText.c_str());
-    inputState.inputText.clear();
   }
-  inputState.scroll = 0;
-
 
   // Update ImGui keys and record key press events
   for (auto k = 0; k < InputState::kMaxKey; ++k) {
     imGuiIo.KeysDown[k] = inputState.keyDown[k] != 0;
-    inputState.pressed[k] = inputState.keyDown[k] != 0 && inputState.wasDown[k] == 0;
   }
-
-  inputState.wasDown = inputState.keyDown;
-  inputState.modState = SDL_GetModState();
 
   imGuiIo.KeyShift = (SDL_GetModState() & KMOD_SHIFT) != 0;
   imGuiIo.KeyCtrl = (SDL_GetModState() & KMOD_CTRL) != 0;
@@ -341,7 +354,7 @@ bool Init() {
 
   // Initialize sequencer
   if (!Sequencer::InitSingleton(kDefaultNumMeasures, kDefaultBeatsPerMeasure,
-    kDefaultBpm, TimelineDivisions.back(), kDefaultSubdivisions)) {
+    kDefaultBpm, kMaxSubdivisions, kDefaultSubdivisions)) {
     MCLOG(Error, "Unable to initialize mixer");
     SDL_Quit();
     return false;

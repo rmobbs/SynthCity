@@ -523,7 +523,8 @@ void Sequencer::LoadSongJson(std::string fileName) {
           continue;
         }
 
-        track->SetNote(noteEntry[kBeatTag].GetUint(), { true, noteEntry[kFretTag].GetInt() });
+        track->SetNote(noteEntry[kBeatTag].GetUint(),
+          Track::Note(true, noteEntry[kFretTag].GetInt()));
       }
     }
   }

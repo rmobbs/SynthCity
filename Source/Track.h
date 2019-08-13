@@ -16,6 +16,14 @@ public:
   public:
     bool enabled = false;
     int32 fretIndex = -1;
+
+    Note() = default;
+
+    inline Note(bool enabled, int32 fretIndex)
+      : enabled(enabled)
+      , fretIndex(fretIndex) {
+
+    }
   };
 protected:
   std::string name;

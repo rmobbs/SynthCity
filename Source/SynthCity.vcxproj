@@ -240,6 +240,7 @@
     <ClCompile Include="DialogTrack.cpp" />
     <ClCompile Include="Globals.cpp" />
     <ClCompile Include="ImGuiExtensions.cpp" />
+    <ClCompile Include="InputState.cpp" />
     <ClCompile Include="Patch.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessAttackSustainDecay.cpp" />

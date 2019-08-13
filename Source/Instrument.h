@@ -37,6 +37,10 @@ public:
     return tracks;
   }
 
+  inline uint32 GetTrackCount() const {
+    return tracks.size();
+  }
+
   inline int32 GetSoloTrack() const {
     return soloTrack;
   }
