@@ -450,9 +450,11 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("New Instrument")) {
+        ClearSelectedNotes();
         sequencer.NewInstrument();
       }
       if (ImGui::MenuItem("Load Instrument")) {
+        ClearSelectedNotes();
         LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle));
       }
       if (ImGui::MenuItem("Save Instrument")) {
@@ -475,9 +477,11 @@ void ComposerView::Render(ImVec2 canvasSize) {
       }
       if (ImGui::BeginMenu("Song")) {
         if (ImGui::MenuItem("New Song")) {
+          ClearSelectedNotes();
           sequencer.GetInstrument()->ClearNotes();
         }
         if (ImGui::MenuItem("Load Song")) {
+          ClearSelectedNotes();
           LoadSong();
         }
         if (ImGui::MenuItem("Save Song")) {
