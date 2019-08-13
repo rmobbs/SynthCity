@@ -233,12 +233,39 @@ void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
   }
 }
 
+void ComposerView::GroupOrHoveredAction(std::function<void(int32, int32)> action) {
+  auto instrument = Sequencer::Get().GetInstrument();
+  if (instrument != nullptr) {
+    bool anySelected = false;
+    for (size_t trackIndex = 0; trackIndex < noteSelectedStatus.size(); ++trackIndex) {
+      for (size_t noteIndex = 0; noteIndex < noteSelectedStatus[trackIndex].size(); ++noteIndex) {
+        if (noteSelectedStatus[trackIndex][noteIndex]) {
+          anySelected = true;
+          action(trackIndex, noteIndex);
+        }
+      }
+    }
+
+    if (!anySelected && hoveredNote.second != -1) {
+      action(hoveredNote.first, hoveredNote.second);
+    }
+  }
+}
+
 void ComposerView::HandleInput() {
   auto& inputState = InputState::Get();
 
   // Saving tired right index fingers since 2018
   if (inputState.pressed[SDLK_SPACE]) {
-    ImGui::GetIO().MouseDown[0] = true;
+    GroupOrHoveredAction([](int32 trackIndex, int32 noteIndex) {
+      auto track = Sequencer::Get().GetInstrument()->GetTrack(trackIndex);
+      if (track != nullptr) {
+        auto& note = track->GetNote(noteIndex);
+        note.enabled = !note.enabled;
+      }
+    });
+
+    ClearSelectedNotes();
   }
 
   if (inputState.pressed[SDLK_ESCAPE]) {
@@ -272,27 +299,12 @@ void ComposerView::HandleInput() {
       }
 
       if (newFretIndex != -2) {
-        auto instrument = Sequencer::Get().GetInstrument();
-        if (instrument != nullptr) {
-          bool anySelected = false;
-          for (size_t trackIndex = 0; trackIndex < noteSelectedStatus.size(); ++trackIndex) {
-            for (size_t noteIndex = 0; noteIndex < noteSelectedStatus[trackIndex].size(); ++noteIndex) {
-              if (noteSelectedStatus[trackIndex][noteIndex]) {
-                anySelected = true;
-                auto track = instrument->GetTrack(trackIndex);
-                if (track != nullptr) {
-                  track->GetNote(noteIndex).fretIndex = newFretIndex;
-                }
-              }
-            }
+        GroupOrHoveredAction([newFretIndex](int32 trackIndex, int32 noteIndex) {
+          auto track = Sequencer::Get().GetInstrument()->GetTrack(trackIndex);
+          if (track != nullptr) {
+            track->GetNote(noteIndex).fretIndex = newFretIndex;
           }
-          if (!anySelected && hoveredNote.second != -1) {
-            auto track = instrument->GetTrack(hoveredNote.first);
-            if (track != nullptr) {
-              track->GetNote(hoveredNote.second).fretIndex = newFretIndex;
-            }
-          }
-        }
+        });
       }
 
       if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
@@ -308,101 +320,96 @@ void ComposerView::HandleInput() {
 void ComposerView::ProcessPendingActions() {
   auto& sequencer = Sequencer::Get();
 
-  AudioGlobals::LockAudio();
-  {
-    // Newly triggered notes are written to entry 1 in the audio callback
-    playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
-    playingNotesFlashTimes[0].merge(playingNotesFlashTimes[1]);
+  // Newly triggered notes are written to entry 1 in the audio callback
+  playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
+  playingNotesFlashTimes[0].merge(playingNotesFlashTimes[1]);
 
-    // Number of measures changed
-    if (pendingNumMeasures != -1) {
-      sequencer.SetNumMeasures(pendingNumMeasures);
+  // Number of measures changed
+  if (pendingNumMeasures != -1) {
+    sequencer.SetNumMeasures(pendingNumMeasures);
+  }
+
+  // Beats per measure changed
+  if (pendingBeatsPerMeasure != -1) {
+    sequencer.SetBeatsPerMeasure(pendingBeatsPerMeasure);
+  }
+
+  // Subdivision changed
+  if (pendingSubdivision != -1) {
+    sequencer.SetSubdivision(pendingSubdivision);
+  }
+
+  // Beats per minute changed
+  if (pendingBeatsPerMinute != -1) {
+    sequencer.SetBeatsPerMinute(pendingBeatsPerMinute);
+  }
+
+  // Master volume changed
+  if (pendingMasterVolume >= 0.0f) {
+    Mixer::Get().SetMasterVolume(pendingMasterVolume);
+  }
+
+  auto instrument = sequencer.GetInstrument();
+  if (instrument != nullptr) {
+    // Track volume changed
+    if (pendingTrackVolume.first != -1) {
+      auto track = instrument->GetTrack(pendingTrackVolume.first);
+      if (track != nullptr) {
+        track->SetVolume(pendingTrackVolume.second);
+      }
     }
 
-    // Beats per measure changed
-    if (pendingBeatsPerMeasure != -1) {
-      sequencer.SetBeatsPerMeasure(pendingBeatsPerMeasure);
+    // Track mute state changed
+    if (pendingTrackMute.first != -1) {
+      auto track = instrument->GetTrack(pendingTrackMute.first);
+      if (track != nullptr) {
+        track->SetMute(pendingTrackMute.second);
+      }
     }
 
-    // Subdivision changed
-    if (pendingSubdivision != -1) {
-      sequencer.SetSubdivision(pendingSubdivision);
+    // Track spawns voice
+    if (pendingPlayTrack != -1) {
+      instrument->PlayTrack(pendingPlayTrack);
     }
 
-    // Beats per minute changed
-    if (pendingBeatsPerMinute != -1) {
-      sequencer.SetBeatsPerMinute(pendingBeatsPerMinute);
+    // Mute all voices except the solo track
+    if (pendingSoloTrack != -2) {
+      instrument->SetSoloTrack(pendingSoloTrack);
     }
 
-    // Master volume changed
-    if (pendingMasterVolume >= 0.0f) {
-      Mixer::Get().SetMasterVolume(pendingMasterVolume);
-    }
-
-    auto instrument = sequencer.GetInstrument();
-    if (instrument != nullptr) {
-      // Track volume changed
-      if (pendingTrackVolume.first != -1) {
-        auto track = instrument->GetTrack(pendingTrackVolume.first);
-        if (track != nullptr) {
-          track->SetVolume(pendingTrackVolume.second);
+    // Toggle a note on/off
+    if (toggledNote.second != -1) {
+      auto track = instrument->GetTrack(toggledNote.first);
+      if (track != nullptr) {
+        auto note = track->GetNote(toggledNote.second);
+        if (note.enabled) {
+          note.enabled = false;
         }
-      }
-
-      // Track mute state changed
-      if (pendingTrackMute.first != -1) {
-        auto track = instrument->GetTrack(pendingTrackMute.first);
-        if (track != nullptr) {
-          track->SetMute(pendingTrackMute.second);
+        else {
+          note.enabled = true;
         }
-      }
-
-      // Track spawns voice
-      if (pendingPlayTrack != -1) {
-        instrument->PlayTrack(pendingPlayTrack);
-      }
-
-      // Mute all voices except the solo track
-      if (pendingSoloTrack != -2) {
-        instrument->SetSoloTrack(pendingSoloTrack);
-      }
-
-      // Toggle a note on/off
-      if (toggledNote.second != -1) {
-        auto track = instrument->GetTrack(toggledNote.first);
-        if (track != nullptr) {
-          auto note = track->GetNote(toggledNote.second);
-          if (note.enabled) {
-            note.enabled = false;
-          }
-          else {
-            note.enabled = true;
-          }
-          track->SetNote(toggledNote.second, note);
-        }
-      }
-
-      // Change a note's fret index
-
-      // Track cloned via dialog previous frame
-      if (pendingCloneTrack != -1) {
-        auto oldTrack = instrument->GetTrack(pendingCloneTrack);
-        if (oldTrack != nullptr) {
-          auto newTrack = new Track(*oldTrack);
-          newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
-          instrument->AddTrack(newTrack);
-        }
-      }
-
-      // Track removed via dialog previous frame
-      // NOTE: This is the last delayed track operation just in case
-      if (pendingRemoveTrack != -1) {
-        noteSelectedStatus.erase(noteSelectedStatus.begin() + pendingRemoveTrack);
-        instrument->RemoveTrack(pendingRemoveTrack);
+        track->SetNote(toggledNote.second, note);
       }
     }
 
-    AudioGlobals::UnlockAudio();
+    // Change a note's fret index
+
+    // Track cloned via dialog previous frame
+    if (pendingCloneTrack != -1) {
+      auto oldTrack = instrument->GetTrack(pendingCloneTrack);
+      if (oldTrack != nullptr) {
+        auto newTrack = new Track(*oldTrack);
+        newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
+        instrument->AddTrack(newTrack);
+      }
+    }
+
+    // Track removed via dialog previous frame
+    // NOTE: This is the last delayed track operation just in case
+    if (pendingRemoveTrack != -1) {
+      noteSelectedStatus.erase(noteSelectedStatus.begin() + pendingRemoveTrack);
+      instrument->RemoveTrack(pendingRemoveTrack);
+    }
   }
 
   // Reset all pendings
@@ -429,9 +436,10 @@ void ComposerView::ClearSelectedNotes() {
 void ComposerView::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
+  AudioGlobals::LockAudio();
   ProcessPendingActions();
-
   HandleInput();
+  AudioGlobals::UnlockAudio();
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
@@ -711,7 +719,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
               auto cursorPos = ImGui::GetCursorPos();
               if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote.enabled, beatWidth, kKeyboardKeyHeight)) {
-                // @Delay
                 if (InputState::Get().modState & KMOD_SHIFT) {
                   if (trackNote.enabled) {
                     noteSelectedStatus[trackIndex][noteLocalIndex] = !noteSelectedStatus[trackIndex][noteLocalIndex];
@@ -719,11 +726,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 }
                 else {
                   ClearSelectedNotes();
+
+                  // @Delay
                   toggledNote = { trackIndex, noteLocalIndex };
                 }
               }
 
-              if (trackNote.enabled && ImGui::IsItemHovered()) {
+              if (ImGui::IsItemHovered()) {
                 hoveredNote = { trackIndex, noteLocalIndex };
               }
 
