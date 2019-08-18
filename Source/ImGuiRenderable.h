@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderable.h"
+#include "imgui.h"
 
 class ImGuiRenderable : public Renderable {
 protected:

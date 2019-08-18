@@ -1,0 +1,88 @@
+{
+    "version": "0.0.7",
+    "Instrument": "Roland TR-808",
+    "Tempo": 120,
+    "Measures": 2,
+    "BeatsPerMeasure": 4,
+    "Tracks": [
+        {
+            "Notes": [
+                {
+                    "Beat": 0,
+                    "Fret": 0
+                },
+                {
+                    "Beat": 16,
+                    "Fret": 0
+                },
+                {
+                    "Beat": 32,
+                    "Fret": 0
+                },
+                {
+                    "Beat": 48,
+                    "Fret": 0
+                }
+            ]
+        },
+        {
+            "Notes": [
+                {
+                    "Beat": 8,
+                    "Fret": 2
+                },
+                {
+                    "Beat": 24,
+                    "Fret": 2
+                },
+                {
+                    "Beat": 40,
+                    "Fret": 2
+                },
+                {
+                    "Beat": 56,
+                    "Fret": 2
+                }
+            ]
+        },
+        {
+            "Notes": []
+        },
+        {
+            "Notes": [
+                {
+                    "Beat": 0,
+                    "Fret": 1
+                },
+                {
+                    "Beat": 8,
+                    "Fret": 3
+                },
+                {
+                    "Beat": 16,
+                    "Fret": 1
+                },
+                {
+                    "Beat": 24,
+                    "Fret": 3
+                },
+                {
+                    "Beat": 32,
+                    "Fret": 1
+                },
+                {
+                    "Beat": 40,
+                    "Fret": 3
+                },
+                {
+                    "Beat": 48,
+                    "Fret": 1
+                },
+                {
+                    "Beat": 56,
+                    "Fret": 3
+                }
+            ]
+        }
+    ]
+}

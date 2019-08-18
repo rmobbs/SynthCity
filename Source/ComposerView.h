@@ -5,13 +5,12 @@
 #include <map>
 #include <functional>
 
-#include "ImGuiRenderable.h"
+#include "View.h"
 #include "GL/glew.h"
 #include "glm/vec4.hpp"
-#include "imgui.h"
 
 class Dialog;
-class ComposerView {
+class ComposerView : public View {
 protected:
   enum class Mode {
     Normal,
@@ -40,6 +39,7 @@ protected:
   int32 pendingSubdivision = -1;
   int32 pendingBeatsPerMinute = -1;
   int32 pendingBeatsPerMeasure = -1;
+  uint32 notePlayedCallbackId = UINT32_MAX;
   float pendingMasterVolume = -1.0f;
   std::vector<std::vector<int32>> noteSelectedStatus;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
@@ -59,7 +59,6 @@ protected:
 
   std::map<int, double> playingTrackFlashTimes[2];
   std::map<int, double> playingNotesFlashTimes[2];
-  std::function<void()> exitFunction;
   Mode mode = Mode::Normal;
 
   void InitResources();
@@ -71,8 +70,11 @@ protected:
   void GroupOrHoveredAction(std::function<void(int32, int32)> action);
 
 public:
-  ComposerView(uint32 mainWindowHandle, std::function<void()> exitFunction);
+  ComposerView(uint32 mainWindowHandle);
   ~ComposerView();
 
-  void Render(ImVec2 canvasSize);
+  void Render(ImVec2 canvasSize) override;
+
+  void Show() override;
+  void Hide() override;
 };

@@ -217,8 +217,13 @@ uint32 Sequencer::NextFrame(void)
   return interval;
 }
 
-void Sequencer::AddNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
+uint32 Sequencer::AddNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
   notePlayedCallbacks.push_back({ notePlayedCallback, notePlayedPayload });
+  return notePlayedCallbacks.size() - 1;
+}
+
+void Sequencer::RemoveNotePlayedCallback(uint32 callbackId) {
+  notePlayedCallbacks.erase(notePlayedCallbacks.begin() + callbackId);
 }
 
 bool Sequencer::NewInstrument() {

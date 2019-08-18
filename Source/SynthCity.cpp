@@ -16,11 +16,15 @@
 #include "GlobalRenderData.h"
 #include "OddsAndEnds.h"
 #include "ComposerView.h"
+#include "GamePreviewView.h"
 #include "InputState.h"
 #include "Mixer.h"
 #include "Globals.h"
 #include "WavBank.h"
 #include "Process.h"
+#include "SoundFactory.h"
+#include "ProcessFactory.h"
+
 
 #include "SDL_syswm.h"
 #include <windows.h>
@@ -46,8 +50,6 @@ static SDL_SysWMinfo sysWmInfo;
 static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
 static constexpr uint32 kSwapInterval = 1;
-
-static ComposerView* currentView = nullptr;
 
 static GLuint fontTextureId;
 
@@ -80,51 +82,54 @@ void UpdateInput() {
 
   while (SDL_PollEvent(&sdlEvent)) {
     switch (sdlEvent.type) {
-    case SDL_KEYDOWN:
-      if (sdlEvent.key.keysym.sym < InputState::kMaxKey) {
-        inputState.pressed[sdlEvent.key.keysym.sym] = true;
-        inputState.keyDown[sdlEvent.key.keysym.sym] = true;
+      case SDL_KEYDOWN:
+        if (sdlEvent.key.keysym.sym < InputState::kMaxKey) {
+          inputState.pressed[sdlEvent.key.keysym.sym] = true;
+          inputState.keyDown[sdlEvent.key.keysym.sym] = true;
+        }
+        break;
+      case SDL_KEYUP:
+        if (sdlEvent.key.keysym.sym < InputState::kMaxKey) {
+          inputState.keyDown[sdlEvent.key.keysym.sym] = 0;
+        }
+        break;
+      case SDL_TEXTINPUT:
+        inputState.inputText = sdlEvent.text.text;
+        break;
+      case SDL_MOUSEMOTION:
+        inputState.mouseX = sdlEvent.motion.x;
+        inputState.mouseY = sdlEvent.motion.y;
+        break;
+      case SDL_MOUSEBUTTONDOWN: {
+        auto buttonIndex = SdlMouseButtonToInputMouseIndex(sdlEvent.button.button);
+        if (buttonIndex != -1) {
+          inputState.mouseButtonDown[buttonIndex] = true;
+          inputState.mouseButtonPress[buttonIndex] = true;
+        }
+        break;
       }
-      break;
-    case SDL_KEYUP:
-      if (sdlEvent.key.keysym.sym < InputState::kMaxKey) {
-        inputState.keyDown[sdlEvent.key.keysym.sym] = 0;
+      case SDL_MOUSEBUTTONUP: {
+        auto buttonIndex = SdlMouseButtonToInputMouseIndex(sdlEvent.button.button);
+        if (buttonIndex != -1) {
+          inputState.mouseButtonDown[buttonIndex] = false;
+          inputState.mouseButtonRelease[buttonIndex] = true;
+        }
+        break;
       }
-      break;
-    case SDL_TEXTINPUT:
-      inputState.inputText = sdlEvent.text.text;
-      break;
-    case SDL_MOUSEMOTION:
-      inputState.mouseX = sdlEvent.motion.x;
-      inputState.mouseY = sdlEvent.motion.y;
-      break;
-    case SDL_MOUSEBUTTONDOWN: {
-      auto buttonIndex = SdlMouseButtonToInputMouseIndex(sdlEvent.button.button);
-      if (buttonIndex != -1) {
-        inputState.mouseButtonDown[buttonIndex] = true;
-        inputState.mouseButtonPress[buttonIndex] = true;
+      case SDL_MOUSEWHEEL:
+        if (sdlEvent.wheel.y > 0) {
+          inputState.mouseScrollSign = 1;
+        }
+        else if (sdlEvent.wheel.y < 0) {
+          inputState.mouseScrollSign = -1;
+        }
+        break;
+      case SDL_QUIT:
+        wantQuit = true;
+        break;
+      default: {
+        break;
       }
-      break;
-    }
-    case SDL_MOUSEBUTTONUP: {
-      auto buttonIndex = SdlMouseButtonToInputMouseIndex(sdlEvent.button.button);
-      if (buttonIndex != -1) {
-        inputState.mouseButtonDown[buttonIndex] = false;
-        inputState.mouseButtonRelease[buttonIndex] = true;
-      }
-      break;
-    }
-    case SDL_MOUSEWHEEL:
-      if (sdlEvent.wheel.y > 0) {
-        inputState.mouseScrollSign = 1;
-      }
-      else if (sdlEvent.wheel.y < 0) {
-        inputState.mouseScrollSign = -1;
-      }
-      break;
-    case SDL_QUIT:
-      wantQuit = true;
-      break;
     }
   }
 
@@ -163,9 +168,6 @@ void MainLoop() {
 
   auto& sequencer = Sequencer::Get();
 
-  glClearColor(0.5f, 0.5f, 0.5f, 0);
-  glClear(GL_COLOR_BUFFER_BIT);
-
   // Update viewport
   int windowWidth;
   int windowHeight;
@@ -184,7 +186,7 @@ void MainLoop() {
     GlobalRenderData::get().setMatrix(GlobalRenderData::MatrixType::ScreenOrthographic, screenOrtho);
   }
 
-  currentView->Render(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
+  View::GetCurrentView()->Render(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
 
   SDL_GL_SwapWindow(sdlWindow);
 }
@@ -247,10 +249,11 @@ bool InitGL() {
   // Load shader programs
   GlobalRenderData::get().addShaderProgram(std::string("SpriteProgram"),
     ShaderProgram(std::string("SpriteProgram"),
-      std::string("Shaders\\proj_pos2_scale_uv_diffuse.vert"),
-      std::string("Shaders\\diffuse_mul_uv.frag"),
-      // Uniforms
+      std::string("Shaders\\proj_pos2_scale_diffuse.vert"),
+      std::string("Shaders\\diffuse.frag"),
+      // Automatic uniforms
       {
+        // Vertex shader
         { "ProjMtx",
           0,
           [](int32 location) {
@@ -260,15 +263,14 @@ bool InitGL() {
           }
         },
         {
-          "Texture",
-          0,
+          "WorldScale",
+          1,
         },
       },
       // Attributes
       {
         { "Position", 0 },
-        { "UV", 1 },
-        { "Color", 2 },
+        { "Color", 1 },
       })
   );
 
@@ -276,8 +278,9 @@ bool InitGL() {
     ShaderProgram(std::string("ImGuiProgram"),
       std::string("Shaders\\proj_pos2_uv_diffuse.vert"),
       std::string("Shaders\\diffuse_mul_uv.frag"),
-      // Uniforms
+      // Automatic uniforms
       {
+        // Vertex shader
         { "ProjMtx",
           0,
           [](int32 location) {
@@ -286,6 +289,7 @@ bool InitGL() {
                   getMatrix(GlobalRenderData::MatrixType::ScreenOrthographic)));
           }
         },
+        // Fragment shader
         {
           "Texture",
           0,
@@ -362,17 +366,15 @@ bool Init() {
 
   Mixer::Get().SetController(&Sequencer::Get());
 
-  // TODO: determine default view
-  // Initialize the designer view
-  currentView = new ComposerView(reinterpret_cast<uint32>(sysWmInfo.info.win.window), []() { wantQuit = true;  });
+  // Initialize the views
+  View::RegisterView<ComposerView>(new ComposerView(reinterpret_cast<uint32>(sysWmInfo.info.win.window)));
+  View::RegisterView<GamePreviewView>(new GamePreviewView(reinterpret_cast<uint32>(sysWmInfo.info.win.window)));
+  View::SetCurrentView<ComposerView>();
 
   MCLOG(Info, "SynthCity %s", Globals::kVersionString);
 
   return true;
 }
-
-#include "SoundFactory.h"
-#include "ProcessFactory.h"
 
 void Term() {
   // Term the mixer first, as it has to clean up sound instances which can refer to
@@ -386,8 +388,7 @@ void Term() {
   WavBank::TermSingleton();
 
   // Term all views
-  delete currentView;
-  currentView = nullptr;
+  View::Term();
 
   TermImGui();
   TermGL();

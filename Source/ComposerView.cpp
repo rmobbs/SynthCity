@@ -23,6 +23,7 @@
 #include "WavSound.h"
 #include "Globals.h"
 #include "InputState.h"
+#include "GamePreviewView.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -436,6 +437,9 @@ void ComposerView::ClearSelectedNotes() {
 void ComposerView::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
+  glClearColor(0.5f, 0.5f, 0.5f, 0);
+  glClear(GL_COLOR_BUFFER_BIT);
+
   AudioGlobals::LockAudio();
   ProcessPendingActions();
   HandleInput();
@@ -461,9 +465,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         SaveInstrument();
       }
       if (ImGui::MenuItem("Exit")) {
-        if (exitFunction != nullptr) {
-          exitFunction();
-        }
+        SDL_PushEvent(&SDL_Event({ SDL_QUIT }));
       }
       ImGui::EndMenu();
     }
@@ -486,6 +488,14 @@ void ComposerView::Render(ImVec2 canvasSize) {
         }
         if (ImGui::MenuItem("Save Song")) {
           SaveSong();
+        }
+        ImGui::EndMenu();
+      }
+
+      if (ImGui::BeginMenu("Game")) {
+        if (ImGui::MenuItem("Preview")) {
+          sequencer.Stop();
+          View::SetCurrentView<GamePreviewView>();
         }
         ImGui::EndMenu();
       }
@@ -1126,24 +1136,35 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, lastTexture);
 }
 
-ComposerView::ComposerView(uint32 mainWindowHandle, std::function<void()> exitFunction)
-: mainWindowHandle(mainWindowHandle)
-, exitFunction(exitFunction) {
+ComposerView::ComposerView(uint32 mainWindowHandle)
+: mainWindowHandle(mainWindowHandle) {
+
   logResponderId = Logging::AddResponder([=](const std::string_view& logLine) {
     outputWindowState.AddLog(logLine);
   });
 
   InitResources();
+}
 
+void ComposerView::Show() {
+  // TODO: Gotta rethink this
+  auto _mainWindowHandle = mainWindowHandle;
   Sequencer::Get().SetLoadInstrumentCallback(
-    [mainWindowHandle](std::string instrumentName) {
-      return LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle), instrumentName);
+    [_mainWindowHandle](std::string instrumentName) {
+      return LoadInstrument(reinterpret_cast<HWND>(_mainWindowHandle), instrumentName);
     });
 
-  Sequencer::Get().AddNotePlayedCallback(
+  notePlayedCallbackId = Sequencer::Get().AddNotePlayedCallback(
     [](uint32 trackIndex, uint32 noteIndex, void* payload) {
       reinterpret_cast<ComposerView*>(payload)->NotePlayedCallback(trackIndex, noteIndex);
     }, this);
+}
+
+void ComposerView::Hide() {
+  if (notePlayedCallbackId != UINT32_MAX) {
+    Sequencer::Get().RemoveNotePlayedCallback(notePlayedCallbackId);
+    notePlayedCallbackId = UINT32_MAX;
+  }
 }
 
 ComposerView::~ComposerView() {

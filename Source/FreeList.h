@@ -2,6 +2,7 @@
 
 #include <list>
 #include <vector>
+#include <functional>
 
 template<class ClassName, typename... Args> class StaticFreeList {
 private:

@@ -148,7 +148,8 @@ public:
   bool Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision);
 
   void SetPosition(uint32 newPosition);
-  void AddNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
+  uint32 AddNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
+  void RemoveNotePlayedCallback(uint32 callbackId);
   bool NewInstrument();
 
    Sequencer() {}
