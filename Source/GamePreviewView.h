@@ -11,6 +11,7 @@ protected:
   uint32 mainWindowHandle = UINT32_MAX;
   std::vector<SpriteRenderable*> staticSprites;
   std::list<SpriteRenderable*> dynamicSprites;
+  float beatFrameLength = 0;
 
   void InitResources();
   void TermResources();

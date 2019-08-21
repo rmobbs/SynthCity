@@ -273,6 +273,7 @@ void Mixer::AudioCallback(void *userData, uint8 *stream, int32 length) {
     // Mix and write audio
     int32 frames = std::min(std::min(ticksRemaining,
       static_cast<int32>(kMaxCallbackSampleFrames)), length);
+    curFrame += frames;
 
     MixVoices(mixbuf.data(), frames);
     WriteOutput(mixbuf.data(), reinterpret_cast<int16 *>(stream), frames);
@@ -299,6 +300,7 @@ void Mixer::StopAllVoices() {
   voiceFreeList.ReturnAll();
   voices.clear();
   numActiveVoices = 0;
+  curFrame = 0;
 
   DrainExpiredPool();
 

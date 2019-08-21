@@ -30,6 +30,7 @@ protected:
 
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
+  uint32 curFrame = 0;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
   Controller* controller = nullptr;
   std::vector<float> mixbuf;
@@ -62,6 +63,10 @@ public:
   int32 PlayPatch(const Patch* patch, float volume);
   void ApplyInterval(uint32 interval);
   void SetController(Controller* controller);
+
+  inline uint32 GetCurFrame() const {
+    return curFrame;
+  }
 
    Mixer();
   ~Mixer();

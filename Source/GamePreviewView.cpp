@@ -35,19 +35,28 @@ static constexpr float kFretOffscreenMax = 100.0f;
 class FretNote : public SpriteRenderable {
 protected:
   uint32 fretIndex = UINT32_MAX;
+  float beatTime = 0.0f;
 public:
   FretNote() {
 
   }
 
-  FretNote(uint32 fretIndex)
+  FretNote(float beatTime, uint32 fretIndex)
   : SpriteRenderable(fretNoteExtent, fretNoteColors[fretIndex])
+  , beatTime(beatTime)
   , fretIndex(fretIndex) {
 
   }
+
+  inline float GetBeatTime() const {
+    return beatTime;
+  }
+  inline uint32 GetFretIndex() const {
+    return fretIndex;
+  }
 };
 
-FreeList<FretNote, uint32> fretNoteFreeList;
+FreeList<FretNote, float, uint32> fretNoteFreeList;
 
 GamePreviewView::GamePreviewView(uint32 mainWindowHandle)
   : mainWindowHandle(mainWindowHandle) {
@@ -86,6 +95,9 @@ void GamePreviewView::TermResources() {
 }
 
 void GamePreviewView::Show() {
+  // Length of a full beat in frames
+  beatFrameLength = Mixer::kDefaultFrequency / Sequencer::Get().GetBeatsPerMinute() * 60.0f;
+
   // TODO: Read the settings
 
   // TODO: Menu
@@ -98,24 +110,22 @@ void GamePreviewView::Show() {
 
     float subdivStep = kDistanceBetweenQuarterNotes / Sequencer::Get().GetMaxSubdivisions();
 
-    // Start at the target line minus intro beats distance
-    uint32 beatIndex = 0;
-    float offsetY = targetLinePosition.y - kIntroBeats * kDistanceBetweenQuarterNotes;
-    while (offsetY > -kFretOffscreenMax) {
+    // Spawn initial notes
+    for (uint32 subBeatIndex = 0; subBeatIndex < 8 * Sequencer::Get().GetMaxSubdivisions(); ++subBeatIndex) {
       for (size_t trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
         const auto& track = instrument->GetTrack(trackIndex);
-        if (beatIndex < track->GetNoteCount()) {
-          const auto& note = track->GetNote(beatIndex);
+        if (subBeatIndex < track->GetNoteCount()) {
+          const auto& note = track->GetNote(subBeatIndex);
           if (note.enabled && note.fretIndex != -1) {
-            auto fretNote = fretNoteFreeList.Borrow(note.fretIndex);
-            fretNote->position = glm::vec2(fretLinePosition[note.
-              fretIndex].x - fretNoteExtent.x * 0.5f, offsetY - fretNoteExtent.y);
+            auto fretNote = fretNoteFreeList.Borrow(static_cast<float>(subBeatIndex) /
+              static_cast<float>(Sequencer::Get().GetMaxSubdivisions()), note.fretIndex);
             dynamicSprites.push_back(fretNote);
           }
         }
+        else {
+          break;
+        }
       }
-      ++beatIndex;
-      offsetY -= subdivStep;
     }
 
     //Sequencer::Get().Play();
@@ -140,7 +150,29 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     renderable->Render();
   }
 
-  for (const auto& renderable : dynamicSprites) {
-    renderable->Render();
+  // Update falling notes
+
+  // Get current high-precision beat time
+  float beatTime = static_cast<float>(Mixer::Get().GetCurFrame()) / beatFrameLength;
+
+  // Roll through notes and update positions
+  auto fretNoteIter = dynamicSprites.begin();
+  while (fretNoteIter != dynamicSprites.end()) {
+    auto fretNote = reinterpret_cast<FretNote*>(*fretNoteIter);
+
+    float notePosY = targetLinePosition.y -
+      (fretNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
+    if (notePosY >= targetLinePosition.y) {
+      fretNoteIter = dynamicSprites.erase(fretNoteIter);
+    }
+    else if (notePosY < -100.0f) {
+      break;
+    }
+    else {
+      fretNote->position = glm::vec2(fretLinePosition[fretNote->
+        GetFretIndex()].x - fretNoteExtent.x * 0.5f, notePosY);
+      fretNote->Render();
+      ++fretNoteIter;
+    }
   }
 }

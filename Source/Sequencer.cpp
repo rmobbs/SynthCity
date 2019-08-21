@@ -67,8 +67,8 @@ bool Sequencer::TermSingleton() {
 
 uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
   if (currentBpm > 0 && beatSubdivision > 0) {
-    return static_cast<uint32>(Mixer::kDefaultFrequency /
-      currentBpm * 60.0 / static_cast<float>(beatSubdivision));
+    return static_cast<uint32>(((Mixer::kDefaultFrequency /
+      currentBpm) * 60.0) / static_cast<float>(beatSubdivision));
   }
   return 0;
 }
@@ -122,7 +122,7 @@ void Sequencer::Stop() {
   isPlaying = false;
   loopIndex = 0;
   Mixer::Get().StopAllVoices();
-  SetPosition(-static_cast<int32>(leadInBeats * maxBeatSubdivisions));
+  SetPosition(0);// -static_cast<int32>(leadInBeats * maxBeatSubdivisions));
 }
 
 void Sequencer::SetPosition(int32 newPosition) {

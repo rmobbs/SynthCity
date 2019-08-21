@@ -437,6 +437,8 @@ void ComposerView::ClearSelectedNotes() {
 void ComposerView::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
 
+  auto curFrame = Mixer::Get().GetCurFrame();
+
   glClearColor(0.5f, 0.5f, 0.5f, 0);
   glClear(GL_COLOR_BUFFER_BIT);
 
