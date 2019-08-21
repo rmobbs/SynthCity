@@ -87,6 +87,10 @@ void Sequencer::SetBeatsPerMinute(uint32 bpm) {
   Mixer::Get().ApplyInterval(interval);
 }
 
+void Sequencer::SetLeadInBeats(uint32 leadInBeats) {
+  this->leadInBeats = leadInBeats;
+}
+
 void Sequencer::PartialNoteCallback() {
   // Nothin'
 }
@@ -116,11 +120,12 @@ void Sequencer::PauseKill() {
 
 void Sequencer::Stop() {
   isPlaying = false;
+  loopIndex = 0;
   Mixer::Get().StopAllVoices();
-  SetPosition(0);
+  SetPosition(-static_cast<int32>(leadInBeats * maxBeatSubdivisions));
 }
 
-void Sequencer::SetPosition(uint32 newPosition) {
+void Sequencer::SetPosition(int32 newPosition) {
   currPosition = newPosition;
   nextPosition = currPosition;
 }
@@ -153,6 +158,13 @@ uint32 Sequencer::GetPosition(void) const {
   return currPosition;
 }
 
+uint32 Sequencer::GetTrackPosition(void) const {
+  if (currPosition > 0) {
+    return currPosition;
+  }
+  return 0;
+}
+
 uint32 Sequencer::GetNextPosition(void) const {
   return nextPosition;
 }
@@ -172,48 +184,52 @@ uint32 Sequencer::NextFrame(void)
   currPosition = nextPosition;
   nextPosition = currPosition + maxBeatSubdivisions / currBeatSubdivision;
 
-  // Handle end-of-track / looping
-  if (currPosition >= noteCount) {
-    if (isLooping) {
-      currPosition = 0;
-      nextPosition = currPosition + maxBeatSubdivisions / currBeatSubdivision;
-    }
-    else {
-      Stop();
-      return CalcInterval(GetSubdivision());
-    }
-  }
-
-  if ((currPosition % maxBeatSubdivisions) == 0) {
-    FullNoteCallback((currPosition % (maxBeatSubdivisions * GetBeatsPerMeasure())) == 0);
+  // Still issue beat callbacks when in lead-in
+  auto absCurrPosition = std::abs(currPosition);
+  if ((absCurrPosition % maxBeatSubdivisions) == 0) {
+    FullNoteCallback((absCurrPosition % (maxBeatSubdivisions * GetBeatsPerMeasure())) == 0);
   }
   else {
     PartialNoteCallback();
   }
 
-  for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
-    if (instrument->tracks[trackIndex]->GetMute()) {
-      continue;
-    }
-    auto soloTrackIndex = instrument->GetSoloTrack();
-    if (soloTrackIndex != -1 && soloTrackIndex != trackIndex) {
-      continue;
-    }
-
-    auto& notes = instrument->tracks[trackIndex]->GetNotes();
-    if (currPosition >= static_cast<int32>(notes.size())) {
-      continue;
-    }
-
-    auto d = notes.data() + currPosition;
-    if (d->enabled) {
-      for (auto& notePlayedCallback : notePlayedCallbacks) {
-        notePlayedCallback.first(trackIndex, currPosition, notePlayedCallback.second);
+  if (currPosition >= 0) {
+    // Handle end-of-track / looping
+    if (currPosition >= noteCount) {
+      if (isLooping) {
+        currPosition = 0;
+        nextPosition = currPosition + maxBeatSubdivisions / currBeatSubdivision;
+        ++loopIndex;
       }
-      instrument->PlayTrack(trackIndex);
+      else {
+        Stop();
+        return CalcInterval(GetSubdivision());
+      }
+    }
+
+    for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
+      if (instrument->tracks[trackIndex]->GetMute()) {
+        continue;
+      }
+      auto soloTrackIndex = instrument->GetSoloTrack();
+      if (soloTrackIndex != -1 && soloTrackIndex != trackIndex) {
+        continue;
+      }
+
+      auto& notes = instrument->tracks[trackIndex]->GetNotes();
+      if (currPosition >= static_cast<int32>(notes.size())) {
+        continue;
+      }
+
+      auto d = notes.data() + currPosition;
+      if (d->enabled) {
+        for (auto& notePlayedCallback : notePlayedCallbacks) {
+          notePlayedCallback.first(trackIndex, currPosition, notePlayedCallback.second);
+        }
+        instrument->PlayTrack(trackIndex);
+      }
     }
   }
-
   return interval;
 }
 

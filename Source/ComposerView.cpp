@@ -993,6 +993,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
           // @Atomic
           Mixer::Get().SetMasterVolume(masterVolume);
         }
+
+        ImGui::SameLine();
+        ImGui::PushItemWidth(100);
+        int32 leadInBeats = Sequencer::Get().GetLeadInBeats();
+        if (ImGui::InputInt("Lead-in", &leadInBeats)) {
+          Sequencer::Get().SetLeadInBeats(leadInBeats);
+        }
       }
 
       auto oldCursorPos = ImGui::GetCursorPos();
@@ -1009,7 +1016,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
       imGuiStyle.ItemSpacing = oldItemSpacing;
 
       // Draw the play line
-      cursorPosX = beatLabelStartX + beatWidth * (sequencer.GetPosition() /
+      cursorPosX = beatLabelStartX + beatWidth * (sequencer.GetTrackPosition() /
         (sequencer.GetMaxSubdivisions() / sequencer.GetSubdivision()));
       ImGui::SetCursorPos(ImVec2(cursorPosX - 0, beatLabelStartY));
       ImGui::FillRect(ImVec2(1, beatLabelEndY - beatLabelStartY), 0x7FFFFFFF);

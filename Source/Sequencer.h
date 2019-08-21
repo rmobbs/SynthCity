@@ -32,6 +32,8 @@ public:
 private:
   static Sequencer* singleton;
 
+  uint32 loopIndex = 0;
+  uint32 leadInBeats = 0;
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
   uint32 numMeasures = kDefaultNumMeasures;
   uint32 maxBeatSubdivisions = 0;
@@ -104,6 +106,11 @@ public:
   }
   void SetBeatsPerMinute(uint32 bpm);
 
+  inline uint32 GetLeadInBeats() const {
+    return leadInBeats;
+  }
+  void SetLeadInBeats(uint32 leadInBeats);
+
   inline bool IsPlaying() const {
     return isPlaying;
   }
@@ -143,11 +150,12 @@ public:
   }
 
   uint32 GetPosition(void) const;
+  uint32 GetTrackPosition(void) const;
   uint32 GetNextPosition(void) const;
 
   bool Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision);
 
-  void SetPosition(uint32 newPosition);
+  void SetPosition(int32 newPosition);
   uint32 AddNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
   void RemoveNotePlayedCallback(uint32 callbackId);
   bool NewInstrument();

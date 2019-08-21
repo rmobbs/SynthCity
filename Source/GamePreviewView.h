@@ -2,7 +2,7 @@
 
 #include "View.h"
 #include "FreeList.h"
-#include <queue>
+#include <list>
 
 class SpriteRenderable;
 class GamePreviewView : public View {
@@ -10,7 +10,7 @@ protected:
   ImGuiRenderable renderable;
   uint32 mainWindowHandle = UINT32_MAX;
   std::vector<SpriteRenderable*> staticSprites;
-  std::queue<SpriteRenderable*> dynamicSprites;
+  std::list<SpriteRenderable*> dynamicSprites;
 
   void InitResources();
   void TermResources();

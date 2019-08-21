@@ -4,6 +4,8 @@
 #include "GL/glew.h"
 #include "SDL.h"
 #include "ComposerView.h"
+#include "Sequencer.h"
+#include "Instrument.h"
 
 static glm::vec2 fretLineExtents(10, 750);
 static glm::vec4 fretLineColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -14,6 +16,7 @@ static glm::vec2 fretLinePosition[] = {
   { 320, 20 }
 };
 
+static glm::vec2 fretNoteExtent(80.0f, 30.0f);
 static glm::vec4 fretNoteColors[] = {
   glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
   glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
@@ -25,16 +28,21 @@ static glm::vec2 targetLinePosition(40, 680);
 static glm::vec2 targetLineExtents(330, 10);
 
 static constexpr uint32 kFretNoteFreListDefaultSize(60);
+static uint32 kIntroBeats = 0;
+static constexpr float kDistanceBetweenQuarterNotes = 200.0f;
+static constexpr float kFretOffscreenMax = 100.0f;
 
-class FretNote {
+class FretNote : public SpriteRenderable {
 protected:
   uint32 fretIndex = UINT32_MAX;
 public:
   FretNote() {
 
   }
+
   FretNote(uint32 fretIndex)
-  : fretIndex(fretIndex) {
+  : SpriteRenderable(fretNoteExtent, fretNoteColors[fretIndex])
+  , fretIndex(fretIndex) {
 
   }
 };
@@ -84,6 +92,34 @@ void GamePreviewView::Show() {
 
   // Instrument has a song loaded?
 
+  auto instrument = Sequencer::Get().GetInstrument();
+  if (instrument != nullptr) {
+    // Pre-spawn any necessary notes
+
+    float subdivStep = kDistanceBetweenQuarterNotes / Sequencer::Get().GetMaxSubdivisions();
+
+    // Start at the target line minus intro beats distance
+    uint32 beatIndex = 0;
+    float offsetY = targetLinePosition.y - kIntroBeats * kDistanceBetweenQuarterNotes;
+    while (offsetY > -kFretOffscreenMax) {
+      for (size_t trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
+        const auto& track = instrument->GetTrack(trackIndex);
+        if (beatIndex < track->GetNoteCount()) {
+          const auto& note = track->GetNote(beatIndex);
+          if (note.enabled && note.fretIndex != -1) {
+            auto fretNote = fretNoteFreeList.Borrow(note.fretIndex);
+            fretNote->position = glm::vec2(fretLinePosition[note.
+              fretIndex].x - fretNoteExtent.x * 0.5f, offsetY - fretNoteExtent.y);
+            dynamicSprites.push_back(fretNote);
+          }
+        }
+      }
+      ++beatIndex;
+      offsetY -= subdivStep;
+    }
+
+    //Sequencer::Get().Play();
+  }
 }
 
 void GamePreviewView::HandleInput() {
@@ -101,6 +137,10 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   glClear(GL_COLOR_BUFFER_BIT);
 
   for (const auto& renderable : staticSprites) {
+    renderable->Render();
+  }
+
+  for (const auto& renderable : dynamicSprites) {
     renderable->Render();
   }
 }

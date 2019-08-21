@@ -371,6 +371,9 @@ bool Init() {
   View::RegisterView<GamePreviewView>(new GamePreviewView(reinterpret_cast<uint32>(sysWmInfo.info.win.window)));
   View::SetCurrentView<ComposerView>();
 
+  Sequencer::Get().LoadInstrument("Instrument\\808\\808.json", "");
+  Sequencer::Get().LoadSongJson("Songs\\tapsimple.json");
+
   MCLOG(Info, "SynthCity %s", Globals::kVersionString);
 
   return true;
