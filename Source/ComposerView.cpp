@@ -273,6 +273,47 @@ void ComposerView::HandleInput() {
     ClearSelectedNotes();
   }
 
+  if (inputState.modState & KMOD_CTRL) {
+    // Copy
+    if (inputState.pressed[SDLK_c]) {
+      if (noteSelectedStatus.size() > 0) {
+        noteClipboard = noteSelectedStatus;
+      }
+    }
+
+    // Paste
+    else if (inputState.pressed[SDLK_v]) {
+      if (noteClipboard.size()) {
+        auto instrument = Sequencer::Get().GetInstrument();
+        if (instrument != nullptr) {
+          // We need to know the first note to generate the proper offset
+          size_t firstNote = INT32_MAX;
+          for (size_t t = 0; t < noteClipboard.size(); ++t) {
+            for (size_t n = 0; n < noteClipboard[t].size() && n < firstNote; ++n) {
+              if (noteClipboard[t][n] != 0) {
+                firstNote = n;
+                break;
+              }
+            }
+          }
+
+          if (firstNote != INT32_MAX) {
+            for (size_t t = 0; t < noteClipboard.size(); ++t) {
+              auto track = instrument->GetTrack(t);
+
+              size_t e = track->GetNoteCount();
+              for (size_t n = 0; n < noteClipboard[t].size(); ++n) {
+                if (noteClipboard[t][n] != 0) {
+                  track->SetNote(e + n - firstNote, track->GetNote(n));
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   switch (mode) {
     case Mode::Normal: {
       if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
@@ -281,35 +322,39 @@ void ComposerView::HandleInput() {
       break;
     }
     case Mode::Markup: {
-      int32 newFretIndex = -2;
+      // Mode toggle
+      if (inputState.modState & KMOD_CTRL) {
+        if (inputState.pressed[SDLK_m]) {
+          mode = Mode::Normal;
+        }
+      }
+      else {
+        int32 newFretIndex = -2;
 
-      if (inputState.pressed[SDLK_1]) {
-        newFretIndex = 0;
-      }
-      else if (inputState.pressed[SDLK_2]) {
-        newFretIndex = 1;
-      }
-      else if (inputState.pressed[SDLK_3]) {
-        newFretIndex = 2;
-      }
-      else if (inputState.pressed[SDLK_4]) {
-        newFretIndex = 3;
-      }
-      else if (inputState.pressed[SDLK_0]) {
-        newFretIndex = -1;
-      }
+        if (inputState.pressed[SDLK_1]) {
+          newFretIndex = 0;
+        }
+        else if (inputState.pressed[SDLK_2]) {
+          newFretIndex = 1;
+        }
+        else if (inputState.pressed[SDLK_3]) {
+          newFretIndex = 2;
+        }
+        else if (inputState.pressed[SDLK_4]) {
+          newFretIndex = 3;
+        }
+        else if (inputState.pressed[SDLK_0]) {
+          newFretIndex = -1;
+        }
 
-      if (newFretIndex != -2) {
-        GroupOrHoveredAction([newFretIndex](int32 trackIndex, int32 noteIndex) {
-          auto track = Sequencer::Get().GetInstrument()->GetTrack(trackIndex);
-          if (track != nullptr) {
-            track->GetNote(noteIndex).fretIndex = newFretIndex;
-          }
-        });
-      }
-
-      if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
-        mode = Mode::Normal;
+        if (newFretIndex != -2) {
+          GroupOrHoveredAction([newFretIndex](int32 trackIndex, int32 noteIndex) {
+            auto track = Sequencer::Get().GetInstrument()->GetTrack(trackIndex);
+            if (track != nullptr) {
+              track->GetNote(noteIndex).fretIndex = newFretIndex;
+            }
+            });
+        }
       }
       break;
     }
@@ -570,12 +615,12 @@ void ComposerView::Render(ImVec2 canvasSize) {
       // Start of the beat label
       float beatLabelStartX = ImGui::GetCursorPosX() + kHamburgerMenuWidth + kKeyboardKeyWidth + imGuiStyle.ItemSpacing.x;
 
-      // Beat numbers
+      // Measure numbers
       float cursorPosX = beatLabelStartX;
-      for (size_t b = 0; b < sequencer.GetNumMeasures() * sequencer.GetBeatsPerMeasure(); ++b) {
+      for (size_t m = 0; m < sequencer.GetNumMeasures(); ++m) {
         ImGui::SetCursorPosX(cursorPosX);
-        cursorPosX += kFullBeatWidth;
-        ImGui::Text(std::to_string(b + 1).c_str());
+        cursorPosX += kFullBeatWidth * sequencer.GetBeatsPerMeasure();
+        ImGui::Text(std::to_string(m + 1).c_str());
         ImGui::SameLine();
       }
 
@@ -831,6 +876,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // On mouse l-press, start the box recording (if we wait for drag to kick in we
         // lose a few pixels)
         if (ImGui::IsMouseClicked(0)) {
+          ClearSelectedNotes();
+
           mouseDragBeg = ImGui::GetMousePos();
           if (mouseDragBeg.x < beatLabelStartX) {
             mouseDragBeg.x = beatLabelStartX;
@@ -922,19 +969,21 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
         // Beats per measure
         ImGui::SameLine();
-        ImGui::PushItemWidth(100);
+        ImGui::PushItemWidth(75);
         int beatsPerMeasure = sequencer.GetBeatsPerMeasure();
-        if (ImGui::InputInt("BeatsPerMeasure", &beatsPerMeasure)) {
+        if (ImGui::InputInt("/", &beatsPerMeasure)) {
           // @Delay
           pendingBeatsPerMeasure = std::max(std::min(static_cast<uint32>
             (beatsPerMeasure), kMaxBeatsPerMeasure), kMinBeatsPerMeasure);
         }
         ImGui::PopItemWidth();
 
+        imGuiStyle.ItemSpacing.x = 3;
+
         // Subdivision
         ImGui::SameLine();
-        ImGui::PushItemWidth(100);
-        if (ImGui::BeginCombo("Subdivision", std::to_string(sequencer.GetSubdivision()).c_str())) {
+        ImGui::PushItemWidth(50);
+        if (ImGui::BeginCombo("#", std::to_string(sequencer.GetSubdivision()).c_str())) {
           std::vector<uint32> subDivs;
 
           uint32 subDiv = Sequencer::Get().GetMaxSubdivisions();
@@ -956,6 +1005,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
           ImGui::EndCombo();
         }
         ImGui::PopItemWidth();
+
+        imGuiStyle.ItemSpacing.x = oldItemSpacing.x + 5;
 
         // BPM
         ImGui::SameLine();
@@ -995,26 +1046,24 @@ void ComposerView::Render(ImVec2 canvasSize) {
           // @Atomic
           Mixer::Get().SetMasterVolume(masterVolume);
         }
-
-        ImGui::SameLine();
-        ImGui::PushItemWidth(100);
-        int32 leadInBeats = Sequencer::Get().GetLeadInBeats();
-        if (ImGui::InputInt("Lead-in", &leadInBeats)) {
-          Sequencer::Get().SetLeadInBeats(leadInBeats);
-        }
       }
 
       auto oldCursorPos = ImGui::GetCursorPos();
 
       // Draw the beat demarcation lines
       cursorPosX = beatLabelStartX;
-      for (uint32 b = 0; b < sequencer.GetNumMeasures() * sequencer.GetBeatsPerMeasure(); ++b) {
-        ImGui::SetCursorPos(ImVec2(cursorPosX - 0, beatLabelStartY));
-        ImGui::FillRect(ImVec2(1, beatLabelEndY -
-          beatLabelStartY), ImGui::GetColorU32(ImGuiCol_FrameBgActive));
-        cursorPosX += kFullBeatWidth;
+      for (uint32 m = 0; m < sequencer.GetNumMeasures(); ++m) {
+        float a = 1.0f;
+        float w = 3.0f;
+        for (uint32 b = 0; b < sequencer.GetBeatsPerMeasure(); ++b) {
+          ImGui::SetCursorPos(ImVec2(cursorPosX - a, beatLabelStartY));
+          ImGui::FillRect(ImVec2(w, beatLabelEndY -
+            beatLabelStartY), ImGui::GetColorU32(ImGuiCol_FrameBgActive));
+          cursorPosX += kFullBeatWidth;
+          a = 0;
+          w = 1;
+        }
       }
-
       imGuiStyle.ItemSpacing = oldItemSpacing;
 
       // Draw the play line

@@ -41,6 +41,7 @@ protected:
   int32 pendingBeatsPerMeasure = -1;
   uint32 notePlayedCallbackId = UINT32_MAX;
   float pendingMasterVolume = -1.0f;
+  std::vector<std::vector<int32>> noteClipboard;
   std::vector<std::vector<int32>> noteSelectedStatus;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   std::pair<int32, int32> toggledNote = { -1, -1 };
