@@ -10,7 +10,8 @@ protected:
   ImGuiRenderable renderable;
   uint32 mainWindowHandle = UINT32_MAX;
   std::vector<SpriteRenderable*> staticSprites;
-  std::list<SpriteRenderable*> dynamicSprites;
+  std::vector<SpriteRenderable*> fretSprites;
+  std::list<SpriteRenderable*> fallingNotes;
   float beatFrameLength = 0;
 
   void InitResources();

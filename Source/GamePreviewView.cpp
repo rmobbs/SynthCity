@@ -7,14 +7,17 @@
 #include "Sequencer.h"
 #include "Instrument.h"
 
-static glm::vec2 fretLineExtents(10, 750);
-static glm::vec4 fretLineColor(0.2f, 0.2f, 0.2f, 1.0f);
-static glm::vec2 fretLinePosition[] = {
-  {  80, 20 },
-  { 160, 20 },
-  { 240, 20 },
-  { 320, 20 }
+static glm::vec2 noteLaneExtents(10, 800);
+static glm::vec4 noteLaneColor(0.2f, 0.2f, 0.2f, 1.0f);
+static glm::vec2 noteLanePosition[] = {
+  {  80, 0 },
+  { 160, 0 },
+  { 240, 0 },
+  { 320, 0 }
 };
+static glm::vec2 fretExtents(250, 10);
+static constexpr uint32 kNumFrets(5);
+static glm::vec4 fretColor(0.2f, 0.2f, 0.2f, 1.0f);
 
 static glm::vec2 fretNoteExtent(80.0f, 30.0f);
 static glm::vec4 fretNoteColors[] = {
@@ -23,6 +26,8 @@ static glm::vec4 fretNoteColors[] = {
   glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
   glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
 };
+
+static constexpr uint32 kNumFretsPastTargetLine(1);
 
 static glm::vec2 targetLinePosition(40, 680);
 static glm::vec2 targetLineExtents(330, 10);
@@ -68,16 +73,24 @@ GamePreviewView::~GamePreviewView() {
 }
 
 void GamePreviewView::InitResources() {
-  // Fret lines
-  for (int i = 0; i < _countof(fretLinePosition); ++i) {
-    auto spriteRenderable = new SpriteRenderable(fretLineExtents, fretLineColor);
-    spriteRenderable->position = fretLinePosition[i];
+  // Note lanes
+  for (int i = 0; i < _countof(noteLanePosition); ++i) {
+    auto spriteRenderable = new SpriteRenderable(noteLaneExtents, noteLaneColor);
+    spriteRenderable->position = noteLanePosition[i];
     staticSprites.push_back(spriteRenderable);
+  }
+
+  // Moving frets
+  float bottomY = targetLinePosition.y + kDistanceBetweenQuarterNotes * kNumFretsPastTargetLine;
+  for (uint32 i = 0; i < kNumFrets; ++i) {
+    auto spriteRenderable = new SpriteRenderable(fretExtents, fretColor);
+    spriteRenderable->position = glm::vec2(noteLanePosition[0].x, bottomY - i * kDistanceBetweenQuarterNotes);
+    fretSprites.push_back(spriteRenderable);
   }
 
   // Target line
   {
-    auto spriteRenderable = new SpriteRenderable(targetLineExtents, fretLineColor);
+    auto spriteRenderable = new SpriteRenderable(targetLineExtents, noteLaneColor);
     spriteRenderable->position = targetLinePosition;
     staticSprites.push_back(spriteRenderable);
   }
@@ -119,7 +132,7 @@ void GamePreviewView::Show() {
           if (note.enabled && note.fretIndex != -1) {
             auto fretNote = fretNoteFreeList.Borrow(static_cast<float>(subBeatIndex) /
               static_cast<float>(Sequencer::Get().GetMaxSubdivisions()), note.fretIndex);
-            dynamicSprites.push_back(fretNote);
+            fallingNotes.push_back(fretNote);
           }
         }
         else {
@@ -150,26 +163,43 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     renderable->Render();
   }
 
-  // Update falling notes
-
   // Get current high-precision beat time
   float beatTime = static_cast<float>(Mixer::Get().GetCurFrame()) / beatFrameLength;
+  float beatFrac = beatTime - std::floorf(beatTime);
+
+  float bottomY = targetLinePosition.y + kDistanceBetweenQuarterNotes * kNumFretsPastTargetLine;
+  for (uint32 i = 0; i < kNumFrets; ++i) {
+    auto spriteRenderable = new SpriteRenderable(fretExtents, fretColor);
+    spriteRenderable->position = glm::vec2(noteLanePosition[0].x, bottomY - i * kDistanceBetweenQuarterNotes);
+    fretSprites.push_back(spriteRenderable);
+  }
+
+  // Barber pole illusion for frets
+  for (uint32 i = 0; i < fretSprites.size(); ++i) {
+    const auto& renderable = fretSprites[i];
+    renderable->position = glm::vec2(noteLanePosition[0].x,
+      bottomY - ((i + (1.0f - beatFrac)) * kDistanceBetweenQuarterNotes));
+    renderable->Render();
+  }
+
+  // Update falling notes
+
 
   // Roll through notes and update positions
-  auto fretNoteIter = dynamicSprites.begin();
-  while (fretNoteIter != dynamicSprites.end()) {
+  auto fretNoteIter = fallingNotes.begin();
+  while (fretNoteIter != fallingNotes.end()) {
     auto fretNote = reinterpret_cast<FretNote*>(*fretNoteIter);
 
     float notePosY = targetLinePosition.y -
       (fretNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
     if (notePosY >= targetLinePosition.y) {
-      fretNoteIter = dynamicSprites.erase(fretNoteIter);
+      fretNoteIter = fallingNotes.erase(fretNoteIter);
     }
     else if (notePosY < -100.0f) {
       break;
     }
     else {
-      fretNote->position = glm::vec2(fretLinePosition[fretNote->
+      fretNote->position = glm::vec2(noteLanePosition[fretNote->
         GetFretIndex()].x - fretNoteExtent.x * 0.5f, notePosY);
       fretNote->Render();
       ++fretNoteIter;
