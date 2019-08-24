@@ -18,7 +18,6 @@ static constexpr const char* kSoundsTag("sounds");
 Track::Track(const Track& that)
 : name(that.name)
 , colorScheme(that.colorScheme)
-, notes(that.notes)
 , mute(that.mute)
 , volume(that.volume) {
   patch = new Patch(*that.patch);
@@ -40,46 +39,9 @@ Track::~Track() {
   patch = nullptr;
 }
 
-void Track::AddNotes(uint32 noteCount) {
-  AudioGlobals::LockAudio();
-  notes.resize(notes.size() + noteCount);
-  AudioGlobals::UnlockAudio();
-}
-
-void Track::SetNoteCount(uint32 noteCount) {
-  AudioGlobals::LockAudio();
-  notes.resize(noteCount);
-  AudioGlobals::UnlockAudio();
-}
-
-void Track::SetNote(uint32 noteIndex, const Note& note) {
-  if (noteIndex >= notes.size()) {
-    notes.resize(noteIndex + 1);
-  }
-  notes[noteIndex] = note;
-}
-
-Track::Note& Track::GetNote(uint32 noteIndex) {
-  return notes[noteIndex];
-}
-
-void Track::ClearNotes() {
-  AudioGlobals::LockAudio();
-  std::fill(notes.begin(), notes.end(), Note());
-  AudioGlobals::UnlockAudio();
-}
-
 void Track::SetPatch(Patch* newPatch) {
-  AudioGlobals::LockAudio();
   delete patch;
   patch = newPatch;
-  AudioGlobals::UnlockAudio();
-}
-
-void Track::SetNotes(const std::vector<Note>& newNotes) {
-  AudioGlobals::LockAudio();
-  notes = newNotes;
-  AudioGlobals::UnlockAudio();
 }
 
 bool Track::SerializeWrite(const WriteSerializer& serializer) {

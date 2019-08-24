@@ -108,6 +108,7 @@ void GamePreviewView::TermResources() {
 }
 
 void GamePreviewView::Show() {
+#if 0
   // Length of a full beat in frames
   beatFrameLength = Mixer::kDefaultFrequency / Sequencer::Get().GetBeatsPerMinute() * 60.0f;
 
@@ -143,6 +144,7 @@ void GamePreviewView::Show() {
 
     //Sequencer::Get().Play();
   }
+#endif
 }
 
 void GamePreviewView::HandleInput() {

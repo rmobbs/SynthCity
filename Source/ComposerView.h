@@ -2,12 +2,12 @@
 
 #include <string>
 #include <vector>
-#include <map>
 #include <functional>
 
 #include "View.h"
 #include "GL/glew.h"
 #include "glm/vec4.hpp"
+#include <set>
 
 class Dialog;
 class ComposerView : public View {
@@ -39,10 +39,17 @@ protected:
   int32 pendingSubdivision = -1;
   int32 pendingBeatsPerMinute = -1;
   int32 pendingBeatsPerMeasure = -1;
+  bool pendingNewInstrument = false;
+  bool pendingLoadInstrument = false;
+  bool pendingSaveInstrument = false;
+  bool pendingNewSong = false;
+  bool pendingLoadSong = false;
+  bool pendingSaveSong = false;
+
   uint32 notePlayedCallbackId = UINT32_MAX;
   float pendingMasterVolume = -1.0f;
   std::vector<std::vector<int32>> noteClipboard;
-  std::vector<std::vector<int32>> noteSelectedStatus;
+  std::vector<std::set<int32>> noteSelectedStatus;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   std::pair<int32, int32> toggledNote = { -1, -1 };
   std::pair<int32, int32> hoveredNote = { -1, -1 };

@@ -15,21 +15,19 @@ static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
 
-Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
-  name(instrumentName),
-  numNotes(numNotes) {
+Instrument::Instrument(std::string instrumentName)
+  : name(instrumentName) {
 
 }
 
-Instrument::Instrument(const ReadSerializer& r, uint32 numNotes)
-  : numNotes(numNotes) {
+Instrument::Instrument(const ReadSerializer& r) {
   if (!SerializeRead(r)) {
     throw std::runtime_error("Instrument: Unable to serialize (read)");
   }
 }
 
 Instrument::~Instrument() {
-  Clear();
+
 }
 
 bool Instrument::SerializeRead(const ReadSerializer& serializer) {
@@ -101,54 +99,21 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
   return true;
 }
 
-void Instrument::ClearNotes() {
-  AudioGlobals::LockAudio();
-  for (auto& track : tracks) {
-    track->ClearNotes();
-  }
-  AudioGlobals::UnlockAudio();
-}
-
-void Instrument::Clear() {
-  AudioGlobals::LockAudio();
-  for (auto& track : tracks) {
-    delete track;
-  }
-  tracks.clear();
-  AudioGlobals::UnlockAudio();
-}
-
-void Instrument::SetNoteCount(uint32 numNotes) {
-  AudioGlobals::LockAudio();
-  for (auto& track : tracks) {
-    track->SetNoteCount(numNotes);
-  }
-  AudioGlobals::UnlockAudio();
-}
-
 void Instrument::AddTrack(Track* track) {
-  AudioGlobals::LockAudio();
-  track->SetNoteCount(numNotes);
   tracks.push_back(track);
-  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
-  AudioGlobals::LockAudio();
-  newTrack->SetNotes(tracks[index]->GetNotes());
   delete tracks[index];
   tracks[index] = newTrack;
-  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::RemoveTrack(uint32 index) {
-  AudioGlobals::LockAudio();
   if (soloTrack == index) {
     soloTrack = -1;
   }
   delete tracks[index];
   tracks.erase(tracks.begin() + index);
-  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::SetSoloTrack(int32 trackIndex) {
@@ -189,7 +154,7 @@ bool Instrument::SaveInstrument(std::string fileName) {
 }
 
 /* static */
-Instrument* Instrument::LoadInstrument(std::string fileName, uint32 numNotes) {
+Instrument* Instrument::LoadInstrument(std::string fileName) {
   MCLOG(Info, "Loading instrument from file \'%s\'", fileName.c_str());
 
   std::ifstream ifs(fileName);
@@ -217,7 +182,7 @@ Instrument* Instrument::LoadInstrument(std::string fileName, uint32 numNotes) {
 
   Instrument* newInstrument = nullptr;
   try {
-    newInstrument = new Instrument({ document }, numNotes);
+    newInstrument = new Instrument({ document });
   }
   catch (...) {
 

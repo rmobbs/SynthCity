@@ -357,8 +357,7 @@ bool Init() {
   }
 
   // Initialize sequencer
-  if (!Sequencer::InitSingleton(kDefaultNumMeasures, kDefaultBeatsPerMeasure,
-    kDefaultBpm, kMaxSubdivisions, kDefaultSubdivisions)) {
+  if (!Sequencer::InitSingleton()) {
     MCLOG(Error, "Unable to initialize mixer");
     SDL_Quit();
     return false;
@@ -371,8 +370,8 @@ bool Init() {
   View::RegisterView<GamePreviewView>(new GamePreviewView(reinterpret_cast<uint32>(sysWmInfo.info.win.window)));
   View::SetCurrentView<ComposerView>();
 
-  Sequencer::Get().LoadInstrument("Instrument\\808\\808.json", "");
-  Sequencer::Get().LoadSongJson("Songs\\tapsimple.json");
+  //Sequencer::Get().LoadInstrument("Instrument\\808\\808.json", "");
+  //Sequencer::Get().LoadSongJson("Songs\\tapsimple.json");
 
   MCLOG(Info, "SynthCity %s", Globals::kVersionString);
 

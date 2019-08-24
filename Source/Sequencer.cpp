@@ -17,6 +17,7 @@
 #include "Instrument.h"
 #include "Patch.h"
 #include "ProcessDecay.h"
+#include "Song.h"
 
 static constexpr float kMetronomeVolume = 0.7f;
 static constexpr const char *kInstrumentTag = "Instrument";
@@ -32,6 +33,8 @@ static constexpr const char *kVelocityTag = "Velocity";
 static constexpr std::string_view kMidiTags[] = { ".midi", ".mid" };
 static constexpr std::string_view kJsonTag(".json");
 static constexpr std::string_view kNewInstrumentDefaultName("New Instrument");
+static constexpr uint32 kDefaultBpm = 120;
+static constexpr uint32 kDefaultSubdivisions = 4;
 
 
 enum class ReservedSounds {
@@ -44,11 +47,11 @@ enum class ReservedSounds {
 Sequencer* Sequencer::singleton = nullptr;
 
 /* static */
-bool Sequencer::InitSingleton(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision) {
+bool Sequencer::InitSingleton() {
   if (!singleton) {
     singleton = new Sequencer;
     if (singleton) {
-      if (singleton->Init(numMeasures, beatsPerMeasure, bpm, maxBeatSubdivisions, currBeatSubdivision)) {
+      if (singleton->Init()) {
         return true;
       }
       delete singleton;
@@ -65,34 +68,39 @@ bool Sequencer::TermSingleton() {
   return true;
 }
 
-uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
-  if (currentBpm > 0 && beatSubdivision > 0) {
-    return static_cast<uint32>(((Mixer::kDefaultFrequency /
-      currentBpm) * 60.0) / static_cast<float>(beatSubdivision));
+uint32 Sequencer::GetTempo() const {
+  if (song != nullptr) {
+    return song->GetTempo();
   }
-  return 0;
+  return kDefaultTempo;
+}
+
+void Sequencer::SetTempo(uint32 tempo) {
+  if (song != nullptr) {
+    song->SetTempo(tempo);
+
+    interval = static_cast<int32>(CalcInterval(GetSubdivision()));
+    Mixer::Get().ApplyInterval(interval);
+  }
+}
+
+uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
+  if (GetTempo() > 0 && beatSubdivision > 0) {
+    return static_cast<uint32>(((Mixer::kDefaultFrequency /
+      GetTempo()) * 60.0) / static_cast<float>(beatSubdivision));
+  }
+  return kDefaultInterval;
 }
 
 void Sequencer::SetSubdivision(uint32 subdivision) {
-  if (subdivision > maxBeatSubdivisions) {
-    subdivision = maxBeatSubdivisions;
+  if (song != nullptr) {
+    currBeatSubdivision = std::min(subdivision, song->GetBeatSubdivision());
   }
-  currBeatSubdivision = subdivision;
-  interval = static_cast<int32>(CalcInterval(GetSubdivision()));
-}
-
-void Sequencer::SetBeatsPerMinute(uint32 bpm) {
-  currentBpm = bpm;
+  else {
+    currBeatSubdivision = std::min(subdivision, kDefaultMaxBeatSubdivisions);
+  }
   interval = static_cast<int32>(CalcInterval(GetSubdivision()));
   Mixer::Get().ApplyInterval(interval);
-}
-
-void Sequencer::SetLeadInBeats(uint32 leadInBeats) {
-  this->leadInBeats = leadInBeats;
-}
-
-void Sequencer::PartialNoteCallback() {
-  // Nothin'
 }
 
 void Sequencer::FullNoteCallback(bool isMeasure) {
@@ -119,10 +127,12 @@ void Sequencer::PauseKill() {
 }
 
 void Sequencer::Stop() {
+  Mixer::Get().StopAllVoices();
+
   isPlaying = false;
   loopIndex = 0;
-  Mixer::Get().StopAllVoices();
-  SetPosition(0);// -static_cast<int32>(leadInBeats * maxBeatSubdivisions));
+
+  SetPosition(0);
 }
 
 void Sequencer::SetPosition(int32 newPosition) {
@@ -130,75 +140,44 @@ void Sequencer::SetPosition(int32 newPosition) {
   nextPosition = currPosition;
 }
 
-void Sequencer::SetNumMeasures(uint32 numMeasures) {
-  if (this->numMeasures != numMeasures) {
-    this->numMeasures = numMeasures;
-
-    if (instrument != nullptr) {
-      instrument->SetNoteCount(GetNumMeasures() * GetBeatsPerMeasure() * GetMaxSubdivisions());
-    }
-  }
-}
-
-void Sequencer::SetBeatsPerMeasure(uint32 beatsPerMeasure) {
-  if (this->beatsPerMeasure != beatsPerMeasure) {
-    this->beatsPerMeasure = beatsPerMeasure;
-
-    if (instrument != nullptr) {
-      instrument->SetNoteCount(GetNumMeasures() * GetBeatsPerMeasure() * GetMaxSubdivisions());
-    }
-  }
-}
-
 void Sequencer::SetLooping(bool looping) {
   isLooping = looping;
 }
 
-uint32 Sequencer::GetPosition(void) const {
+uint32 Sequencer::GetPosition() const {
   return currPosition;
 }
 
-uint32 Sequencer::GetTrackPosition(void) const {
-  if (currPosition > 0) {
-    return currPosition;
-  }
-  return 0;
-}
-
-uint32 Sequencer::GetNextPosition(void) const {
+uint32 Sequencer::GetNextPosition() const {
   return nextPosition;
 }
 
-uint32 Sequencer::NextFrame(void)
+uint32 Sequencer::NextFrame()
 {
   // NOTE: Called from SDL audio callback so SM_LockAudio is in effect
 
   // If nothing to do, wait current subdivision (TODO: See if we can wait _minimal_ subdivision ...
   // need to fix how we're triggering metronome for that)
-  if (!isPlaying || !interval || !instrument || !instrument->tracks.size()) {
+  if (!isPlaying || !interval || !instrument || !song) {
     return CalcInterval(GetSubdivision());
   }
 
-  int32 noteCount = GetNumMeasures() * GetBeatsPerMeasure() * GetMaxSubdivisions();
-
   currPosition = nextPosition;
-  nextPosition = currPosition + maxBeatSubdivisions / currBeatSubdivision;
+  nextPosition = currPosition + song->GetBeatSubdivision() / currBeatSubdivision;
 
   // Still issue beat callbacks when in lead-in
   auto absCurrPosition = std::abs(currPosition);
-  if ((absCurrPosition % maxBeatSubdivisions) == 0) {
-    FullNoteCallback((absCurrPosition % (maxBeatSubdivisions * GetBeatsPerMeasure())) == 0);
-  }
-  else {
-    PartialNoteCallback();
+  if ((absCurrPosition % song->GetBeatSubdivision()) == 0) {
+    FullNoteCallback((absCurrPosition % (song->
+      GetBeatSubdivision() * song->GetBeatsPerMeasure())) == 0);
   }
 
   if (currPosition >= 0) {
     // Handle end-of-track / looping
-    if (currPosition >= noteCount) {
+    if (currPosition >= static_cast<int32>(song->GetNoteCount())) {
       if (isLooping) {
         currPosition = 0;
-        nextPosition = currPosition + maxBeatSubdivisions / currBeatSubdivision;
+        nextPosition = currPosition + song->GetBeatSubdivision() / currBeatSubdivision;
         ++loopIndex;
       }
       else {
@@ -207,26 +186,22 @@ uint32 Sequencer::NextFrame(void)
       }
     }
 
-    for (size_t trackIndex = 0; trackIndex < instrument->tracks.size(); ++trackIndex) {
-      if (instrument->tracks[trackIndex]->GetMute()) {
+    for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++ lineIndex) {
+      // NOTE: Will lines and tracks always be 1:1?
+      if (instrument->tracks[lineIndex]->GetMute()) {
         continue;
       }
       auto soloTrackIndex = instrument->GetSoloTrack();
-      if (soloTrackIndex != -1 && soloTrackIndex != trackIndex) {
+      if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
         continue;
       }
 
-      auto& notes = instrument->tracks[trackIndex]->GetNotes();
-      if (currPosition >= static_cast<int32>(notes.size())) {
-        continue;
-      }
-
-      auto d = notes.data() + currPosition;
-      if (d->enabled) {
+      auto d = song->GetLine(lineIndex).data() + currPosition;
+      if (d->GetEnabled()) {
         for (auto& notePlayedCallback : notePlayedCallbacks) {
-          notePlayedCallback.first(trackIndex, currPosition, notePlayedCallback.second);
+          notePlayedCallback.first(lineIndex, currPosition, notePlayedCallback.second);
         }
-        instrument->PlayTrack(trackIndex);
+        instrument->PlayTrack(lineIndex);
       }
     }
   }
@@ -243,42 +218,53 @@ void Sequencer::RemoveNotePlayedCallback(uint32 callbackId) {
 }
 
 bool Sequencer::NewInstrument() {
-  Instrument* newInstrument = new Instrument(std::string(kNewInstrumentDefaultName),
-    GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
+  Instrument* newInstrument = new Instrument(std::string(kNewInstrumentDefaultName));
   if (newInstrument) {
-    AudioGlobals::LockAudio();
     Stop();
     delete instrument;
     instrument = newInstrument;
-    AudioGlobals::UnlockAudio();
+
+    // TODO: Hmm
+    NewSong();
+
     return true;
   }
   return false;
 }
 
 bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
-  Instrument *newInstrument = Instrument::
-    LoadInstrument(fileName, GetMaxSubdivisions() * GetNumMeasures() * GetBeatsPerMeasure());
+  Instrument *newInstrument = Instrument::LoadInstrument(fileName);
 
   if (newInstrument) {
     if (mustMatch.length() != 0 && mustMatch != newInstrument->GetName()) {
       delete newInstrument;
     }
     else {
-      AudioGlobals::LockAudio();
       Stop();
+
       delete instrument;
       instrument = newInstrument;
-      AudioGlobals::UnlockAudio();
+
+      // TODO: Hmm
+      NewSong();
+
       return true;
     }
   }
   return false;
 }
 
+void Sequencer::NewSong() {
+  delete song;
+  song = new Song(instrument->GetTrackCount(),
+    kDefaultBpm, kDefaultNumMeasures, kDefaultBeatsPerMeasure, kDefaultSubdivisions);
+  interval = static_cast<int32>(CalcInterval(GetSubdivision()));
+  Mixer::Get().ApplyInterval(interval);
+}
+
 bool Sequencer::SaveSong(std::string fileName) {
-  if (!instrument) {
-    MCLOG(Warn, "Somehow there is no instrument in SaveSong");
+  if (!song) {
+    MCLOG(Warn, "Somehow there is no song in SaveSong");
     return false;
   }
 
@@ -291,55 +277,7 @@ bool Sequencer::SaveSong(std::string fileName) {
   rapidjson::StringBuffer sb;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
 
-  w.StartObject();
-  // Version tag:string
-  w.Key(Globals::kVersionTag);
-  w.String(Globals::kVersionString);
-
-  w.Key(kInstrumentTag);
-  w.String(instrument->GetName().c_str());
-
-  w.Key(kTempoTag);
-  w.Uint(GetBeatsPerMinute());
-
-  w.Key(kMeasuresTag);
-  w.Uint(GetNumMeasures());
-
-  w.Key(kBeatsPerMeasureTag);
-  w.Uint(GetBeatsPerMeasure());
-  
-  w.Key(kTracksTag);
-  w.StartArray();
-  for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
-    auto track = instrument->GetTrack(trackIndex);
-    if (track->GetNoteCount()) {
-      w.StartObject();
-
-      w.Key(kNotesTag);
-      w.StartArray();
-      
-      // TODO: It's possible the song could have been saved with a different number of
-      // max subdivisions ...
-      for (size_t n = 0; n < track->GetNoteCount(); ++n) {
-        auto& note = track->GetNote(n);
-        if (note.enabled) {
-          w.StartObject();
-
-          w.Key(kBeatTag);
-          w.Uint(n);
-          w.Key(kFretTag);
-          w.Int(note.fretIndex);
-
-          w.EndObject();
-        }
-      }
-
-      w.EndArray();
-      w.EndObject();
-    }
-  }
-  w.EndArray();  
-  w.EndObject();
+  //song->SerializeWrite({ w });
 
   std::string outputString(sb.GetString());
   ofs.write(outputString.c_str(), outputString.length());
@@ -390,24 +328,19 @@ void Sequencer::LoadSongMidi(std::string fileName) {
       // Ok. We now have all the tracks we want in one track; it is only note-ons;
       // they are globally and locally time stamped
       // Now we need to iterate these and add them as notes!
-      this->maxBeatSubdivisions;
       for (const auto& midiEvent : midiTrack.events) {
         auto a = static_cast<int32>(midiEvent.dataptr[1]);
         auto b = static_cast<int32>(kMinMidiValue);
         auto trackIndex = (std::max(a, b) - b) % instrument->tracks.size();
         auto beatsIndex = static_cast<uint32>(static_cast<double>(midiEvent.timeStamp) /
-          static_cast<double>(midiSource.getTimeDivision()) * maxBeatSubdivisions);
+          static_cast<double>(midiSource.getTimeDivision()) * kDefaultMaxBeatSubdivisions);
 
-        if (!(beatsIndex % maxBeatSubdivisions)) {
+        if (!(beatsIndex % kDefaultMaxBeatSubdivisions)) {
           ++numMeasures;
         }
         
         //instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f); // TODO: Need velocity
       }
-
-      // Currently capping number of loaded measures as unlimited measures are not properly
-      // clipped in ImGui and the program becomes unusable
-      SetNumMeasures(20);
 
       MCLOG(Info, "Successfully loaded MIDI file \'%s\'", fileName.c_str());
     }
@@ -447,107 +380,17 @@ void Sequencer::LoadSongJson(std::string fileName) {
     return;
   }
 
-  instrument->ClearNotes();
+  try {
+    auto newSong = new Song({ document });
 
-  // Version
-  if (!document.HasMember(Globals::kVersionTag) || !document[Globals::kVersionTag].IsString()) {
-    MCLOG(Error, "Missing/invalid version tag in song file");
-    return;
+    delete song;
+    song = newSong;
+
+    interval = static_cast<int32>(CalcInterval(GetSubdivision()));
+    Mixer::Get().ApplyInterval(interval);
   }
-  std::string version = document[Globals::kVersionTag].GetString();
-
-  if (version != std::string(Globals::kVersionString)) {
-    MCLOG(Error, "Invalid song file version");
-    return;
-  }
-
-  // Get instrument
-  if (!document.HasMember(kInstrumentTag) || !document[kInstrumentTag].IsString()) {
-    MCLOG(Warn, "Missing/invalid %s tag in song file %s", kInstrumentTag, fileName.c_str());
-    return; // TODO: Maybe just load?
-  }
-
-  std::string instrumentName = document[kInstrumentTag].GetString();
-
-  std::cout << "Song uses instrument " << instrumentName << std::endl;
-
-  if (this->instrument == nullptr || this->instrument->GetName() != instrumentName) {
-    if (!loadInstrumentCallback) {
-      MCLOG(Warn, "Current instrument \'%s\' does not match song instrument \'%s\' and no "
-        "callback was provided to load the correct one", this->instrument->GetName().c_str(), instrumentName.c_str());
-      return;
-    }
-
-    // Prompt the caller that we need to load an instrument first
-    if (!loadInstrumentCallback(instrumentName)) {
-      // TODO: Could offer loading with track truncation
-      MCLOG(Warn, "Unable to load specified instrument %s", instrumentName.c_str());
-      return;
-    }
-  }
-
-  // At this point instrument names match
-
-  // Get tempo
-  if (!document.HasMember(kTempoTag) || !document[kTempoTag].IsUint()) {
-    MCLOG(Warn, "Invalid tempo in song file %s", fileName.c_str());;
-    return;
-  }
-
-  auto tempo = document[kTempoTag].GetUint();
-  SetBeatsPerMinute(tempo);
-
-  // Get number of measures in song and expand instrument tracks
-  if (!document.HasMember(kMeasuresTag) || !document[kMeasuresTag].IsUint()) {
-    MCLOG(Warn, "Invalid number of measures in song file %s", fileName.c_str());
-    return;
-  }
-
-  auto numMeasures = document[kMeasuresTag].GetUint();
-  SetNumMeasures(numMeasures);
-
-  // Get beats per measure
-  if (!document.HasMember(kBeatsPerMeasureTag) || !document[kBeatsPerMeasureTag].IsUint()) {
-    MCLOG(Warn, "Invalid number of beats per measure in song file %s", fileName.c_str());
-    return;
-  }
-
-  auto beatsPerMeasure = document[kBeatsPerMeasureTag].GetUint();
-  SetBeatsPerMeasure(beatsPerMeasure);
-
-  // Read tracks (can have none)
-  if (document.HasMember(kTracksTag) && document[kTracksTag].IsArray()) {
-    const auto& tracksArray = document[kTracksTag];
-    for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
-      const auto& trackEntry = tracksArray[trackArrayIndex];
-
-      // Read notes (can have none)
-      if (!trackEntry.HasMember(kNotesTag) || !trackEntry[kNotesTag].IsArray()) {
-        continue;
-      }
-
-      auto track = instrument->GetTrack(trackArrayIndex);
-      if (!track) {
-        MCLOG(Warn, "Song references invalid track index!");
-        continue;
-      }
-
-      const auto& notesArray = trackEntry[kNotesTag];
-      for (rapidjson::SizeType noteArrayIndex = 0; noteArrayIndex < notesArray.Size(); ++noteArrayIndex) {
-        const auto& noteEntry = notesArray[noteArrayIndex];
-        if (!noteEntry.HasMember(kBeatTag) || !noteEntry[kBeatTag].IsUint()) {
-          MCLOG(Warn, "Invalid beat for note in notes array!");
-          continue;
-        }
-        if (!noteEntry.HasMember(kFretTag) || !noteEntry[kFretTag].IsInt()) {
-          MCLOG(Warn, "Invalid fret for note in notes array!");
-          continue;
-        }
-
-        track->SetNote(noteEntry[kBeatTag].GetUint(),
-          Track::Note(true, noteEntry[kFretTag].GetInt()));
-      }
-    }
+  catch (std::runtime_error& rte) {
+    MCLOG(Error, "Failed to load song: %s", rte.what());
   }
 }
 
@@ -564,11 +407,7 @@ void Sequencer::LoadSong(std::string fileName) {
   }
 }
 
-bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uint32 maxBeatSubdivisions, uint32 currBeatSubdivision) {
-  this->numMeasures = numMeasures;
-  this->beatsPerMeasure = beatsPerMeasure;
-  this->maxBeatSubdivisions = maxBeatSubdivisions;
-
+bool Sequencer::Init() {
   // Load the reserved sounds
   reservedPatches.resize(static_cast<int32>(ReservedSounds::Count));
   try {
@@ -585,9 +424,6 @@ bool Sequencer::Init(uint32 numMeasures, uint32 beatsPerMeasure, uint32 bpm, uin
   catch (...) {
     MCLOG(Error, "Unable to load upbeat metronome WAV file");
   }
-
-  SetSubdivision(currBeatSubdivision);
-  SetBeatsPerMinute(bpm);
 
   return true;
 }
