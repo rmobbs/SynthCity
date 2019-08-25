@@ -74,6 +74,7 @@ static const ImVec4 kFretColors[] = {
 
 static const ImVec4 kMeasureDemarcationLineColor(1.0f, 1.0f, 1.0f, 1.0f);
 static const ImVec4 kBeatDemarcationLineColor(0.6f, 0.6f, 0.6f, 1.0f);
+static const ImVec4 kPlayLineColor(1.0f, 1.0f, 0.0f, 1.0f);
 
 void ComposerView::OutputWindowState::ClearLog() {
   displayHistory.clear();
@@ -901,7 +902,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
             cursorPosX = beatWidth * (sequencer.GetPosition() /
               (song->GetMinNoteValue() / sequencer.GetSubdivision()));
             ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
-            ImGui::FillRect(ImVec2(1, beatLineEndY - beatLineBegY), 0x7FFFFFFF);
+            ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
+              ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
 
             // Drag box
             {
