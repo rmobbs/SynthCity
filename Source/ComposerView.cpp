@@ -36,14 +36,12 @@
 #include <commctrl.h>
 
 static constexpr float kFullBeatWidth = 80.0f;
-static constexpr float kKeyboardKeyWidth = 100.0f;
 static constexpr float kKeyboardKeyHeight = 20.0f;
 static constexpr uint32 kDefaultBpm = 120;
 static constexpr uint32 kDefaultNumMeasures = 2;
 static constexpr uint32 kDefaultBeatsPerMeasure = 4;
 static constexpr uint32 kDefaultSubdivisions = 4;
 static constexpr float kPlayNoteFlashDuration = 0.5f;
-static constexpr float kPlayNoteFlashGrow = 1.0f;
 static constexpr uint32 kPlayNoteFlashColor = 0x0000FFFF;
 static constexpr uint32 kMaxMeasures = 256;
 static constexpr uint32 kMinMeasures = 1;
@@ -267,6 +265,15 @@ void ComposerView::HandleInput() {
 
   if (inputState.pressed[SDLK_ESCAPE]) {
     ClearSelectedNotes();
+  }
+
+  if (inputState.pressed[SDLK_SPACE]) {
+    if (Sequencer::Get().IsPlaying()) {
+      Sequencer::Get().Stop();
+    }
+    else {
+      Sequencer::Get().Play();
+    }
   }
 
   if (inputState.modState & KMOD_CTRL) {
@@ -732,12 +739,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
             }
 
             if (flashPct > 0.0f) {
-              trackButtonBegCursor.x -= kPlayNoteFlashGrow * flashPct;
-              trackButtonBegCursor.y -= kPlayNoteFlashGrow * flashPct;
-
               ImGui::SetCursorPos(trackButtonBegCursor);
-              ImGui::FillRect(ImVec2(kKeyboardKeyWidth + kPlayNoteFlashGrow * 2.0f * flashPct,
-                kKeyboardKeyHeight + kPlayNoteFlashGrow * 2.0f * flashPct),
+              ImGui::FillRect(ImVec2(trackLabelWidth, kKeyboardKeyHeight),
                 (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
               ImGui::SetCursorPos(trackButtonEndCursor);
             }
