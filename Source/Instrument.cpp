@@ -14,6 +14,7 @@ static constexpr const char* kNameTag("name");
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
+static constexpr uint32 kInstrumentFileVersion = 1;
 
 Instrument::Instrument(std::string instrumentName)
   : name(instrumentName) {
@@ -38,14 +39,18 @@ std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& ser
   auto& d = serializer.d;
 
   // Version
-  if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsString()) {
+  if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsUint()) {
     return std::make_pair(false, "Missing/invalid version tag in instrument file");
   }
-  std::string version = d[Globals::kVersionTag].GetString();
 
-  if (version != std::string(Globals::kVersionString)) {
+  auto version = d[Globals::kVersionTag].GetUint();
+
+  if (version != kInstrumentFileVersion) {
+    // Allow conversion of previous formats
+    // https://trello.com/c/O0SzcHfG
     return std::make_pair(false, "Invalid instrument file version");
   }
+
 
   // Name
   if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
@@ -78,7 +83,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
 
   // Version tag:string
   w.Key(Globals::kVersionTag);
-  w.String(Globals::kVersionString);
+  w.Uint(kInstrumentFileVersion);
 
   // Name tag:string
   w.Key(kNameTag);

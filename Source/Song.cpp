@@ -7,11 +7,13 @@ static constexpr const char *kInstrumentTag = "Instrument";
 static constexpr const char *kTempoTag = "Tempo";
 static constexpr const char *kMeasuresTag = "Measures";
 static constexpr const char *kTimeSignatureTag = "TimeSignature";
+static constexpr const char* kMinimumNoteDurationTag = "MinimumNoteDuration";
 static constexpr const char* kTracksTag = "Tracks";
 static constexpr const char *kNotesTag = "Notes";
 static constexpr const char *kBeatTag = "Beat";
 static constexpr const char* kFretTag = "Fret";
-static constexpr const char* kMinimumNoteDurationTag = "MinimumNoteDuration";
+static constexpr uint32 kSongFileVersion = 1;
+static constexpr uint32 kDefaultNoteValue = 4;
 
 Song::Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
   : tempo(tempo)
@@ -38,13 +40,15 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
   }
 
   // Version
-  if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsString()) {
+  if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsUint()) {
     return std::make_pair(false, "Missing/invalid version tag");
   }
 
-  std::string version = d[Globals::kVersionTag].GetString();
+  auto version = d[Globals::kVersionTag].GetUint();
 
-  if (version != std::string(Globals::kVersionString)) {
+  if (version != kSongFileVersion) {
+    // Allow conversion of previous formats
+    // https://trello.com/c/O0SzcHfG
     return std::make_pair(false, "Invalid song file version");
   }
 
@@ -72,7 +76,9 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
   auto div = timeSignature.find('/');
   if (div != std::string::npos) {
     beatsPerMeasure = std::stoi(timeSignature.substr(0, div));
-    noteValue = std::stoi(timeSignature.substr(div + 1));
+
+    // We currently assume a quarter-note base note value
+    // https://trello.com/c/WY2eBMDh
 
     // TODO: Validation of time signature
   }
@@ -143,6 +149,66 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
   return std::make_pair(true, "");
 }
+
+std::pair<bool, std::string> Song::SerializeWrite(const WriteSerializer& serializer) {
+  auto& w = serializer.w;
+
+  w.StartObject();
+  // Version tag:string
+  w.Key(Globals::kVersionTag);
+  w.Uint(kSongFileVersion);
+
+  w.Key(kInstrumentTag);
+  w.String(instrumentName.c_str());
+
+  w.Key(kTempoTag);
+  w.Uint(GetTempo());
+
+  w.Key(kTimeSignatureTag);
+  // We currently assume a quarter-note base note value
+  // https://trello.com/c/WY2eBMDh
+  w.String((std::to_string(beatsPerMeasure) + "/" + std::to_string(kDefaultNoteValue)).c_str());
+
+  w.Key(kMinimumNoteDurationTag);
+  w.Uint(minNoteValue);
+
+  if (GetNoteCount() != 0) {
+    w.Key(kTracksTag);
+    w.StartArray();
+
+    for (uint32 lineIndex = 0; lineIndex < barLines.size(); ++lineIndex) {
+      auto line = barLines[lineIndex];
+
+      w.StartObject();
+
+      w.Key(kNotesTag);
+      w.StartArray();
+
+      for (size_t n = 0; n < line.size(); ++n) {
+        auto& note = line[n];
+        if (note.GetEnabled()) {
+          w.StartObject();
+
+          w.Key(kBeatTag);
+          w.Uint(n);
+          w.Key(kFretTag);
+          w.Int(note.GetGameIndex());
+
+          w.EndObject();
+        }
+      }
+
+      w.EndArray();
+      w.EndObject();
+    }
+
+    w.EndArray();
+    w.EndObject();
+  }
+
+  return std::make_pair(true, "");
+}
+
 
 void Song::AddLine() {
   barLines.push_back(std::vector<Note>(GetNoteCount()));

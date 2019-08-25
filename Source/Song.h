@@ -2,6 +2,7 @@
 
 #include "BaseTypes.h"
 #include "SerializeFwd.h"
+#include "Globals.h"
 #include <string>
 #include <vector>
 
@@ -38,19 +39,19 @@ public:
   };
 
 protected:
-  uint32 tempo = 0;
-  uint32 beatsPerMeasure = 0;
-  uint32 noteValue = 4;
-  uint32 minNoteValue = 0;
+  uint32 tempo = Globals::kDefaultTempo;
+  uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
+  uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string instrumentName;
 
   std::vector<std::vector<Note>> barLines;
 
 public:
-  Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
+  Song(uint32 numLines, uint32 numMeasures, uint32 tempo, uint32 beatsPerMeasure, uint32 minNoteValue);
   Song(const ReadSerializer& serializer);
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
+  std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
 
   inline const std::string& GetInstrumentName() const {
     return instrumentName;

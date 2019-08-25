@@ -20,22 +20,9 @@
 #include "Song.h"
 
 static constexpr float kMetronomeVolume = 0.7f;
-static constexpr const char *kInstrumentTag = "Instrument";
-static constexpr const char *kTempoTag = "Tempo";
-static constexpr const char *kMeasuresTag = "Measures";
-static constexpr const char *kBeatsPerMeasureTag = "BeatsPerMeasure";
-static constexpr const char *kNotesTag = "Notes";
-static constexpr const char* kTracksTag = "Tracks";
-static constexpr const char* kFretTag = "Fret";
-static constexpr const char *kBeatTag = "Beat";
-static constexpr const char *kTrackTag = "Track";
-static constexpr const char *kVelocityTag = "Velocity";
 static constexpr std::string_view kMidiTags[] = { ".midi", ".mid" };
 static constexpr std::string_view kJsonTag(".json");
 static constexpr std::string_view kNewInstrumentDefaultName("New Instrument");
-static constexpr uint32 kDefaultBpm = 120;
-static constexpr uint32 kDefaultSubdivisions = 4;
-
 
 enum class ReservedSounds {
   MetronomeFull,
@@ -231,7 +218,8 @@ bool Sequencer::NewInstrument() {
     delete instrument;
     instrument = newInstrument;
 
-    // TODO: Hmm
+    // This is destructive
+    // https://trello.com/c/cSv285Tr
     NewSong();
 
     return true;
@@ -252,7 +240,8 @@ bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
       delete instrument;
       instrument = newInstrument;
 
-      // TODO: Hmm
+      // This is destructive
+      // https://trello.com/c/cSv285Tr
       NewSong();
 
       return true;
@@ -263,33 +252,83 @@ bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
 
 void Sequencer::NewSong() {
   delete song;
-  song = new Song(instrument->GetTrackCount(), kDefaultBpm,
-    kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
+  song = new Song(instrument->GetTrackCount(), kDefaultNumMeasures,
+    Globals::kDefaultTempo, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
   UpdateInterval();
 }
 
 bool Sequencer::SaveSong(std::string fileName) {
-  if (!song) {
-    MCLOG(Warn, "Somehow there is no song in SaveSong");
-    return false;
-  }
+  MCLOG(Info, "Saving song to file \'%s\'", fileName.c_str());
 
-  std::ofstream ofs(fileName);
-  if (ofs.bad()) {
-    MCLOG(Warn, "Unable to save song to file %s ", fileName.c_str());
+  if (!song) {
+    MCLOG(Error, "Somehow there is no song in SaveSong");
     return false;
   }
 
   rapidjson::StringBuffer sb;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
 
-  //song->SerializeWrite({ w });
+  auto result = song->SerializeWrite({ w });
+  if (!result.first) {
+    MCLOG(Error, "Unable to save song: %s", result.second.c_str());
+    return false;
+  }
+
+  std::ofstream ofs(fileName);
+  if (ofs.bad()) {
+    MCLOG(Error, "Unable to save song to file %s ", fileName.c_str());
+    return false;
+  }
 
   std::string outputString(sb.GetString());
   ofs.write(outputString.c_str(), outputString.length());
   ofs.close();
 
   return true;
+}
+
+void Sequencer::LoadSongJson(std::string fileName) {
+  MCLOG(Info, "Loading song from file \'%s\'", fileName.c_str());
+
+  std::ifstream ifs(fileName);
+
+  if (ifs.bad()) {
+    MCLOG(Error, "Unable to load song from file %s", fileName.c_str());
+    return;
+  }
+
+  std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+  if (!fileData.length()) {
+    MCLOG(Error, "Unable to load song from file %s", fileName.c_str());
+    return;
+  }
+
+  rapidjson::Document document;
+  document.Parse(fileData.c_str());
+
+  if (!document.IsObject()) {
+    MCLOG(Error, "Failure parsing JSON in file %s", fileName.c_str());
+    return;
+  }
+
+  try {
+    auto newSong = new Song({ document });
+
+    if (newSong->GetMinNoteValue() > Globals::kDefaultMinNote) {
+      delete newSong;
+      MCLOG(Error, "Song subdivisions greater than sequencer max");
+      return;
+    }
+
+    delete song;
+    song = newSong;
+
+    UpdateInterval();
+  }
+  catch (std::runtime_error& rte) {
+    MCLOG(Error, "Failed to load song: %s", rte.what());
+  }
 }
 
 void Sequencer::LoadSongMidi(std::string fileName) {
@@ -360,51 +399,6 @@ void Sequencer::LoadSongMidi(std::string fileName) {
   }
 }
 
-void Sequencer::LoadSongJson(std::string fileName) {
-  MCLOG(Info, "Loading song from file \'%s\'", fileName.c_str());
-
-  std::ifstream ifs(fileName);
-
-  if (ifs.bad()) {
-    MCLOG(Warn, "Unable to load song from file %s", fileName.c_str());
-    return;
-  }
-
-  std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-
-  if (!fileData.length()) {
-    MCLOG(Warn, "Unable to load song from file %s", fileName.c_str());
-    return;
-  }
-
-  // Create JSON parser
-  rapidjson::Document document;
-  document.Parse(fileData.c_str());
-
-  if (!document.IsObject()) {
-    MCLOG(Warn, "Failure parsing JSON in file %s", fileName.c_str());
-    return;
-  }
-
-  try {
-    auto newSong = new Song({ document });
-
-    if (newSong->GetMinNoteValue() > Globals::kDefaultMinNote) {
-      delete newSong;
-      MCLOG(Error, "Song subdivisions greater than sequencer max");
-      return;
-    }
-
-    delete song;
-    song = newSong;
-
-    UpdateInterval();
-  }
-  catch (std::runtime_error& rte) {
-    MCLOG(Error, "Failed to load song: %s", rte.what());
-  }
-}
-
 void Sequencer::LoadSong(std::string fileName) {
   if (fileName.compare(fileName.length() -
     kJsonTag.length(), kJsonTag.length(), kJsonTag) == 0) {
@@ -427,6 +421,7 @@ bool Sequencer::Init() {
   }
   catch (...) {
     MCLOG(Error, "Unable to load downbeat metronome WAV file");
+    // Survivable
   }
   try {
     reservedPatches[static_cast<int32>(ReservedSounds::MetronomePartial)] =
@@ -434,6 +429,7 @@ bool Sequencer::Init() {
   }
   catch (...) {
     MCLOG(Error, "Unable to load upbeat metronome WAV file");
+    // Survivable
   }
 
   return true;

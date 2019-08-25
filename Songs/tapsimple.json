@@ -1,5 +1,5 @@
 {
-    "version": "0.0.7",
+    "version": 1,
     "Instrument": "Roland TR-808",
     "Tempo": 120,
     "TimeSignature": "4/4",
