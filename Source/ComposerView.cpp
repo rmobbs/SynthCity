@@ -395,26 +395,16 @@ void ComposerView::ProcessPendingActions() {
 
   // Newly triggered notes are written to entry 1 in the audio callback
   playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
-  playingNotesFlashTimes[0].merge(playingNotesFlashTimes[1]);
-
-#if 0
-  // Beats per measure changed
-  if (pendingBeatsPerMeasure != -1) {
-    sequencer.SetBeatsPerMeasure(pendingBeatsPerMeasure);
-  }
-#endif
 
   // Subdivision changed
   if (pendingSubdivision != -1) {
     sequencer.SetSubdivision(pendingSubdivision);
   }
 
-#if 0
   // Beats per minute changed
-  if (pendingBeatsPerMinute != -1) {
-    sequencer.SetBeatsPerMinute(pendingBeatsPerMinute);
+  if (pendingTempo != -1) {
+    sequencer.SetTempo(pendingTempo);
   }
-#endif
 
   // Master volume changed
   if (pendingMasterVolume >= 0.0f) {
@@ -506,10 +496,8 @@ void ComposerView::ProcessPendingActions() {
   }
 
   // Reset all pendings
-  pendingNumMeasures = -1;
-  pendingBeatsPerMeasure = -1;
   pendingSubdivision = -1;
-  pendingBeatsPerMinute = -1;
+  pendingTempo = -1;
   pendingMasterVolume = -1.0f;
   pendingTrackVolume = { -1, 0.0f };
   pendingTrackMute = { -1, false };
@@ -823,7 +811,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
               ImGui::NewLine();
 
               // Notes (displayed at current beat zoom level)
-              uint32 beatStep = song->GetBeatSubdivision() / sequencer.GetSubdivision();
+              uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
               for (size_t beatIndex = 0; beatIndex < line.size(); beatIndex += beatStep) {
                 ImGui::SameLine();
 
@@ -891,6 +879,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 }
               }
             }
+
             ImGui::SetCursorPosY(songCanvasSize.y);
             auto beatLineEndY = ImGui::GetCursorPosY();
 
@@ -910,7 +899,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
             // Draw the play line
             cursorPosX = beatWidth * (sequencer.GetPosition() /
-              (song->GetBeatSubdivision() / sequencer.GetSubdivision()));
+              (song->GetMinNoteValue() / sequencer.GetSubdivision()));
             ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
             ImGui::FillRect(ImVec2(1, beatLineEndY - beatLineBegY), 0x7FFFFFFF);
 
@@ -1005,9 +994,38 @@ void ComposerView::Render(ImVec2 canvasSize) {
         int currentBpm = song ? song->GetTempo() : kDefaultBpm;
         if (ImGui::InputInt("BPM", &currentBpm)) {
           // @Delay
-          pendingBeatsPerMinute = currentBpm;
+          pendingTempo = currentBpm;
         }
         ImGui::PopItemWidth();
+
+        // Grid (subdivision)
+        ImGui::SameLine();
+        ImGui::PushItemWidth(100);
+        if (ImGui::BeginCombo("Subdivision", (std::string("1/") +
+          std::to_string(sequencer.GetSubdivision())).c_str())) {
+          std::vector<uint32> subDivs;
+
+          uint32 subDiv = Globals::kDefaultMinNote;
+          while (subDiv >= 2) {
+            subDivs.push_back(subDiv);
+            subDiv /= 2;
+          }
+
+          for (auto revIter = subDivs.rbegin(); revIter != subDivs.rend(); ++revIter) {
+            bool isSelected = (sequencer.GetSubdivision() == *revIter);
+            if (ImGui::Selectable((std::string("1/") +
+              std::to_string(*revIter)).c_str(), isSelected)) {
+              // @Delay
+              pendingSubdivision = *revIter;
+            }
+            else {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+        ImGui::PopItemWidth();
+
 
         // Loop
         ImGui::SameLine();
@@ -1122,8 +1140,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
 void ComposerView::NotePlayedCallback(uint32 trackIndex, uint32 noteIndex) {
 #if 0
   playingTrackFlashTimes[1].insert({ trackIndex, Globals::currentTime });
-  playingNotesFlashTimes[1].insert({ Sequencer::Get().GetInstrument()->
-    GetTrack(trackIndex)->GetNoteCount() * trackIndex + noteIndex, Globals::currentTime });
 #endif
 }
 

@@ -78,29 +78,33 @@ uint32 Sequencer::GetTempo() const {
 void Sequencer::SetTempo(uint32 tempo) {
   if (song != nullptr) {
     song->SetTempo(tempo);
-
-    interval = static_cast<int32>(CalcInterval(GetSubdivision()));
-    Mixer::Get().ApplyInterval(interval);
+    UpdateInterval();
   }
 }
 
-uint32 Sequencer::CalcInterval(uint32 beatSubdivision) const {
-  if (GetTempo() > 0 && beatSubdivision > 0) {
-    return static_cast<uint32>(((Mixer::kDefaultFrequency /
-      GetTempo()) * 60.0) / static_cast<float>(beatSubdivision));
+uint32 Sequencer::UpdateInterval() {
+  // Using min note value at all times so grid display does not affect playback
+  // https://trello.com/c/05XYJTLP
+  uint32 noteInterval = Globals::kDefaultMinNote;//currbeatSubdivision;
+  if (song != nullptr) {
+    noteInterval = song->GetMinNoteValue();
   }
-  return kDefaultInterval;
+
+  interval = static_cast<uint32>((Mixer::kDefaultFrequency /
+    GetTempo() * 60.0) / static_cast<double>(noteInterval));
+  Mixer::Get().ApplyInterval(interval);
+
+  return interval;
 }
 
 void Sequencer::SetSubdivision(uint32 subdivision) {
+  currBeatSubdivision = std::min(subdivision, Globals::kDefaultMinNote);
   if (song != nullptr) {
-    currBeatSubdivision = std::min(subdivision, song->GetBeatSubdivision());
+    currBeatSubdivision = std::min(subdivision, song->GetMinNoteValue());
   }
-  else {
-    currBeatSubdivision = std::min(subdivision, kDefaultMaxBeatSubdivisions);
-  }
-  interval = static_cast<int32>(CalcInterval(GetSubdivision()));
-  Mixer::Get().ApplyInterval(interval);
+  // Changing the display subdivision does not affect playback
+  // https://trello.com/c/05XYJTLP
+  //UpdateInterval();
 }
 
 void Sequencer::FullNoteCallback(bool isMeasure) {
@@ -156,20 +160,20 @@ uint32 Sequencer::NextFrame()
 {
   // NOTE: Called from SDL audio callback so SM_LockAudio is in effect
 
-  // If nothing to do, wait current subdivision (TODO: See if we can wait _minimal_ subdivision ...
-  // need to fix how we're triggering metronome for that)
-  if (!isPlaying || !interval || !instrument || !song) {
-    return CalcInterval(GetSubdivision());
+  if (!isPlaying || !instrument || !song) {
+    return interval;
   }
 
   currPosition = nextPosition;
-  nextPosition = currPosition + song->GetBeatSubdivision() / currBeatSubdivision;
+  // Commenting out divide so grid display doesn't affect note playback
+  // https://trello.com/c/05XYJTLP
+  nextPosition = currPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
 
   // Still issue beat callbacks when in lead-in
   auto absCurrPosition = std::abs(currPosition);
-  if ((absCurrPosition % song->GetBeatSubdivision()) == 0) {
+  if ((absCurrPosition % song->GetMinNoteValue()) == 0) {
     FullNoteCallback((absCurrPosition % (song->
-      GetBeatSubdivision() * song->GetBeatsPerMeasure())) == 0);
+      GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
   }
 
   if (currPosition >= 0) {
@@ -177,31 +181,34 @@ uint32 Sequencer::NextFrame()
     if (currPosition >= static_cast<int32>(song->GetNoteCount())) {
       if (isLooping) {
         currPosition = 0;
-        nextPosition = currPosition + song->GetBeatSubdivision() / currBeatSubdivision;
+        // Commenting out divide so grid display doesn't affect note playback
+        // https://trello.com/c/05XYJTLP
+        nextPosition = currPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
         ++loopIndex;
       }
       else {
         Stop();
-        return CalcInterval(GetSubdivision());
       }
     }
 
-    for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++ lineIndex) {
-      // NOTE: Will lines and tracks always be 1:1?
-      if (instrument->tracks[lineIndex]->GetMute()) {
-        continue;
-      }
-      auto soloTrackIndex = instrument->GetSoloTrack();
-      if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
-        continue;
-      }
-
-      auto d = song->GetLine(lineIndex).data() + currPosition;
-      if (d->GetEnabled()) {
-        for (auto& notePlayedCallback : notePlayedCallbacks) {
-          notePlayedCallback.first(lineIndex, currPosition, notePlayedCallback.second);
+    if (isPlaying) {
+      for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
+        // NOTE: Will lines and tracks always be 1:1?
+        if (instrument->tracks[lineIndex]->GetMute()) {
+          continue;
         }
-        instrument->PlayTrack(lineIndex);
+        auto soloTrackIndex = instrument->GetSoloTrack();
+        if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
+          continue;
+        }
+
+        auto d = song->GetLine(lineIndex).data() + currPosition;
+        if (d->GetEnabled()) {
+          for (auto& notePlayedCallback : notePlayedCallbacks) {
+            notePlayedCallback.first(lineIndex, currPosition, notePlayedCallback.second);
+          }
+          instrument->PlayTrack(lineIndex);
+        }
       }
     }
   }
@@ -256,10 +263,9 @@ bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
 
 void Sequencer::NewSong() {
   delete song;
-  song = new Song(instrument->GetTrackCount(),
-    kDefaultBpm, kDefaultNumMeasures, kDefaultBeatsPerMeasure, kDefaultSubdivisions);
-  interval = static_cast<int32>(CalcInterval(GetSubdivision()));
-  Mixer::Get().ApplyInterval(interval);
+  song = new Song(instrument->GetTrackCount(), kDefaultBpm,
+    kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
+  UpdateInterval();
 }
 
 bool Sequencer::SaveSong(std::string fileName) {
@@ -333,9 +339,9 @@ void Sequencer::LoadSongMidi(std::string fileName) {
         auto b = static_cast<int32>(kMinMidiValue);
         auto trackIndex = (std::max(a, b) - b) % instrument->tracks.size();
         auto beatsIndex = static_cast<uint32>(static_cast<double>(midiEvent.timeStamp) /
-          static_cast<double>(midiSource.getTimeDivision()) * kDefaultMaxBeatSubdivisions);
+          static_cast<double>(midiSource.getTimeDivision()) * Globals::kDefaultMinNote);
 
-        if (!(beatsIndex % kDefaultMaxBeatSubdivisions)) {
+        if (!(beatsIndex % Globals::kDefaultMinNote)) {
           ++numMeasures;
         }
         
@@ -383,11 +389,16 @@ void Sequencer::LoadSongJson(std::string fileName) {
   try {
     auto newSong = new Song({ document });
 
+    if (newSong->GetMinNoteValue() > Globals::kDefaultMinNote) {
+      delete newSong;
+      MCLOG(Error, "Song subdivisions greater than sequencer max");
+      return;
+    }
+
     delete song;
     song = newSong;
 
-    interval = static_cast<int32>(CalcInterval(GetSubdivision()));
-    Mixer::Get().ApplyInterval(interval);
+    UpdateInterval();
   }
   catch (std::runtime_error& rte) {
     MCLOG(Error, "Failed to load song: %s", rte.what());

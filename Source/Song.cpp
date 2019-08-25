@@ -13,13 +13,13 @@ static constexpr const char *kBeatTag = "Beat";
 static constexpr const char* kFretTag = "Fret";
 static constexpr const char* kMinimumNoteDurationTag = "MinimumNoteDuration";
 
-Song::Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 beatSubdivision)
+Song::Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
   : tempo(tempo)
   , beatsPerMeasure(beatsPerMeasure)
-  , beatSubdivision(beatSubdivision) {
+  , minNoteValue(minNoteValue) {
   barLines.resize(numLines);
   for (auto& barLine : barLines) {
-    barLine.resize(numMeasures * beatsPerMeasure * beatSubdivision);
+    barLine.resize(numMeasures * beatsPerMeasure * minNoteValue);
   }
 }
 
@@ -84,7 +84,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
     return std::make_pair(false, "Missing/invalid minimum note duration");
   }
 
-  beatSubdivision = d[kMinimumNoteDurationTag].GetUint();
+  minNoteValue = d[kMinimumNoteDurationTag].GetUint();
 
   // Read tracks (can have none)
   if (d.HasMember(kTracksTag) && d[kTracksTag].IsArray()) {
@@ -131,9 +131,9 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
     if (barLines.size()) {
       uint32 beatCount = barLines[0].size();
 
-      uint32 minBeatsPerMeasure = beatSubdivision * beatsPerMeasure;
-      if ((beatCount % minBeatsPerMeasure) != 0) {
-        beatCount = ((beatCount / minBeatsPerMeasure) + 1) * minBeatsPerMeasure;
+      uint32 minNotesPerMeasure = minNoteValue * beatsPerMeasure;
+      if ((beatCount % minNotesPerMeasure) != 0) {
+        beatCount = ((beatCount / minNotesPerMeasure) + 1) * minNotesPerMeasure;
         for (auto& barLine : barLines) {
           barLine.resize(beatCount);
         }

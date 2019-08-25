@@ -7,6 +7,8 @@
 
 class Song {
 public:
+  static constexpr uint32 kDefaultBeatsPerMeasure = 4;
+
   class Note {
   protected:
     bool enabled = false;
@@ -39,13 +41,13 @@ protected:
   uint32 tempo = 0;
   uint32 beatsPerMeasure = 0;
   uint32 noteValue = 4;
-  uint32 beatSubdivision = 0;
+  uint32 minNoteValue = 0;
   std::string instrumentName;
 
   std::vector<std::vector<Note>> barLines;
 
 public:
-  Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 beatSubdivision);
+  Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
   Song(const ReadSerializer& serializer);
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
@@ -73,8 +75,8 @@ public:
   uint32 GetBeatsPerMeasure() const {
     return beatsPerMeasure;
   }
-  uint32 GetBeatSubdivision() const {
-    return beatSubdivision;
+  uint32 GetMinNoteValue() const {
+    return minNoteValue;
   }
   uint32 GetTempo() const {
     return tempo;
@@ -83,7 +85,7 @@ public:
     this->tempo = tempo;
   }
   uint32 GetNumMeasures() const {
-    return GetNoteCount() / (beatSubdivision * beatsPerMeasure);
+    return GetNoteCount() / (minNoteValue * beatsPerMeasure);
   }
 
   void AddLine();

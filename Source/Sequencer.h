@@ -13,16 +13,14 @@ class Patch;
 class Song;
 
 class Sequencer : public Mixer::Controller {
-private:
-  static constexpr uint32 kDefaultBeatsPerMeasure = 4;
+public:
   static constexpr uint32 kDefaultNumMeasures = 4;
-  static constexpr uint32 kDefaultMaxBeatSubdivisions = 8;
-  static constexpr uint32 kDfeaultBeatSubdivisions = 4;
+  static constexpr uint32 kDfeaultBeatSubdivision = 4;
   static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kMaxTempo = 220;
   static constexpr uint32 kDefaultTempo = 120;
   static constexpr uint32 kDefaultInterval = 1000;
-public:
+
   // Loaded MIDI is passed to the host; they interact with the user to determine what
   // parameters will be used to convert that MIDI to our song format
   struct MidiConversionParams {
@@ -37,7 +35,7 @@ private:
   static Sequencer* singleton;
 
   uint32 loopIndex = 0;
-  uint32 currBeatSubdivision = kDfeaultBeatSubdivisions;
+  uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
   std::atomic<bool> isPlaying = false;
   std::atomic<bool> isMetrononeOn = false;
   std::atomic<bool> isLooping = true;
@@ -45,7 +43,7 @@ private:
   void* notePlayedPayload = nullptr;
   int32 currPosition = 0;
   int32 nextPosition = 0;
-  int32 interval = 0;
+  int32 interval = kDefaultInterval;
   Instrument* instrument = nullptr;
   Song* song = nullptr;
   std::vector<Patch*> reservedPatches;
@@ -53,7 +51,7 @@ private:
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
 
   void FullNoteCallback(bool isMeasure);
-  uint32 CalcInterval(uint32 beatSubdivision) const;
+  uint32 UpdateInterval();
 
 
   // Mixer

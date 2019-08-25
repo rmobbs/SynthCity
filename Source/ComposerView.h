@@ -35,10 +35,9 @@ protected:
   int32 pendingPlayTrack = -1;
   int32 pendingRemoveTrack = -1;
   int32 pendingCloneTrack = -1;
-  int32 pendingNumMeasures = -1;
   int32 pendingSubdivision = -1;
-  int32 pendingBeatsPerMinute = -1;
-  int32 pendingBeatsPerMeasure = -1;
+  int32 pendingTempo = -1;
+  float pendingMasterVolume = -1.0f;
   bool pendingNewInstrument = false;
   bool pendingLoadInstrument = false;
   bool pendingSaveInstrument = false;
@@ -47,7 +46,6 @@ protected:
   bool pendingSaveSong = false;
 
   uint32 notePlayedCallbackId = UINT32_MAX;
-  float pendingMasterVolume = -1.0f;
   std::vector<std::vector<int32>> noteClipboard;
   std::vector<std::set<int32>> noteSelectedStatus;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
@@ -66,7 +64,6 @@ protected:
   ImGuiRenderable renderable;
 
   std::map<int, double> playingTrackFlashTimes[2];
-  std::map<int, double> playingNotesFlashTimes[2];
   Mode mode = Mode::Normal;
 
   void InitResources();
