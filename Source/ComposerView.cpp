@@ -559,8 +559,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack("Add Track", sequencer.GetInstrument(),
-            -1, new Track(GetNewTrackName(kDefaultNewTrackName)), playButtonIconTexture, stopButtonIconTexture);
+          pendingDialog = new DialogTrack("Add Track", -1, new Track(GetNewTrackName(kDefaultNewTrackName)), playButtonIconTexture, stopButtonIconTexture);
         }
         ImGui::EndMenu();
       }
@@ -710,7 +709,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
               }
               ImGui::SameLine();
               if (ImGui::Button("Properties...")) {
-                pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
+                pendingDialog = new DialogTrack("Edit Track", trackIndex,
                   new Track(*track), playButtonIconTexture, stopButtonIconTexture);
                 closePopup = true;
               }
@@ -1140,9 +1139,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 }
 
 void ComposerView::NotePlayedCallback(uint32 trackIndex, uint32 noteIndex) {
-#if 0
   playingTrackFlashTimes[1].insert({ trackIndex, Globals::currentTime });
-#endif
 }
 
 void ComposerView::InitResources() {

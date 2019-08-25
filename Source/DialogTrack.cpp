@@ -4,7 +4,9 @@
 #include "Patch.h"
 #include "Process.h"
 #include "Sound.h"
+#include "Sequencer.h"
 #include "Instrument.h"
+#include "Song.h"
 #include "Mixer.h"
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -12,9 +14,8 @@
 static constexpr float kMinDialogWidth(600.0f);
 static constexpr float kMinDialogHeight(600.0f);
 
-DialogTrack::DialogTrack(std::string title, Instrument* instrument, int32 trackIndex, Track* track, uint32 playButtonTexture, uint32 stopButtonTexture)
+DialogTrack::DialogTrack(std::string title, int32 trackIndex, Track* track, uint32 playButtonTexture, uint32 stopButtonTexture)
   : title(title)
-  , instrument(instrument)
   , trackIndex(trackIndex)
   , track(track)
   , playButtonTexture(playButtonTexture)
@@ -97,10 +98,15 @@ bool DialogTrack::Render() {
 
     if (exitedOk) {
       if (trackIndex != -1) {
-        instrument->ReplaceTrack(trackIndex, track);
+        Sequencer::Get().GetInstrument()->ReplaceTrack(trackIndex, track);
       }
       else {
-        instrument->AddTrack(track);
+        Sequencer::Get().GetInstrument()->AddTrack(track);
+
+        auto song = Sequencer::Get().GetSong();
+        if (song != nullptr) {
+          song->AddLine();
+        }
       }
       track = nullptr;
     }

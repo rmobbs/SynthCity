@@ -442,6 +442,9 @@ bool Sequencer::Init() {
 Sequencer::~Sequencer() {
   AudioGlobals::LockAudio();
   
+  delete song;
+  song = nullptr;
+
   delete instrument;
   instrument = nullptr;
 

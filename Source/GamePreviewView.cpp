@@ -65,7 +65,7 @@ FreeList<FretNote, float, uint32> fretNoteFreeList;
 
 GamePreviewView::GamePreviewView(uint32 mainWindowHandle)
   : mainWindowHandle(mainWindowHandle) {
-  InitResources();
+  //InitResources();
 }
 
 GamePreviewView::~GamePreviewView() {

@@ -28,7 +28,10 @@ Instrument::Instrument(const ReadSerializer& r) {
 }
 
 Instrument::~Instrument() {
-
+  for (auto& track : tracks) {
+    delete track;
+  }
+  tracks.clear();
 }
 
 std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& serializer) {
