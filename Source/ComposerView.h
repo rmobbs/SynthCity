@@ -46,8 +46,8 @@ protected:
   bool pendingSaveSong = false;
 
   uint32 notePlayedCallbackId = UINT32_MAX;
-  std::vector<std::vector<int32>> noteClipboard;
-  std::vector<std::set<int32>> noteSelectedStatus;
+  std::vector<std::set<uint32>> noteClipboard;
+  std::vector<std::set<uint32>> noteSelectedStatus;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   std::pair<int32, int32> toggledNote = { -1, -1 };
   std::pair<int32, int32> hoveredNote = { -1, -1 };

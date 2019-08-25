@@ -25,6 +25,7 @@
 #include "InputState.h"
 #include "GamePreviewView.h"
 #include "Song.h"
+#include "OddsAndEnds.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -159,6 +160,8 @@ bool LoadSong() {
   ofn.lStructSize = sizeof(ofn);
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  // TODO: Fix MIDI loading
+  // https://trello.com/c/vQCRzrcm
   ofn.lpstrFilter = _TEXT("JSON\0*.json\0");//MIDI\0 * .midi; *.mid\0");
   ofn.nFilterIndex = 0;
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
@@ -218,6 +221,8 @@ std::string GetNewTrackName(const std::string& trackNameBase) {
   return trackName;
 }
 
+// TODO: Better implementation of custom track color schemes
+// https://trello.com/c/VX59Thk1
 void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
 
   if (colorScheme.length()) {
@@ -237,34 +242,6 @@ void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
       imGuiStyle.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
       flashColor = 0x00838380;
     }
-  }
-}
-
-template<typename T> inline bool set_contains(const std::set<T>& theSet, const T& theValue) {
-  return (theSet.find(theValue) != theSet.end());
-}
-
-template<typename T> inline void set_toggle(std::set<T>& theSet, const T& theValue) {
-  auto setEntry = theSet.find(theValue);
-  if (setEntry != theSet.end()) {
-    theSet.erase(setEntry);
-  }
-  else {
-    theSet.insert(theValue);
-  }
-}
-
-template<typename T> inline void set_add(std::set<T>& theSet, const T& theValue) {
-  auto setEntry = theSet.find(theValue);
-  if (setEntry == theSet.end()) {
-    theSet.insert(theValue);
-  }
-}
-
-template<typename T> inline void set_remove(std::set<T>& theSet, const T& theValue) {
-  auto setEntry = theSet.find(theValue);
-  if (setEntry != theSet.end()) {
-    theSet.erase(setEntry);
   }
 }
 
@@ -305,8 +282,19 @@ void ComposerView::HandleInput() {
   if (inputState.modState & KMOD_CTRL) {
     // Copy
     if (inputState.pressed[SDLK_c]) {
-      if (noteSelectedStatus.size() > 0) {
-        //noteClipboard = noteSelectedStatus;
+      // Don't clear the existing clipboard if we have nothing currently selected, as
+      // accidentally pressing CTLR+C again after CTRL+C (instead of CTRL+V) is very
+      // frustrating
+      bool notesSelected = false;
+      for (const auto& nss : noteSelectedStatus) {
+        if (nss.size() > 0) {
+          notesSelected = true;
+          break;
+        }
+      }
+
+      if (notesSelected) {
+        noteClipboard = noteSelectedStatus;
       }
     }
 
@@ -315,31 +303,24 @@ void ComposerView::HandleInput() {
       if (noteClipboard.size()) {
         auto song = Sequencer::Get().GetSong();
         assert(song != nullptr);
+
         // We need to know the first note to generate the proper offset
-        size_t firstNote = INT32_MAX;
-        for (size_t t = 0; t < noteClipboard.size(); ++t) {
-          for (size_t n = 0; n < noteClipboard[t].size() && n < firstNote; ++n) {
-            if (noteClipboard[t][n] != 0) {
-              firstNote = n;
-              break;
-            }
+        size_t firstNote = UINT32_MAX;
+        for (const auto& ncp : noteClipboard) {
+          if (ncp.empty()) {
+            continue;
+          }
+
+          // Ordered set
+          auto iter = ncp.begin();
+          if (firstNote > *iter) {
+            firstNote = *iter;
           }
         }
 
-#if 0
-        if (firstNote != INT32_MAX) {
-          for (size_t t = 0; t < noteClipboard.size(); ++t) {
-            auto& line = song->GetLine(t);
-
-            size_t e = track->GetNoteCount();
-            for (size_t n = 0; n < noteClipboard[t].size(); ++n) {
-              if (noteClipboard[t][n] != 0) {
-                track->SetNote(e + n - firstNote, track->GetNote(n));
-              }
-            }
-          }
+        if (firstNote != UINT32_MAX) {
         }
-#endif
+
       }
     }
   }
@@ -830,7 +811,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 if (ImGui::SquareRadioButton(uniqueLabel.c_str(), note.GetEnabled(), buttonExtent.x, buttonExtent.y)) {
                   if (InputState::Get().modState & KMOD_SHIFT) {
                     if (note.GetEnabled()) {
-                      set_toggle<int32>(noteSelectedStatus[lineIndex], beatIndex);
+                      set_toggle<uint32>(noteSelectedStatus[lineIndex], beatIndex);
                     }
                   }
                   else {
@@ -846,6 +827,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                 if (note.GetEnabled()) {
                   // Draw filled note: TODO: Remove this, should draw it once above
+                  // https://trello.com/c/Ll8dgleN
                   {
                     ImVec4 noteColor = kDefaultNoteColor;
                     if (note.GetGameIndex() >= 0 && note.GetGameIndex() < _countof(kFretColors)) {
@@ -863,15 +845,15 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                     if (dragBox.x <= noteBox.z && noteBox.x <= dragBox.z &&
                       dragBox.w >= noteBox.y && noteBox.w >= dragBox.y) {
-                      set_add<int32>(noteSelectedStatus[lineIndex], beatIndex);
+                      set_add<uint32>(noteSelectedStatus[lineIndex], beatIndex);
                     }
                     else {
-                      set_remove<int32>(noteSelectedStatus[lineIndex], beatIndex);
+                      set_remove<uint32>(noteSelectedStatus[lineIndex], beatIndex);
                     }
                   }
 
                   // Draw selection box around note if selected
-                  if (set_contains<int32>(noteSelectedStatus[lineIndex], beatIndex)) {
+                  if (set_contains<uint32>(noteSelectedStatus[lineIndex], beatIndex)) {
                     ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
                     ImGui::DrawRect(ImVec2(buttonExtent.x - 2.0f,
                       buttonExtent.y - 2.0f), ImGui::ColorConvertFloat4ToU32(kDragSelectColor));
@@ -911,8 +893,9 @@ void ComposerView::Render(ImVec2 canvasSize) {
               // On mouse l-press, start the box recording (if we wait for drag to kick in we
               // lose a few pixels)
               if (ImGui::IsMouseClicked(0)) {
-                // TODO: Need to fix this to only clear if we're not over anything
-                //ClearSelectedNotes();
+                if (!(InputState::Get().modState & KMOD_SHIFT)) {
+                  ClearSelectedNotes();
+                }
 
                 mouseDragBeg = ImGui::GetMousePos();
                 mouseDragBeg -= ImGui::GetWindowPos();
@@ -1109,6 +1092,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         }
 
         // TODO: rather than parse the string, create an expanded class
+        // https://trello.com/c/wksKPcRD
         static const ImVec4 logColors[Logging::Category::Count] = {
           ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // Info = White
           ImVec4(0.7f, 0.7f, 0.0f, 1.0f), // Warn = Yellow
@@ -1189,7 +1173,9 @@ ComposerView::ComposerView(uint32 mainWindowHandle)
 }
 
 void ComposerView::Show() {
-  // TODO: Gotta rethink this
+  // Songs refer to instruments; if you load a song and it does not match the current
+  // instrument it needs a way to 'talk back' to us and ask us to load the correct
+  // instrument.
   auto _mainWindowHandle = mainWindowHandle;
   Sequencer::Get().SetLoadInstrumentCallback(
     [_mainWindowHandle](std::string instrumentName) {

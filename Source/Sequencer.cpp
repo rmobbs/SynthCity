@@ -331,6 +331,8 @@ void Sequencer::LoadSongJson(std::string fileName) {
   }
 }
 
+// TODO: Fix MIDI loading
+// https://trello.com/c/vQCRzrcm
 void Sequencer::LoadSongMidi(std::string fileName) {
   if (!instrument) {
     MCLOG(Error, "Cannot load MIDI file without a loaded instrument");
@@ -364,7 +366,6 @@ void Sequencer::LoadSongMidi(std::string fileName) {
   if (midiConversionParamsCallback(midiSource, midiConversionParams)) {
     MidiTrack midiTrack;
 
-    // TODO: Do this right
     static constexpr uint32 kMinMidiValue = 21;
 
     // Yikes
@@ -384,7 +385,7 @@ void Sequencer::LoadSongMidi(std::string fileName) {
           ++numMeasures;
         }
         
-        //instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f); // TODO: Need velocity
+        //instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f);
       }
 
       MCLOG(Info, "Successfully loaded MIDI file \'%s\'", fileName.c_str());
