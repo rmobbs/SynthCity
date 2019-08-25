@@ -37,17 +37,6 @@
 
 static constexpr float kFullBeatWidth = 80.0f;
 static constexpr float kKeyboardKeyHeight = 20.0f;
-static constexpr uint32 kDefaultBpm = 120;
-static constexpr uint32 kDefaultNumMeasures = 2;
-static constexpr uint32 kDefaultBeatsPerMeasure = 4;
-static constexpr uint32 kDefaultSubdivisions = 4;
-static constexpr float kPlayNoteFlashDuration = 0.5f;
-static constexpr uint32 kPlayNoteFlashColor = 0x0000FFFF;
-static constexpr uint32 kMaxMeasures = 256;
-static constexpr uint32 kMinMeasures = 1;
-static constexpr uint32 kMaxBeatsPerMeasure = 12;
-static constexpr uint32 kMinBeatsPerMeasure = 2;
-static constexpr float kDefaultNoteVelocity = 1.0f;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
@@ -972,7 +961,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // BPM
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        int currentBpm = song ? song->GetTempo() : kDefaultBpm;
+        int currentBpm = song ? song->GetTempo() : Globals::kDefaultTempo;
         if (ImGui::InputInt("BPM", &currentBpm)) {
           // @Delay
           pendingTempo = currentBpm;
