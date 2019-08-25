@@ -245,19 +245,10 @@ void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
   }
 }
 
-void ComposerView::GroupOrHoveredAction(std::function<void(int32, int32)> action) {
-  auto instrument = Sequencer::Get().GetInstrument();
-  if (instrument != nullptr) {
-    bool anySelected = false;
-    for (size_t trackIndex = 0; trackIndex < noteSelectedStatus.size(); ++trackIndex) {
-      for (auto& val : noteSelectedStatus[trackIndex]) {
-        anySelected = true;
-        action(trackIndex, val);
-      }
-    }
-
-    if (!anySelected && hoveredNote.second != -1) {
-      action(hoveredNote.first, hoveredNote.second);
+void ComposerView::SelectedGroupAction(std::function<void(int32, int32)> action) {
+  for (size_t trackIndex = 0; trackIndex < noteSelectedStatus.size(); ++trackIndex) {
+    for (auto& val : noteSelectedStatus[trackIndex]) {
+      action(trackIndex, val);
     }
   }
 }
@@ -265,11 +256,10 @@ void ComposerView::GroupOrHoveredAction(std::function<void(int32, int32)> action
 void ComposerView::HandleInput() {
   auto& inputState = InputState::Get();
 
-  // Saving tired right index fingers since 2018
-  if (inputState.pressed[SDLK_SPACE]) {
-    GroupOrHoveredAction([](int32 lineIndex, int32 noteIndex) {
+  if (inputState.pressed[SDLK_DELETE]) {
+    SelectedGroupAction([](int32 lineIndex, int32 noteIndex) {
       auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
-      note.SetEnabled(!note.GetEnabled());
+      note.SetEnabled(false);
     });
 
     ClearSelectedNotes();
@@ -359,7 +349,7 @@ void ComposerView::HandleInput() {
         }
 
         if (newGameIndex != -2) {
-          GroupOrHoveredAction([newGameIndex](int32 lineIndex, int32 noteIndex) {
+          SelectedGroupAction([newGameIndex](int32 lineIndex, int32 noteIndex) {
             auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
             note.SetGameIndex(newGameIndex);
           });
@@ -809,14 +799,14 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 auto buttonBegPos = ImGui::GetCursorPos();
                 auto buttonExtent = ImVec2(beatWidth, kKeyboardKeyHeight);
                 if (ImGui::SquareRadioButton(uniqueLabel.c_str(), note.GetEnabled(), buttonExtent.x, buttonExtent.y)) {
-                  if (InputState::Get().modState & KMOD_SHIFT) {
-                    if (note.GetEnabled()) {
-                      set_toggle<uint32>(noteSelectedStatus[lineIndex], beatIndex);
+                  // Clicking a disabled note enables it; clicking an enabled note selects it
+                  if (note.GetEnabled()) {
+                    if (!(InputState::Get().modState & KMOD_SHIFT)) {
+                      ClearSelectedNotes();
                     }
+                    set_toggle<uint32>(noteSelectedStatus[lineIndex], beatIndex);
                   }
                   else {
-                    ClearSelectedNotes();
-
                     toggledNote = { lineIndex, beatIndex };
                   }
                 }
@@ -893,8 +883,12 @@ void ComposerView::Render(ImVec2 canvasSize) {
               // On mouse l-press, start the box recording (if we wait for drag to kick in we
               // lose a few pixels)
               if (ImGui::IsMouseClicked(0)) {
+                // Don't clear notes if they are attempting to add to the set
                 if (!(InputState::Get().modState & KMOD_SHIFT)) {
-                  ClearSelectedNotes();
+                  // Don't clear notes if they are beginning a selected group drag
+                  if (hoveredNote.first == -1 || !set_contains<uint32>(noteSelectedStatus[hoveredNote.first], hoveredNote.second)) {
+                    ClearSelectedNotes();
+                  }
                 }
 
                 mouseDragBeg = ImGui::GetMousePos();

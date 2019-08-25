@@ -72,7 +72,7 @@ protected:
   void NotePlayedCallback(uint32 trackIndex, uint32 noteIndex);
   void ProcessPendingActions();
   void ClearSelectedNotes();
-  void GroupOrHoveredAction(std::function<void(int32, int32)> action);
+  void SelectedGroupAction(std::function<void(int32, int32)> action);
 
 public:
   ComposerView(uint32 mainWindowHandle);
