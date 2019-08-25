@@ -794,20 +794,20 @@ void ComposerView::Render(ImVec2 canvasSize) {
             parentWindowPos.y - ImGui::GetScrollY()));
 
           ImVec2 songCanvasSize(scrollingCanvasSize.x - trackTotalWidth,
-            ImGui::GetCursorPosY() + Globals::kScrollBarWidth);
+            std::max(ImGui::GetCursorPosY() + Globals::kScrollBarWidth, scrollingCanvasSize.y));
 
           ImGui::BeginChild("##Song",
             songCanvasSize,
             false,
-            ImGuiWindowFlags_HorizontalScrollbar);
+            ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
           {
             // Measure numbers
             auto measureNumberPos = ImGui::GetCursorPos();
-            auto beatLabelBegY = 0.0f;
+            auto beatLineBegY = 0.0f;
             for (size_t m = 0; m < song->GetNumMeasures(); ++m) {
               ImGui::SetCursorPos(measureNumberPos);
               ImGui::Text(std::to_string(m + 1).c_str());
-              beatLabelBegY = ImGui::GetCursorPosY();
+              beatLineBegY = ImGui::GetCursorPosY();
               measureNumberPos.x += kFullBeatWidth * song->GetBeatsPerMeasure();
             }
 
@@ -823,7 +823,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
               ImGui::NewLine();
 
               // Notes (displayed at current beat zoom level)
-              uint32 beatStep = sequencer.GetSubdivision() / song->GetBeatSubdivision();
+              uint32 beatStep = song->GetBeatSubdivision() / sequencer.GetSubdivision();
               for (size_t beatIndex = 0; beatIndex < line.size(); beatIndex += beatStep) {
                 ImGui::SameLine();
 
@@ -891,7 +891,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 }
               }
             }
-
+            ImGui::SetCursorPosY(songCanvasSize.y);
             auto beatLineEndY = ImGui::GetCursorPosY();
 
             imGuiStyle.ItemSpacing = defaultItemSpacing;
@@ -901,12 +901,18 @@ void ComposerView::Render(ImVec2 canvasSize) {
             for (uint32 m = 0; m < song->GetNumMeasures(); ++m) {
               uint32 c = ImGui::ColorConvertFloat4ToU32(kMeasureDemarcationLineColor);
               for (uint32 b = 0; b < song->GetBeatsPerMeasure(); ++b) {
-                ImGui::SetCursorPos(ImVec2(cursorPosX, beatLabelBegY));
-                ImGui::FillRect(ImVec2(2.0f, beatLineEndY - beatLabelBegY), c);
+                ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
+                ImGui::FillRect(ImVec2(2.0f, beatLineEndY - beatLineBegY), c);
                 cursorPosX += kFullBeatWidth;
                 c = ImGui::ColorConvertFloat4ToU32(kBeatDemarcationLineColor);
               }
             }
+
+            // Draw the play line
+            cursorPosX = beatWidth * (sequencer.GetPosition() /
+              (song->GetBeatSubdivision() / sequencer.GetSubdivision()));
+            ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
+            ImGui::FillRect(ImVec2(1, beatLineEndY - beatLineBegY), 0x7FFFFFFF);
 
             // Drag box
             {

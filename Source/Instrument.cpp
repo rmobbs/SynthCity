@@ -21,8 +21,9 @@ Instrument::Instrument(std::string instrumentName)
 }
 
 Instrument::Instrument(const ReadSerializer& r) {
-  if (!SerializeRead(r)) {
-    throw std::runtime_error("Instrument: Unable to serialize (read)");
+  auto result = SerializeRead(r);
+  if (!result.first) {
+    throw std::runtime_error(result.second);
   }
 }
 
@@ -30,32 +31,28 @@ Instrument::~Instrument() {
 
 }
 
-bool Instrument::SerializeRead(const ReadSerializer& serializer) {
+std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& serializer) {
   auto& d = serializer.d;
 
   // Version
   if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsString()) {
-    MCLOG(Error, "Missing/invalid version tag in instrument file");
-    return false;
+    return std::make_pair(false, "Missing/invalid version tag in instrument file");
   }
   std::string version = d[Globals::kVersionTag].GetString();
 
   if (version != std::string(Globals::kVersionString)) {
-    MCLOG(Error, "Invalid instrument file version");
-    return false;
+    return std::make_pair(false, "Invalid instrument file version");
   }
 
   // Name
   if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
-    MCLOG(Error, "Missing/invalid name tag in instrument file");
-    return false;
+    return std::make_pair(false, "Missing/invalid name tag in instrument file");
   }
   SetName(d[kNameTag].GetString());
 
   // Tracks
   if (!d.HasMember(kTracksTag) || !d[kTracksTag].IsArray()) {
-    MCLOG(Error, "Invalid tracks array in instrument file");
-    return false;
+    return std::make_pair(false, "Invalid tracks array in instrument file");
   }
 
   const auto& tracksArray = d[kTracksTag];
@@ -68,7 +65,7 @@ bool Instrument::SerializeRead(const ReadSerializer& serializer) {
     }
   }
 
-  return true;
+  return std::make_pair(true, "");
 }
 
 bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
@@ -184,8 +181,8 @@ Instrument* Instrument::LoadInstrument(std::string fileName) {
   try {
     newInstrument = new Instrument({ document });
   }
-  catch (...) {
-
+  catch (std::runtime_error& rte) {
+    MCLOG(Error, "Failed to serialize instrument: %s", rte.what());
   }
   return newInstrument;
 }

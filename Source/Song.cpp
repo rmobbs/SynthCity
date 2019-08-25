@@ -11,6 +11,7 @@ static constexpr const char* kTracksTag = "Tracks";
 static constexpr const char *kNotesTag = "Notes";
 static constexpr const char *kBeatTag = "Beat";
 static constexpr const char* kFretTag = "Fret";
+static constexpr const char* kMinimumNoteDurationTag = "MinimumNoteDuration";
 
 Song::Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 beatSubdivision)
   : tempo(tempo)
@@ -25,7 +26,7 @@ Song::Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMea
 Song::Song(const ReadSerializer& serializer) {
   auto result = SerializeRead(serializer);
   if (!result.first) {
-    throw new std::runtime_error("Failed to serialize (read): " + result.second);
+    throw std::runtime_error("Failed to serialize (read): " + result.second);
   }
 }
 
@@ -70,14 +71,20 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
   auto div = timeSignature.find('/');
   if (div != std::string::npos) {
-    beatSubdivision = std::stoi(timeSignature.substr(div));
-    beatsPerMeasure = std::stoi(timeSignature.substr(div + 1, timeSignature.length()));
+    beatsPerMeasure = std::stoi(timeSignature.substr(0, div));
+    noteValue = std::stoi(timeSignature.substr(div + 1));
 
     // TODO: Validation of time signature
   }
   else {
     return std::make_pair(false, "Invalid time signature");
   }
+
+  if (!d.HasMember(kMinimumNoteDurationTag) || !d[kMinimumNoteDurationTag].IsUint()) {
+    return std::make_pair(false, "Missing/invalid minimum note duration");
+  }
+
+  beatSubdivision = d[kMinimumNoteDurationTag].GetUint();
 
   // Read tracks (can have none)
   if (d.HasMember(kTracksTag) && d[kTracksTag].IsArray()) {
@@ -124,12 +131,12 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
     if (barLines.size()) {
       uint32 beatCount = barLines[0].size();
 
-      if ((beatCount % beatsPerMeasure) != 0) {
-        beatCount = ((beatCount / beatsPerMeasure) + 1) * beatsPerMeasure;
-      }
-
-      for (auto& barLine : barLines) {
-        barLine.resize(beatCount);
+      uint32 minBeatsPerMeasure = beatSubdivision * beatsPerMeasure;
+      if ((beatCount % minBeatsPerMeasure) != 0) {
+        beatCount = ((beatCount / minBeatsPerMeasure) + 1) * minBeatsPerMeasure;
+        for (auto& barLine : barLines) {
+          barLine.resize(beatCount);
+        }
       }
     }
   }

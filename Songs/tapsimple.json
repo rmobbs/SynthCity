@@ -2,8 +2,8 @@
     "version": "0.0.7",
     "Instrument": "Roland TR-808",
     "Tempo": 120,
-    "Measures": 2,
-    "BeatsPerMeasure": 4,
+    "TimeSignature": "4/4",
+    "MinimumNoteDuration": 8,
     "Tracks": [
         {
             "Notes": [

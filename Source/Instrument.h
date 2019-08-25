@@ -46,7 +46,7 @@ public:
 
   static Instrument* LoadInstrument(std::string fileName);
 
-  bool SerializeRead(const ReadSerializer& serializer);
+  std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   bool SerializeWrite(const WriteSerializer& serializer);
 };
 

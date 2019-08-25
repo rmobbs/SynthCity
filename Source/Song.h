@@ -38,14 +38,13 @@ public:
 protected:
   uint32 tempo = 0;
   uint32 beatsPerMeasure = 0;
+  uint32 noteValue = 4;
   uint32 beatSubdivision = 0;
   std::string instrumentName;
 
   std::vector<std::vector<Note>> barLines;
 
 public:
-  Song() = default;
-
   Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 beatSubdivision);
   Song(const ReadSerializer& serializer);
 
@@ -84,7 +83,7 @@ public:
     this->tempo = tempo;
   }
   uint32 GetNumMeasures() const {
-    return GetNoteCount() / beatsPerMeasure / beatSubdivision;
+    return GetNoteCount() / (beatSubdivision * beatsPerMeasure);
   }
 
   void AddLine();
