@@ -84,7 +84,7 @@ public:
     this->tempo = tempo;
   }
   uint32 GetNumMeasures() const {
-    return GetNoteCount() / beatsPerMeasure;
+    return GetNoteCount() / beatsPerMeasure / beatSubdivision;
   }
 
   void AddLine();
