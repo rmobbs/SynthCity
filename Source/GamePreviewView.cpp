@@ -5,7 +5,7 @@
 #include "SDL.h"
 #include "ComposerView.h"
 #include "Sequencer.h"
-#include "Instrument.h"
+#include "Song.h"
 
 static glm::vec2 noteLaneExtents(10, 800);
 static glm::vec4 noteLaneColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -19,7 +19,7 @@ static glm::vec2 fretExtents(250, 10);
 static constexpr uint32 kNumFrets(5);
 static glm::vec4 fretColor(0.2f, 0.2f, 0.2f, 1.0f);
 
-static glm::vec2 fretNoteExtent(80.0f, 30.0f);
+static glm::vec2 fretNoteExtent(70.0f, 20.0f);
 static glm::vec4 fretNoteColors[] = {
   glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
   glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
@@ -65,7 +65,7 @@ FreeList<FretNote, float, uint32> fretNoteFreeList;
 
 GamePreviewView::GamePreviewView(uint32 mainWindowHandle)
   : mainWindowHandle(mainWindowHandle) {
-  //InitResources();
+  InitResources();
 }
 
 GamePreviewView::~GamePreviewView() {
@@ -104,13 +104,14 @@ void GamePreviewView::TermResources() {
     delete renderable;
   }
 
-
+  for (const auto& renderable : fretSprites) {
+    delete renderable;
+  }
 }
 
 void GamePreviewView::Show() {
-#if 0
   // Length of a full beat in frames
-  beatFrameLength = Mixer::kDefaultFrequency / Sequencer::Get().GetBeatsPerMinute() * 60.0f;
+  beatFrameLength = Mixer::kDefaultFrequency / Sequencer::Get().GetTempo() * 60.0f;
 
   // TODO: Read the settings
 
@@ -118,33 +119,26 @@ void GamePreviewView::Show() {
 
   // Instrument has a song loaded?
 
-  auto instrument = Sequencer::Get().GetInstrument();
-  if (instrument != nullptr) {
+  auto song = Sequencer::Get().GetSong();
+  if (song != nullptr) {
     // Pre-spawn any necessary notes
 
-    float subdivStep = kDistanceBetweenQuarterNotes / Sequencer::Get().GetMaxSubdivisions();
+    float subdivStep = kDistanceBetweenQuarterNotes / song->GetMinNoteValue();
 
     // Spawn initial notes
-    for (uint32 subBeatIndex = 0; subBeatIndex < 8 * Sequencer::Get().GetMaxSubdivisions(); ++subBeatIndex) {
-      for (size_t trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
-        const auto& track = instrument->GetTrack(trackIndex);
-        if (subBeatIndex < track->GetNoteCount()) {
-          const auto& note = track->GetNote(subBeatIndex);
-          if (note.enabled && note.fretIndex != -1) {
-            auto fretNote = fretNoteFreeList.Borrow(static_cast<float>(subBeatIndex) /
-              static_cast<float>(Sequencer::Get().GetMaxSubdivisions()), note.fretIndex);
-            fallingNotes.push_back(fretNote);
-          }
-        }
-        else {
-          break;
+    for (size_t noteIndex = 0; noteIndex < song->GetNoteCount(); ++noteIndex) {
+      for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
+        const auto& note = song->GetLine(lineIndex)[noteIndex];
+        if (note.GetEnabled() && note.GetGameIndex() != -1) {
+          auto fretNote = fretNoteFreeList.Borrow(static_cast<float>(noteIndex) /
+            static_cast<float>(song->GetMinNoteValue()), note.GetGameIndex());
+          fallingNotes.push_back(fretNote);
         }
       }
     }
 
     //Sequencer::Get().Play();
   }
-#endif
 }
 
 void GamePreviewView::HandleInput() {
@@ -170,11 +164,6 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   float beatFrac = beatTime - std::floorf(beatTime);
 
   float bottomY = targetLinePosition.y + kDistanceBetweenQuarterNotes * kNumFretsPastTargetLine;
-  for (uint32 i = 0; i < kNumFrets; ++i) {
-    auto spriteRenderable = new SpriteRenderable(fretExtents, fretColor);
-    spriteRenderable->position = glm::vec2(noteLanePosition[0].x, bottomY - i * kDistanceBetweenQuarterNotes);
-    fretSprites.push_back(spriteRenderable);
-  }
 
   // Barber pole illusion for frets
   for (uint32 i = 0; i < fretSprites.size(); ++i) {
@@ -185,14 +174,11 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   }
 
   // Update falling notes
-
-
-  // Roll through notes and update positions
   auto fretNoteIter = fallingNotes.begin();
   while (fretNoteIter != fallingNotes.end()) {
     auto fretNote = reinterpret_cast<FretNote*>(*fretNoteIter);
 
-    float notePosY = targetLinePosition.y -
+    float notePosY = (targetLinePosition.y + (targetLineExtents.y * 0.5f)) - (fretNoteExtent.y * 0.5f) -
       (fretNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
     if (notePosY >= targetLinePosition.y) {
       fretNoteIter = fallingNotes.erase(fretNoteIter);
@@ -202,7 +188,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     }
     else {
       fretNote->position = glm::vec2(noteLanePosition[fretNote->
-        GetFretIndex()].x - fretNoteExtent.x * 0.5f, notePosY);
+        GetFretIndex()].x + (noteLaneExtents.x * 0.5f) - fretNoteExtent.x * 0.5f, notePosY);
       fretNote->Render();
       ++fretNoteIter;
     }
