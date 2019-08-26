@@ -30,6 +30,10 @@ protected:
   void bindShaderAttributes(uint32 stride);
 
 public:
+  Renderable() = default;
+  virtual ~Renderable() {
+
+  }
 
   inline void setShaderProgram(ShaderProgram* shaderProgram) {
     this->shaderProgram = shaderProgram;
