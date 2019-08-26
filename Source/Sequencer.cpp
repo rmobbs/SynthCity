@@ -252,8 +252,8 @@ bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
 
 void Sequencer::NewSong() {
   delete song;
-  song = new Song(instrument->GetTrackCount(), kDefaultNumMeasures,
-    Globals::kDefaultTempo, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
+  song = new Song(instrument->GetTrackCount(), Globals::kDefaultTempo,
+    kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
   UpdateInterval();
 }
 

@@ -745,8 +745,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
           ImGui::SetNextWindowPos(ImVec2(parentWindowPos.x + trackTotalWidth,
             parentWindowPos.y - ImGui::GetScrollY()));
 
-          ImVec2 songCanvasSize(scrollingCanvasSize.x - trackTotalWidth,
-            std::max(ImGui::GetCursorPosY() + Globals::kScrollBarWidth, scrollingCanvasSize.y));
+          ImVec2 songCanvasSize(scrollingCanvasSize.x - trackTotalWidth - Globals::kScrollBarWidth,
+            std::max(ImGui::GetCursorPosY() + Globals::kScrollBarHeight, scrollingCanvasSize.y));
 
           ImGui::BeginChild("##Song",
             songCanvasSize,

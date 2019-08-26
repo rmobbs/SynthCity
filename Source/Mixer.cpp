@@ -30,7 +30,7 @@ static constexpr uint32 kMaxSimultaneousVoices = 64;
 static constexpr float kPeakVolumeRatio = 0.7f;
 static constexpr float kClipMax(0.7f);
 static constexpr float kClipMin(-0.7f);
-static constexpr uint32 kVoicePreallocCount = 64;
+static constexpr uint32 kVoicePreallocCount = kMaxSimultaneousVoices;
 
 // A voice is a playing instance of a patch
 class Voice {

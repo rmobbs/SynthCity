@@ -98,6 +98,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
     barLines.resize(tracksArray.Size());
 
+    uint32 maxNote = 0;
     for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
       const auto& trackEntry = tracksArray[trackArrayIndex];
 
@@ -131,18 +132,18 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
         barLines[trackArrayIndex][beatIndex] = Note(true, fretIndex);
       }
+
+      if (maxNote < barLines[trackArrayIndex].size()) {
+        maxNote = barLines[trackArrayIndex].size();
+      }
     }
 
-    // Make sure we have full measures
-    if (barLines.size()) {
-      uint32 beatCount = barLines[0].size();
-
-      uint32 minNotesPerMeasure = minNoteValue * beatsPerMeasure;
-      if ((beatCount % minNotesPerMeasure) != 0) {
-        beatCount = ((beatCount / minNotesPerMeasure) + 1) * minNotesPerMeasure;
-        for (auto& barLine : barLines) {
-          barLine.resize(beatCount);
-        }
+    // Make sure we have full measures and pad out all the lines
+    uint32 minNotesPerMeasure = minNoteValue * beatsPerMeasure;
+    if ((maxNote % minNotesPerMeasure) != 0) {
+      auto noteCount = ((maxNote / minNotesPerMeasure) + 1) * minNotesPerMeasure;
+      for (auto& barLine : barLines) {
+        barLine.resize(noteCount);
       }
     }
   }
