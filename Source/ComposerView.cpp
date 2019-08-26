@@ -51,7 +51,8 @@ static constexpr const char* kModeStrings[] = {
 };
 
 static const ImVec4 kDefaultNoteColor(1.0f, 1.0f, 1.0f, 0.5f);
-static const ImVec4 kDragBoxColor(1.0f, 1.0f, 1.0f, 1.0f);
+static const ImVec4 kDragBoxOutlineColor(0.0f, 0.0f, 0.0f, 1.0f);
+static const ImVec4 kDragBoxFillColor(0.9f, 0.9f, 0.9f, 0.5f);
 static const ImVec4 kDragSelectColor(1.0f, 1.0f, 0.0f, 1.0f);
 static const ImVec4 kFretColors[] = {
   ImVec4(1.0f, 0.0f, 0.0f, 0.5f),
@@ -916,8 +917,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
               if (w > 0 && h > 0) {
                 auto oldCursorPos = ImGui::GetCursorPos();
                 ImGui::SetCursorPos(ImVec2(dragBox.x, dragBox.y));
+                ImGui::FillRect(ImVec2(static_cast<float>(w),
+                  static_cast<float>(h)), ImGui::GetColorU32(kDragBoxFillColor));
                 ImGui::DrawRect(ImVec2(static_cast<float>(w),
-                  static_cast<float>(h)), ImGui::GetColorU32(kDragBoxColor));
+                  static_cast<float>(h)), ImGui::GetColorU32(kDragBoxOutlineColor));
                 ImGui::SetCursorPos(oldCursorPos);
               }
             }
