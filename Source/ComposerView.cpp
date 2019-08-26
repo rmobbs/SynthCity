@@ -862,6 +862,9 @@ void ComposerView::Render(ImVec2 canvasSize) {
             }
 
             // Draw the play line
+            // TODO: This jumps from sub-beat to sub-beat, would be nice to have it
+            // continuously update
+            // https://trello.com/c/VCzl1tUh
             cursorPosX = beatWidth * (sequencer.GetPosition() /
               (song->GetMinNoteValue() / sequencer.GetSubdivision()));
             ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
