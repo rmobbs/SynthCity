@@ -62,6 +62,7 @@ protected:
   Dialog* pendingDialog = nullptr;
   Dialog* activeDialog = nullptr;
   ImGuiRenderable renderable;
+  bool songWindowClicked = false;
 
   std::map<int, double> playingTrackFlashTimes[2];
   Mode mode = Mode::Normal;

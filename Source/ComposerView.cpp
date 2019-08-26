@@ -737,6 +737,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
           }
         }
 
+        auto songWindowHovered = false;
+
         // Song lines
         auto song = sequencer.GetSong();
         if (song != nullptr) {
@@ -753,6 +755,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
             false,
             ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
           {
+            songWindowHovered = ImGui::IsWindowHovered();
+
             // Measure numbers
             auto measureNumberPos = ImGui::GetCursorPos();
             auto beatLineBegY = 0.0f;
@@ -878,7 +882,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
               // On mouse l-press, start the box recording (if we wait for drag to kick in we
               // lose a few pixels)
-              if (ImGui::IsMouseClicked(0)) {
+              if (ImGui::IsMouseClicked(0) && songWindowHovered) {
                 // Don't clear notes if they are attempting to add to the set
                 if (!(InputState::Get().modState & KMOD_SHIFT)) {
                   // Don't clear notes if they are beginning a selected group drag
@@ -887,17 +891,19 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   }
                 }
 
+                songWindowClicked = true;
                 mouseDragBeg = ImGui::GetMousePos();
                 mouseDragBeg -= ImGui::GetWindowPos();
               }
 
               // On mouse release, clear drag box
               if (ImGui::IsMouseReleased(0)) {
+                songWindowClicked = false;
                 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
               }
 
-              // Update drag box while dragging
-              if (ImGui::IsMouseDragging()) {
+              // Update drag box while dragging (if initiating click happened in song window)
+              if (ImGui::IsMouseDragging() && songWindowClicked) {
                 auto mouseDragCur = ImGui::GetIO().MousePos;
 
                 if (mouseDragCur.x != -FLT_MAX && mouseDragCur.y != -FLT_MAX) {
