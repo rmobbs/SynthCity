@@ -94,13 +94,29 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
   //UpdateInterval();
 }
 
-void Sequencer::FullNoteCallback(bool isMeasure) {
+void Sequencer::OnFrame() {
+  for (const auto& frameCallback : frameCallbacks) {
+    frameCallback.first(frameCallback.second);
+  }
+}
+
+void Sequencer::OnBeat() {
+  for (const auto& beatCallback : beatCallbacks) {
+    beatCallback.first(beatCallback.second);
+  }
+}
+
+void Sequencer::OnNote(bool isMeasure) {
   if (IsMetronomeOn()) {
     uint32 metronomeSound = static_cast<uint32>(ReservedSounds::MetronomePartial);
     if (isMeasure) {
       metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
     }
     Mixer::Get().PlayPatch(reservedPatches[metronomeSound], kMetronomeVolume);
+  }
+
+  for (const auto& beatPlayedCallback : beatPlayedCallbacks) {
+    beatPlayedCallback.first(isMeasure, beatPlayedCallback.second);
   }
 }
 
@@ -126,9 +142,9 @@ void Sequencer::Stop() {
   SetPosition(0);
 }
 
-void Sequencer::SetPosition(int32 newPosition) {
-  currPosition = newPosition;
-  nextPosition = currPosition;
+void Sequencer::SetPosition(uint32 newPosition) {
+  currSongPosition = newPosition;
+  nextSongPosition = currSongPosition;
 }
 
 void Sequencer::SetLooping(bool looping) {
@@ -136,70 +152,91 @@ void Sequencer::SetLooping(bool looping) {
 }
 
 uint32 Sequencer::GetPosition() const {
-  return currPosition;
+  return currSongPosition;
 }
 
 uint32 Sequencer::GetNextPosition() const {
-  return nextPosition;
+  return nextSongPosition;
+}
+
+void Sequencer::ResetFrameCounter() {
+  AudioGlobals::LockAudio();
+  currFrame = 0;
+  AudioGlobals::UnlockAudio();
 }
 
 uint32 Sequencer::NextFrame()
 {
   // NOTE: Called from SDL audio callback so SM_LockAudio is in effect
-
-  if (!isPlaying || !instrument || !song) {
+  if (!instrument || !song) {
     return interval;
   }
 
-  currPosition = nextPosition;
-  // Commenting out divide so grid display doesn't affect note playback
-  // https://trello.com/c/05XYJTLP
-  nextPosition = currPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
+  ++currFrame;
+  OnFrame();
 
-  // Still issue beat callbacks when in lead-in
-  auto absCurrPosition = std::abs(currPosition);
-  if ((absCurrPosition % song->GetMinNoteValue()) == 0) {
-    FullNoteCallback((absCurrPosition % (song->
-      GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
+  if ((currFrame % song->GetMinNoteValue()) == 0) {
+    OnBeat();
   }
 
-  if (currPosition >= 0) {
-    // Handle end-of-track / looping
-    if (currPosition >= static_cast<int32>(song->GetNoteCount())) {
-      if (isLooping) {
-        currPosition = 0;
-        // Commenting out divide so grid display doesn't affect note playback
-        // https://trello.com/c/05XYJTLP
-        nextPosition = currPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
-        ++loopIndex;
-      }
-      else {
-        Stop();
-      }
+  if (!isPlaying) {
+    return interval;
+  }
+
+  currSongPosition = nextSongPosition;
+
+  if ((currSongPosition % song->GetMinNoteValue()) == 0) {
+    OnNote((currSongPosition % (song->GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
+  }
+
+  // Commenting out divide so grid display doesn't affect note playback
+  // https://trello.com/c/05XYJTLP
+  nextSongPosition = currSongPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
+
+  // Handle end-of-track / looping
+  if (currSongPosition >= static_cast<int32>(song->GetNoteCount())) {
+    if (isLooping) {
+      currSongPosition = 0;
+      // Commenting out divide so grid display doesn't affect note playback
+      // https://trello.com/c/05XYJTLP
+      nextSongPosition = currSongPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
+      ++loopIndex;
     }
+    else {
+      Stop();
+    }
+  }
 
-    if (isPlaying) {
-      for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
-        // NOTE: Will lines and tracks always be 1:1?
-        if (instrument->tracks[lineIndex]->GetMute()) {
-          continue;
-        }
-        auto soloTrackIndex = instrument->GetSoloTrack();
-        if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
-          continue;
-        }
+  if (isPlaying) {
+    for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
+      // NOTE: Will lines and tracks always be 1:1?
+      if (instrument->tracks[lineIndex]->GetMute()) {
+        continue;
+      }
+      auto soloTrackIndex = instrument->GetSoloTrack();
+      if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
+        continue;
+      }
 
-        auto d = song->GetLine(lineIndex).data() + currPosition;
-        if (d->GetEnabled()) {
-          for (auto& notePlayedCallback : notePlayedCallbacks) {
-            notePlayedCallback.first(lineIndex, currPosition, notePlayedCallback.second);
-          }
-          instrument->PlayTrack(lineIndex);
+      auto d = song->GetLine(lineIndex).data() + currSongPosition;
+      if (d->GetEnabled()) {
+        for (auto& notePlayedCallback : notePlayedCallbacks) {
+          notePlayedCallback.first(lineIndex, currSongPosition, notePlayedCallback.second);
         }
+        instrument->PlayTrack(lineIndex);
       }
     }
   }
   return interval;
+}
+
+uint32 Sequencer::AddBeatPlayedCallback(Sequencer::BeatPlayedCallback beatPlayedCallback, void* beatPlayedPayload) {
+  beatPlayedCallbacks.push_back({ beatPlayedCallback, beatPlayedPayload });
+  return beatPlayedCallbacks.size() - 1;
+}
+
+void Sequencer::RemoveBeatPlayedCallback(uint32 callbackId) {
+  beatPlayedCallbacks.erase(beatPlayedCallbacks.begin() + callbackId);
 }
 
 uint32 Sequencer::AddNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
@@ -209,6 +246,24 @@ uint32 Sequencer::AddNotePlayedCallback(Sequencer::NotePlayedCallback notePlayed
 
 void Sequencer::RemoveNotePlayedCallback(uint32 callbackId) {
   notePlayedCallbacks.erase(notePlayedCallbacks.begin() + callbackId);
+}
+
+uint32 Sequencer::AddFrameCallback(FrameCallback frameCallback, void* framePayload) {
+  frameCallbacks.push_back({ frameCallback, framePayload });
+  return frameCallbacks.size() - 1;
+}
+
+void Sequencer::RemoveFrameCallback(uint32 callbackId) {
+  frameCallbacks.erase(frameCallbacks.begin() + callbackId);
+}
+
+uint32 Sequencer::AddBeatCallback(BeatCallback beatCallback, void* beatPayload) {
+  beatCallbacks.push_back({ beatCallback, beatPayload });
+  return beatCallbacks.size() - 1;
+}
+
+void Sequencer::RemoveBeatCallback(uint32 callbackId) {
+  beatCallbacks.erase(beatCallbacks.begin() + callbackId);
 }
 
 bool Sequencer::NewInstrument() {

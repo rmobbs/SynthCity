@@ -29,7 +29,17 @@ public:
     std::vector<uint32> trackIndices; // Tracks to flatten into single song
   };
 
+  // Called when a song note is played
   typedef void(*NotePlayedCallback)(uint32 trackIndex, uint32 noteIndex, void* payload);
+  // Called when a song beat is played (differentiated from the previous by the fact
+  // that there may not be an active note on this beat)
+  typedef void(*BeatPlayedCallback)(bool isMeasure, void* payload);
+  // Called whenever the sequencer steps a frame (while a song is loaded) regardless of
+  // whether the song is playing or this beat has a note
+  typedef void(*FrameCallback)(void* payload);
+  // Called whenever the sequencer steps a beat (while a song is loaded) regardless of
+  // whether the song is playing or this beat has a note
+  typedef void(*BeatCallback)(void* payload);
 
 private:
   static Sequencer* singleton;
@@ -39,10 +49,15 @@ private:
   std::atomic<bool> isPlaying = false;
   std::atomic<bool> isMetrononeOn = false;
   std::atomic<bool> isLooping = true;
+  std::vector<std::pair<BeatPlayedCallback, void*>> beatPlayedCallbacks;
   std::vector<std::pair<NotePlayedCallback, void*>> notePlayedCallbacks;
+  std::vector<std::pair<FrameCallback, void*>> frameCallbacks;
+  std::vector<std::pair<BeatCallback, void*>> beatCallbacks;
   void* notePlayedPayload = nullptr;
-  int32 currPosition = 0;
-  int32 nextPosition = 0;
+  uint32 currFrame = 0;
+  uint32 songFrame = 0;
+  uint32 currSongPosition = 0;
+  uint32 nextSongPosition = 0;
   int32 interval = kDefaultInterval;
   Instrument* instrument = nullptr;
   Song* song = nullptr;
@@ -50,7 +65,9 @@ private:
   std::function<bool(std::string)> loadInstrumentCallback;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
 
-  void FullNoteCallback(bool isMeasure);
+  void OnFrame();
+  void OnBeat();
+  void OnNote(bool isMeasure);
   uint32 UpdateInterval();
 
 
@@ -105,6 +122,7 @@ public:
   void Pause();
   void PauseKill();
   void Stop();
+  void ResetFrameCounter();
   bool LoadInstrument(std::string fileName, std::string mustMatch);
 
   void NewSong();
@@ -126,9 +144,15 @@ public:
 
   bool Init();
 
-  void SetPosition(int32 newPosition);
+  void SetPosition(uint32 newPosition);
+  uint32 AddBeatPlayedCallback(BeatPlayedCallback beatPlayedCallback, void* beatPlayedPayload);
+  void RemoveBeatPlayedCallback(uint32 callbackId);
   uint32 AddNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
   void RemoveNotePlayedCallback(uint32 callbackId);
+  uint32 AddFrameCallback(FrameCallback frameCallback, void* framePayload);
+  void RemoveFrameCallback(uint32 callbackId);
+  uint32 AddBeatCallback(BeatCallback beatCallback, void* beatPayload);
+  void RemoveBeatCallback(uint32 callbackId);
   bool NewInstrument();
 
    Sequencer() {}
