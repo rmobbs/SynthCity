@@ -312,48 +312,29 @@ void ComposerView::HandleInput() {
     }
   }
 
-  switch (mode) {
-    case Mode::Normal: {
-      if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
-        mode = Mode::Markup;
-      }
-      break;
-    }
-    case Mode::Markup: {
-      // Mode toggle
-      if (inputState.modState & KMOD_CTRL) {
-        if (inputState.pressed[SDLK_m]) {
-          mode = Mode::Normal;
-        }
-      }
-      else {
-        int32 newGameIndex = -2;
+  int32 newGameIndex = -2;
 
-        if (inputState.pressed[SDLK_1]) {
-          newGameIndex = 0;
-        }
-        else if (inputState.pressed[SDLK_2]) {
-          newGameIndex = 1;
-        }
-        else if (inputState.pressed[SDLK_3]) {
-          newGameIndex = 2;
-        }
-        else if (inputState.pressed[SDLK_4]) {
-          newGameIndex = 3;
-        }
-        else if (inputState.pressed[SDLK_0]) {
-          newGameIndex = -1;
-        }
+  if (inputState.pressed[SDLK_1]) {
+    newGameIndex = 0;
+  }
+  else if (inputState.pressed[SDLK_2]) {
+    newGameIndex = 1;
+  }
+  else if (inputState.pressed[SDLK_3]) {
+    newGameIndex = 2;
+  }
+  else if (inputState.pressed[SDLK_4]) {
+    newGameIndex = 3;
+  }
+  else if (inputState.pressed[SDLK_0]) {
+    newGameIndex = -1;
+  }
 
-        if (newGameIndex != -2) {
-          SelectedGroupAction([newGameIndex](int32 lineIndex, int32 noteIndex) {
-            auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
-            note.SetGameIndex(newGameIndex);
-          });
-        }
-      }
-      break;
-    }
+  if (newGameIndex != -2) {
+    SelectedGroupAction([newGameIndex](int32 lineIndex, int32 noteIndex) {
+      auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
+      note.SetGameIndex(newGameIndex);
+    });
   }
 
   hoveredNote = { -1, -1 };
@@ -1080,8 +1061,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
     }
     ImGui::SameLine();
     ImGui::Text("Voices: %d", Mixer::Get().GetNumActiveVoices());
-    ImGui::SameLine();
-    ImGui::Text("Mode: %s", kModeStrings[static_cast<uint32>(mode)]);
     ImGui::Separator();
 
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);

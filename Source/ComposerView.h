@@ -12,10 +12,6 @@
 class Dialog;
 class ComposerView : public View {
 protected:
-  enum class Mode {
-    Normal,
-    Markup,
-  };
   class  OutputWindowState {
   public:
     std::vector<std::string> displayHistory;
@@ -64,7 +60,6 @@ protected:
   bool songWindowClicked = false;
 
   std::map<int, double> playingTrackFlashTimes[2];
-  Mode mode = Mode::Normal;
 
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);
