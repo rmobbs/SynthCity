@@ -130,6 +130,7 @@ public:
   void LoadSongJson(std::string fileName);
   void LoadSongMidi(std::string fileName);
   void LoadSong(std::string fileName);
+  void PlayMetronome(bool downBeat);
 
   inline void SetLoadInstrumentCallback(std::function<bool(std::string)> loadInstrumentCallback) {
     this->loadInstrumentCallback = loadInstrumentCallback;

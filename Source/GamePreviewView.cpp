@@ -210,6 +210,7 @@ void GamePreviewView::OnBeat() {
       if (!beatsLeftInState) {
         mode = Mode::Countdown;
         beatsLeftInState = kCountdownBeats;
+        Sequencer::Get().PlayMetronome(true);
       }
       break;
     }
@@ -218,6 +219,11 @@ void GamePreviewView::OnBeat() {
       if (!beatsLeftInState) {
         mode = Mode::Playing;
         Sequencer::Get().Play();
+      }
+      else {
+        if (beatsLeftInState == 6 || beatsLeftInState < 5) {
+          Sequencer::Get().PlayMetronome(true);
+        }
       }
       break;
     }

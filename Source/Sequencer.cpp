@@ -108,16 +108,20 @@ void Sequencer::OnBeat() {
 
 void Sequencer::OnNote(bool isMeasure) {
   if (IsMetronomeOn()) {
-    uint32 metronomeSound = static_cast<uint32>(ReservedSounds::MetronomePartial);
-    if (isMeasure) {
-      metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
-    }
-    Mixer::Get().PlayPatch(reservedPatches[metronomeSound], kMetronomeVolume);
+    PlayMetronome(isMeasure);
   }
 
   for (const auto& beatPlayedCallback : beatPlayedCallbacks) {
     beatPlayedCallback.first(isMeasure, beatPlayedCallback.second);
   }
+}
+
+void Sequencer::PlayMetronome(bool downBeat) {
+  uint32 metronomeSound = static_cast<uint32>(ReservedSounds::MetronomePartial);
+  if (downBeat) {
+    metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
+  }
+  Mixer::Get().PlayPatch(reservedPatches[metronomeSound], kMetronomeVolume);
 }
 
 void Sequencer::Play() {
