@@ -23,6 +23,9 @@
 #include "WavSound.h"
 #include "Globals.h"
 #include "InputState.h"
+#include "GamePreviewView.h"
+#include "Song.h"
+#include "OddsAndEnds.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -33,34 +36,23 @@
 #include <commctrl.h>
 
 static constexpr float kFullBeatWidth = 80.0f;
-static constexpr float kKeyboardKeyWidth = 100.0f;
 static constexpr float kKeyboardKeyHeight = 20.0f;
-static constexpr uint32 kDefaultBpm = 120;
-static constexpr uint32 kDefaultNumMeasures = 2;
-static constexpr uint32 kDefaultBeatsPerMeasure = 4;
-static constexpr uint32 kDefaultSubdivisions = 4;
-static constexpr float kPlayNoteFlashDuration = 0.5f;
-static constexpr float kPlayNoteFlashGrow = 1.0f;
-static constexpr uint32 kPlayNoteFlashColor = 0x0000FFFF;
-static constexpr uint32 kMaxMeasures = 256;
-static constexpr uint32 kMinMeasures = 1;
-static constexpr uint32 kMaxBeatsPerMeasure = 12;
-static constexpr uint32 kMinBeatsPerMeasure = 2;
-static constexpr float kDefaultNoteVelocity = 1.0f;
 static constexpr uint32 kPlayTrackFlashColor = 0x00007F7F;
 static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
-static constexpr float kSequencerWindowToolbarHeight = 64.0f;
+static constexpr float kSequencerWindowToolbarHeight = 74.0f;
 static constexpr float kHamburgerMenuWidth(20.0f);
 static constexpr std::string_view kJsonTag(".json");
 static constexpr const char* kDefaultNewTrackName("NewTrack");
+static constexpr const char* kTrackNameFormat("XXXXXXXXXXXXXXXX");
 static constexpr const char* kModeStrings[] = {
   "Normal",
   "Markup",
 };
 
 static const ImVec4 kDefaultNoteColor(1.0f, 1.0f, 1.0f, 0.5f);
-static const ImVec4 kDragBoxColor(1.0f, 1.0f, 1.0f, 1.0f);
+static const ImVec4 kDragBoxOutlineColor(0.0f, 0.0f, 0.0f, 1.0f);
+static const ImVec4 kDragBoxFillColor(0.9f, 0.9f, 0.9f, 0.5f);
 static const ImVec4 kDragSelectColor(1.0f, 1.0f, 0.0f, 1.0f);
 static const ImVec4 kFretColors[] = {
   ImVec4(1.0f, 0.0f, 0.0f, 0.5f),
@@ -68,6 +60,10 @@ static const ImVec4 kFretColors[] = {
   ImVec4(0.0f, 0.0f, 1.0f, 0.5f),
   ImVec4(1.0f, 1.0f, 0.0f, 0.5f),
 };
+
+static const ImVec4 kMeasureDemarcationLineColor(1.0f, 1.0f, 1.0f, 1.0f);
+static const ImVec4 kBeatDemarcationLineColor(0.6f, 0.6f, 0.6f, 1.0f);
+static const ImVec4 kPlayLineColor(1.0f, 1.0f, 0.0f, 1.0f);
 
 void ComposerView::OutputWindowState::ClearLog() {
   displayHistory.clear();
@@ -152,6 +148,8 @@ bool LoadSong() {
   ofn.lStructSize = sizeof(ofn);
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  // TODO: Fix MIDI loading
+  // https://trello.com/c/vQCRzrcm
   ofn.lpstrFilter = _TEXT("JSON\0*.json\0");//MIDI\0 * .midi; *.mid\0");
   ofn.nFilterIndex = 0;
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
@@ -211,6 +209,8 @@ std::string GetNewTrackName(const std::string& trackNameBase) {
   return trackName;
 }
 
+// TODO: Better implementation of custom track color schemes
+// https://trello.com/c/VX59Thk1
 void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
 
   if (colorScheme.length()) {
@@ -233,21 +233,10 @@ void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
   }
 }
 
-void ComposerView::GroupOrHoveredAction(std::function<void(int32, int32)> action) {
-  auto instrument = Sequencer::Get().GetInstrument();
-  if (instrument != nullptr) {
-    bool anySelected = false;
-    for (size_t trackIndex = 0; trackIndex < noteSelectedStatus.size(); ++trackIndex) {
-      for (size_t noteIndex = 0; noteIndex < noteSelectedStatus[trackIndex].size(); ++noteIndex) {
-        if (noteSelectedStatus[trackIndex][noteIndex]) {
-          anySelected = true;
-          action(trackIndex, noteIndex);
-        }
-      }
-    }
-
-    if (!anySelected && hoveredNote.second != -1) {
-      action(hoveredNote.first, hoveredNote.second);
+void ComposerView::SelectedGroupAction(std::function<void(int32, int32)> action) {
+  for (size_t trackIndex = 0; trackIndex < noteSelectedStatus.size(); ++trackIndex) {
+    for (auto& val : noteSelectedStatus[trackIndex]) {
+      action(trackIndex, val);
     }
   }
 }
@@ -255,14 +244,10 @@ void ComposerView::GroupOrHoveredAction(std::function<void(int32, int32)> action
 void ComposerView::HandleInput() {
   auto& inputState = InputState::Get();
 
-  // Saving tired right index fingers since 2018
-  if (inputState.pressed[SDLK_SPACE]) {
-    GroupOrHoveredAction([](int32 trackIndex, int32 noteIndex) {
-      auto track = Sequencer::Get().GetInstrument()->GetTrack(trackIndex);
-      if (track != nullptr) {
-        auto& note = track->GetNote(noteIndex);
-        note.enabled = !note.enabled;
-      }
+  if (inputState.pressed[SDLK_DELETE]) {
+    SelectedGroupAction([](int32 lineIndex, int32 noteIndex) {
+      auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
+      note.SetEnabled(false);
     });
 
     ClearSelectedNotes();
@@ -270,6 +255,61 @@ void ComposerView::HandleInput() {
 
   if (inputState.pressed[SDLK_ESCAPE]) {
     ClearSelectedNotes();
+  }
+
+  if (inputState.pressed[SDLK_SPACE]) {
+    if (Sequencer::Get().IsPlaying()) {
+      Sequencer::Get().Stop();
+    }
+    else {
+      Sequencer::Get().Play();
+    }
+  }
+
+  if (inputState.modState & KMOD_CTRL) {
+    // Copy
+    if (inputState.pressed[SDLK_c]) {
+      // Don't clear the existing clipboard if we have nothing currently selected, as
+      // accidentally pressing CTLR+C again after CTRL+C (instead of CTRL+V) is very
+      // frustrating
+      bool notesSelected = false;
+      for (const auto& nss : noteSelectedStatus) {
+        if (nss.size() > 0) {
+          notesSelected = true;
+          break;
+        }
+      }
+
+      if (notesSelected) {
+        noteClipboard = noteSelectedStatus;
+      }
+    }
+
+    // Paste
+    else if (inputState.pressed[SDLK_v]) {
+      if (noteClipboard.size()) {
+        auto song = Sequencer::Get().GetSong();
+        assert(song != nullptr);
+
+        // We need to know the first note to generate the proper offset
+        size_t firstNote = UINT32_MAX;
+        for (const auto& ncp : noteClipboard) {
+          if (ncp.empty()) {
+            continue;
+          }
+
+          // Ordered set
+          auto iter = ncp.begin();
+          if (firstNote > *iter) {
+            firstNote = *iter;
+          }
+        }
+
+        if (firstNote != UINT32_MAX) {
+        }
+
+      }
+    }
   }
 
   switch (mode) {
@@ -280,35 +320,37 @@ void ComposerView::HandleInput() {
       break;
     }
     case Mode::Markup: {
-      int32 newFretIndex = -2;
+      // Mode toggle
+      if (inputState.modState & KMOD_CTRL) {
+        if (inputState.pressed[SDLK_m]) {
+          mode = Mode::Normal;
+        }
+      }
+      else {
+        int32 newGameIndex = -2;
 
-      if (inputState.pressed[SDLK_1]) {
-        newFretIndex = 0;
-      }
-      else if (inputState.pressed[SDLK_2]) {
-        newFretIndex = 1;
-      }
-      else if (inputState.pressed[SDLK_3]) {
-        newFretIndex = 2;
-      }
-      else if (inputState.pressed[SDLK_4]) {
-        newFretIndex = 3;
-      }
-      else if (inputState.pressed[SDLK_0]) {
-        newFretIndex = -1;
-      }
+        if (inputState.pressed[SDLK_1]) {
+          newGameIndex = 0;
+        }
+        else if (inputState.pressed[SDLK_2]) {
+          newGameIndex = 1;
+        }
+        else if (inputState.pressed[SDLK_3]) {
+          newGameIndex = 2;
+        }
+        else if (inputState.pressed[SDLK_4]) {
+          newGameIndex = 3;
+        }
+        else if (inputState.pressed[SDLK_0]) {
+          newGameIndex = -1;
+        }
 
-      if (newFretIndex != -2) {
-        GroupOrHoveredAction([newFretIndex](int32 trackIndex, int32 noteIndex) {
-          auto track = Sequencer::Get().GetInstrument()->GetTrack(trackIndex);
-          if (track != nullptr) {
-            track->GetNote(noteIndex).fretIndex = newFretIndex;
-          }
-        });
-      }
-
-      if ((inputState.modState & KMOD_CTRL) && inputState.pressed[SDLK_m]) {
-        mode = Mode::Normal;
+        if (newGameIndex != -2) {
+          SelectedGroupAction([newGameIndex](int32 lineIndex, int32 noteIndex) {
+            auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
+            note.SetGameIndex(newGameIndex);
+          });
+        }
       }
       break;
     }
@@ -322,17 +364,6 @@ void ComposerView::ProcessPendingActions() {
 
   // Newly triggered notes are written to entry 1 in the audio callback
   playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
-  playingNotesFlashTimes[0].merge(playingNotesFlashTimes[1]);
-
-  // Number of measures changed
-  if (pendingNumMeasures != -1) {
-    sequencer.SetNumMeasures(pendingNumMeasures);
-  }
-
-  // Beats per measure changed
-  if (pendingBeatsPerMeasure != -1) {
-    sequencer.SetBeatsPerMeasure(pendingBeatsPerMeasure);
-  }
 
   // Subdivision changed
   if (pendingSubdivision != -1) {
@@ -340,8 +371,8 @@ void ComposerView::ProcessPendingActions() {
   }
 
   // Beats per minute changed
-  if (pendingBeatsPerMinute != -1) {
-    sequencer.SetBeatsPerMinute(pendingBeatsPerMinute);
+  if (pendingTempo != -1) {
+    sequencer.SetTempo(pendingTempo);
   }
 
   // Master volume changed
@@ -379,17 +410,8 @@ void ComposerView::ProcessPendingActions() {
 
     // Toggle a note on/off
     if (toggledNote.second != -1) {
-      auto track = instrument->GetTrack(toggledNote.first);
-      if (track != nullptr) {
-        auto note = track->GetNote(toggledNote.second);
-        if (note.enabled) {
-          note.enabled = false;
-        }
-        else {
-          note.enabled = true;
-        }
-        track->SetNote(toggledNote.second, note);
-      }
+      auto& note = Sequencer::Get().GetSong()->GetLine(toggledNote.first)[toggledNote.second];
+      note.SetEnabled(!note.GetEnabled());
     }
 
     // Change a note's fret index
@@ -401,6 +423,7 @@ void ComposerView::ProcessPendingActions() {
         auto newTrack = new Track(*oldTrack);
         newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
         instrument->AddTrack(newTrack);
+        Sequencer::Get().GetSong()->AddLine();
       }
     }
 
@@ -409,14 +432,41 @@ void ComposerView::ProcessPendingActions() {
     if (pendingRemoveTrack != -1) {
       noteSelectedStatus.erase(noteSelectedStatus.begin() + pendingRemoveTrack);
       instrument->RemoveTrack(pendingRemoveTrack);
+      Sequencer::Get().GetSong()->RemoveLine(pendingRemoveTrack);
     }
   }
 
+  if (pendingNewInstrument) {
+    ClearSelectedNotes();
+    sequencer.NewInstrument();
+  }
+
+  if (pendingLoadInstrument) {
+    ClearSelectedNotes();
+    LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle));
+  }
+
+  if (pendingSaveInstrument) {
+    SaveInstrument();
+  }
+
+  if (pendingNewSong) {
+    ClearSelectedNotes();
+    sequencer.NewSong();
+  }
+
+  if (pendingLoadSong) {
+    ClearSelectedNotes();
+    LoadSong();
+  }
+
+  if (pendingSaveSong) {
+    SaveSong();
+  }
+
   // Reset all pendings
-  pendingNumMeasures = -1;
-  pendingBeatsPerMeasure = -1;
   pendingSubdivision = -1;
-  pendingBeatsPerMinute = -1;
+  pendingTempo = -1;
   pendingMasterVolume = -1.0f;
   pendingTrackVolume = { -1, 0.0f };
   pendingTrackMute = { -1, false };
@@ -425,16 +475,25 @@ void ComposerView::ProcessPendingActions() {
   pendingCloneTrack = -1;
   pendingSoloTrack = -2;
   toggledNote = { -1, -1 };
+  pendingNewInstrument = false;
+  pendingLoadInstrument = false;
+  pendingSaveInstrument = false;
+  pendingNewSong = false;
+  pendingLoadSong = false;
+  pendingSaveSong = false;
 }
 
 void ComposerView::ClearSelectedNotes() {
   for (auto& nss : noteSelectedStatus) {
-    std::fill(nss.begin(), nss.end(), false);
+    nss.clear();
   }
 }
 
 void ComposerView::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
+
+  glClearColor(0.5f, 0.5f, 0.5f, 0);
+  glClear(GL_COLOR_BUFFER_BIT);
 
   AudioGlobals::LockAudio();
   ProcessPendingActions();
@@ -450,42 +509,43 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("New Instrument")) {
-        ClearSelectedNotes();
-        sequencer.NewInstrument();
+        pendingNewInstrument = true;
       }
       if (ImGui::MenuItem("Load Instrument")) {
-        ClearSelectedNotes();
-        LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle));
+        pendingLoadInstrument = true;
       }
       if (ImGui::MenuItem("Save Instrument")) {
-        SaveInstrument();
+        pendingSaveInstrument = true;
       }
       if (ImGui::MenuItem("Exit")) {
-        if (exitFunction != nullptr) {
-          exitFunction();
-        }
+        SDL_PushEvent(&SDL_Event({ SDL_QUIT }));
       }
       ImGui::EndMenu();
     }
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack("Add Track", sequencer.GetInstrument(),
-            -1, new Track(GetNewTrackName(kDefaultNewTrackName)), playButtonIconTexture, stopButtonIconTexture);
+          pendingDialog = new DialogTrack("Add Track", -1, new Track(GetNewTrackName(kDefaultNewTrackName)), stopButtonIconTexture);
         }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Song")) {
         if (ImGui::MenuItem("New Song")) {
-          ClearSelectedNotes();
-          sequencer.GetInstrument()->ClearNotes();
+          pendingNewSong = true;
         }
         if (ImGui::MenuItem("Load Song")) {
-          ClearSelectedNotes();
-          LoadSong();
+          pendingLoadSong = true;
         }
         if (ImGui::MenuItem("Save Song")) {
-          SaveSong();
+          pendingSaveSong = true;
+        }
+        ImGui::EndMenu();
+      }
+
+      if (ImGui::BeginMenu("Game")) {
+        if (ImGui::MenuItem("Preview")) {
+          sequencer.Stop();
+          View::SetCurrentView<GamePreviewView>();
         }
         ImGui::EndMenu();
       }
@@ -515,34 +575,27 @@ void ComposerView::Render(ImVec2 canvasSize) {
     }
   }
 
-  // Resize the main window based on console being open/closed
-  int32 outputWindowHeight = static_cast<int32>(canvasSize.y * kOutputWindowWindowScreenHeightPercentage);
+  auto imGuiFont = ImGui::GetFont();
+  auto& imGuiStyle = ImGui::GetStyle();
+  auto defaultItemSpacing = imGuiStyle.ItemSpacing;
+
+  // Vertically resize the main window based on console being open/closed
+  float outputWindowHeight = canvasSize.y * kOutputWindowWindowScreenHeightPercentage;
   if (!wasConsoleOpen) {
-    outputWindowHeight = 20;
+    outputWindowHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2.0f;
   }
-  auto const sequencerHeight = static_cast<int32>(canvasSize.y - outputWindowHeight - mainMenuBarHeight);
 
   auto instrument = sequencer.GetInstrument();
-
   if (instrument != nullptr) {
-    // Ensure selected note tracker is proper size
-    uint32 beatCount = Sequencer::Get().GetNumMeasures() *
-      Sequencer::Get().GetBeatsPerMeasure() * Sequencer::Get().GetMaxSubdivisions();
-    noteSelectedStatus.resize(instrument->GetTrackCount());
-    for (auto& nss : noteSelectedStatus) {
-      nss.resize(beatCount);
-    }
+    ImVec2 sequencerCanvasSize(canvasSize.x, canvasSize.y - outputWindowHeight - mainMenuBarHeight);
 
+    // Main window which contains the tracks on the left and the song lines on the right
     ImGui::SetNextWindowPos(ImVec2(0, mainMenuBarHeight));
-    ImGui::SetNextWindowSize(ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(sequencerHeight)));
-    ImGui::Begin("Instrument",
+    ImGui::SetNextWindowSize(sequencerCanvasSize);
+    ImGui::Begin("Sequencer",
       nullptr,
-      ImGuiWindowFlags_NoTitleBar | 
-      ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
     {
-      auto& imGuiStyle = ImGui::GetStyle();
-      auto oldItemSpacing = imGuiStyle.ItemSpacing;
-
       std::string instrumentName("Instrument");
       char newName[256] = { 0 };
       strcpy(newName, instrument->GetName().c_str());
@@ -550,329 +603,353 @@ void ComposerView::Render(ImVec2 canvasSize) {
         instrument->SetName(std::string(newName));
       }
 
-      ImGui::NewLine();
       ImGui::Separator();
 
-      auto beatWidth = kFullBeatWidth / sequencer.GetSubdivision();
+      ImVec2 scrollingCanvasSize(sequencerCanvasSize.x - Globals::kScrollBarWidth,
+        sequencerCanvasSize.y - kSequencerWindowToolbarHeight);
 
-      // Start of the beat label
-      float beatLabelStartX = ImGui::GetCursorPosX() + kHamburgerMenuWidth + kKeyboardKeyWidth + imGuiStyle.ItemSpacing.x;
-
-      // Beat numbers
-      float cursorPosX = beatLabelStartX;
-      for (size_t b = 0; b < sequencer.GetNumMeasures() * sequencer.GetBeatsPerMeasure(); ++b) {
-        ImGui::SetCursorPosX(cursorPosX);
-        cursorPosX += kFullBeatWidth;
-        ImGui::Text(std::to_string(b + 1).c_str());
-        ImGui::SameLine();
-      }
-
-      ImGui::NewLine();
-      ImGui::Separator();
-
-      auto beatLabelStartY = ImGui::GetCursorPosY();
-
-      // Tracks
-      ImGui::BeginChild("##InstrumentScrollingRegion",
-        ImVec2(static_cast<float>(canvasSize.x) - Globals::kScrollBarWidth,
-        static_cast<float>(sequencerHeight) - kSequencerWindowToolbarHeight - beatLabelStartY),
+      // Vertical scrolling region for tracks and song lines
+      ImGui::BeginChild("##ScrollingRegion",
+        scrollingCanvasSize,
         false,
-        ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGuiWindowFlags_AlwaysAutoResize);
       {
-        uint32 flashColor;
-        uint32 noteGlobalIndex = 0;
-        for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
-          auto& track = instrument->GetTracks()[trackIndex];
+        auto trackLabelWidth = imGuiFont->CalcTextSizeA(imGuiFont->FontSize, FLT_MAX, 0.0f, kTrackNameFormat).x;
+        auto trackTotalWidth = trackLabelWidth + kHamburgerMenuWidth + defaultItemSpacing.x;
 
-          ImVec4 oldColors[ImGuiCol_COUNT];
-          memcpy(oldColors, imGuiStyle.Colors, sizeof(oldColors));
+        // Tracks
+        {
+          // Leave vertical space for the measure labels in the song line area
+          ImGui::NewLine();
 
-          imGuiStyle.ItemSpacing = oldItemSpacing;
+          for (uint32 trackIndex = 0; trackIndex < instrument->GetTracks().size(); ++trackIndex) {
+            auto& track = instrument->GetTracks()[trackIndex];
 
-          flashColor = kPlayTrackFlashColor;
-          SetTrackColors(track->GetColorScheme(), flashColor);
+            ImVec4 defaultColors[ImGuiCol_COUNT];
+            memcpy(defaultColors, imGuiStyle.Colors, sizeof(defaultColors));
 
-          // Hamburger menu
-          std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackIndex);
-          std::string trackProperties = std::string("TrackProperties") + std::to_string(trackIndex);
-          ImGui::PushID(trackHamburgers.c_str());
-          if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
-            ImGui::PopID();
-            ImGui::OpenPopup(trackProperties.c_str());
-          }
-          else {
-            ImGui::PopID();
-          }
-          memcpy(imGuiStyle.Colors, oldColors, sizeof(oldColors));
-          if (ImGui::BeginPopup(trackProperties.c_str())) {
-            bool closePopup = false;
+            uint32 flashColor = kPlayTrackFlashColor;
+            SetTrackColors(track->GetColorScheme(), flashColor);
 
-            bool mute = track->GetMute();
-            if (ImGui::Checkbox("Mute", &mute)) {
-              // @Delay
-              pendingTrackMute = { trackIndex, mute };
+            // Hamburger menu
+            std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackIndex);
+            std::string trackProperties = std::string("TrackProperties") + std::to_string(trackIndex);
+            ImGui::PushID(trackHamburgers.c_str());
+            if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
+              ImGui::PopID();
+              ImGui::OpenPopup(trackProperties.c_str());
             }
-            ImGui::SameLine();
-            bool solo = instrument->GetSoloTrack() == trackIndex;
-            if (ImGui::Checkbox("Solo", &solo)) {
-              // @Delay
-              if (solo) {
-                pendingSoloTrack = trackIndex;
+            else {
+              ImGui::PopID();
+            }
+            memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
+            if (ImGui::BeginPopup(trackProperties.c_str())) {
+              bool closePopup = false;
+
+              bool mute = track->GetMute();
+              if (ImGui::Checkbox("Mute", &mute)) {
+                pendingTrackMute = { trackIndex, mute };
               }
-              else {
-                pendingSoloTrack = -1;
-              }
-            }
-            float volume = track->GetVolume();
-            if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
-              // @Delay
-              pendingTrackVolume = { trackIndex, volume };
-            }
-            if (ImGui::Button("Duplicate")) {
-              // @Delay
-              pendingCloneTrack = trackIndex;
-              closePopup = true;
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Delete")) {
-              // @Delay
-              pendingRemoveTrack = trackIndex;
-              closePopup = true;
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Properties...")) {
-              pendingDialog = new DialogTrack("Edit Track", instrument, trackIndex,
-                new Track(*track), playButtonIconTexture, stopButtonIconTexture);
-              closePopup = true;
-            }
-
-            ImGui::Spacing();
-            ImGui::Spacing();
-            ImGui::Spacing();
-
-            closePopup |= ImGui::Button("OK");
-
-            if (closePopup) {
-              ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-          }
-
-          imGuiStyle.ItemSpacing.x = 0.0f;
-          ImGui::SameLine();
-
-          auto prevPos = ImGui::GetCursorPos();
-
-          flashColor = kPlayTrackFlashColor;
-          SetTrackColors(track->GetColorScheme(), flashColor);
-
-          // Track key
-          if (ImGui::Button(track->GetName().
-            c_str(), ImVec2(kKeyboardKeyWidth, kKeyboardKeyHeight))) {
-            // @Delay
-            pendingPlayTrack = trackIndex;
-          }
-
-          imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
-
-          auto currPos = ImGui::GetCursorPos();
-
-          // If it's playing, flash it
-          float flashPct = 0.0f;
-          {
-            auto flashTime = playingTrackFlashTimes[0].find(trackIndex);
-            if (flashTime != playingTrackFlashTimes[0].end()) {
-              auto pct = static_cast<float>((Globals::currentTime - flashTime->second) / kPlayTrackFlashDuration);
-              if (pct >= 1.0f) {
-                playingTrackFlashTimes[0].erase(flashTime);
-              }
-              else {
-                flashPct = 1.0f - pct;
-              }
-            }
-          }
-
-          if (flashPct > 0.0f) {
-            prevPos.x -= kPlayNoteFlashGrow * flashPct;
-            prevPos.y -= kPlayNoteFlashGrow * flashPct;
-
-            ImGui::SetCursorPos(prevPos);
-            ImGui::FillRect(ImVec2(kKeyboardKeyWidth + kPlayNoteFlashGrow * 2.0f * flashPct,
-              kKeyboardKeyHeight + kPlayNoteFlashGrow * 2.0f * flashPct),
-              (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
-            ImGui::SetCursorPos(currPos);
-          }
-
-          memcpy(imGuiStyle.Colors, oldColors, sizeof(oldColors));
-
-          // Beat groups
-          uint32 noteLocalIndex = 0;
-          for (size_t b = 0; b < sequencer.GetNumMeasures() * sequencer.GetBeatsPerMeasure(); ++b) {
-            // Notes
-            for (size_t s = 0; s < sequencer.GetSubdivision(); ++s) {
               ImGui::SameLine();
-
-              // Lesson learned: labels are required to pair UI with UX
-              auto uniqueLabel(track->GetName() + std::string("#") + std::to_string(noteLocalIndex));
-
-              auto& trackNote = track->GetNote(noteLocalIndex);
-
-              // Toggle notes that are clicked
-              imGuiStyle.ItemSpacing.x = 0.0f;
-              imGuiStyle.ItemSpacing.y = 0.0f;
-
-              auto cursorPos = ImGui::GetCursorPos();
-              if (ImGui::SquareRadioButton(uniqueLabel.c_str(), trackNote.enabled, beatWidth, kKeyboardKeyHeight)) {
-                if (InputState::Get().modState & KMOD_SHIFT) {
-                  if (trackNote.enabled) {
-                    noteSelectedStatus[trackIndex][noteLocalIndex] = !noteSelectedStatus[trackIndex][noteLocalIndex];
-                  }
+              bool solo = instrument->GetSoloTrack() == trackIndex;
+              if (ImGui::Checkbox("Solo", &solo)) {
+                if (solo) {
+                  pendingSoloTrack = trackIndex;
                 }
                 else {
-                  ClearSelectedNotes();
-
-                  // @Delay
-                  toggledNote = { trackIndex, noteLocalIndex };
+                  pendingSoloTrack = -1;
                 }
               }
-
-              if (ImGui::IsItemHovered()) {
-                hoveredNote = { trackIndex, noteLocalIndex };
+              float volume = track->GetVolume();
+              if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
+                pendingTrackVolume = { trackIndex, volume };
+              }
+              if (ImGui::Button("Duplicate")) {
+                pendingCloneTrack = trackIndex;
+                closePopup = true;
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Delete")) {
+                pendingRemoveTrack = trackIndex;
+                closePopup = true;
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Properties...")) {
+                pendingDialog = new DialogTrack("Edit Track", trackIndex,
+                  new Track(*track), stopButtonIconTexture);
+                closePopup = true;
               }
 
-              // Draw filled note
-              if (trackNote.enabled) {
-                ImVec4 noteColor = kDefaultNoteColor;
-                if (trackNote.fretIndex >= 0 && trackNote.fretIndex < _countof(kFretColors)) {
-                  noteColor = kFretColors[trackNote.fretIndex];
+              ImGui::Spacing();
+              ImGui::Spacing();
+              ImGui::Spacing();
+
+              closePopup |= ImGui::Button("OK");
+
+              if (closePopup) {
+                ImGui::CloseCurrentPopup();
+              }
+              ImGui::EndPopup();
+            }
+
+            imGuiStyle.ItemSpacing.y = 0.0f;
+            imGuiStyle.ItemSpacing.x = 0.0f;
+
+            ImGui::SameLine();
+
+            flashColor = kPlayTrackFlashColor;
+            SetTrackColors(track->GetColorScheme(), flashColor);
+
+            // Track button
+            auto trackButtonBegCursor = ImGui::GetCursorPos();
+            if (ImGui::Button(track->GetName().
+              c_str(), ImVec2(trackLabelWidth, kKeyboardKeyHeight))) {
+              pendingPlayTrack = trackIndex;
+            }
+            auto trackButtonEndCursor = ImGui::GetCursorPos();
+
+            imGuiStyle.ItemSpacing = defaultItemSpacing;
+            memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
+
+            // If it's playing, flash it
+            float flashPct = 0.0f;
+            {
+              auto flashTime = playingTrackFlashTimes[0].find(trackIndex);
+              if (flashTime != playingTrackFlashTimes[0].end()) {
+                auto pct = static_cast<float>((Globals::currentTime - flashTime->second) / kPlayTrackFlashDuration);
+                if (pct >= 1.0f) {
+                  playingTrackFlashTimes[0].erase(flashTime);
                 }
-                auto currentPos = ImGui::GetCursorPos();
-                ImGui::SetCursorPos(cursorPos);
-                ImGui::FillRect(ImVec2(beatWidth,
-                  kKeyboardKeyHeight), ImGui::ColorConvertFloat4ToU32(noteColor));
+                else {
+                  flashPct = 1.0f - pct;
+                }
+              }
+            }
 
-                // If we're drag-selecting, update the selected status
-                if (dragBox.x >= 0.0f) {
-                  glm::vec4 noteBox(cursorPos.x, cursorPos.y,
-                    cursorPos.x + beatWidth, cursorPos.y + kKeyboardKeyHeight);
+            if (flashPct > 0.0f) {
+              ImGui::SetCursorPos(trackButtonBegCursor);
+              ImGui::FillRect(ImVec2(trackLabelWidth, kKeyboardKeyHeight),
+                (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
+              ImGui::SetCursorPos(trackButtonEndCursor);
+            }
+          }
+        }
 
-                  if (dragBox.x <= noteBox.z && noteBox.x <= dragBox.z &&
-                      dragBox.w >= noteBox.y && noteBox.w >= dragBox.y) {
-                    noteSelectedStatus[trackIndex][noteLocalIndex] = true;
+        auto songWindowHovered = false;
+
+        // Song lines
+        auto song = sequencer.GetSong();
+        if (song != nullptr) {
+          // Holy Christ what a mess
+          auto parentWindowPos = ImGui::GetWindowPos();
+          ImGui::SetNextWindowPos(ImVec2(parentWindowPos.x + trackTotalWidth,
+            parentWindowPos.y - ImGui::GetScrollY()));
+
+          ImVec2 songCanvasSize(scrollingCanvasSize.x - trackTotalWidth - Globals::kScrollBarWidth,
+            std::max(ImGui::GetCursorPosY() + Globals::kScrollBarHeight, scrollingCanvasSize.y));
+
+          ImGui::BeginChild("##Song",
+            songCanvasSize,
+            false,
+            ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+          {
+            songWindowHovered = ImGui::IsWindowHovered();
+
+            // Measure numbers
+            auto measureNumberPos = ImGui::GetCursorPos();
+            auto beatLineBegY = 0.0f;
+            for (size_t m = 0; m < song->GetNumMeasures(); ++m) {
+              ImGui::SetCursorPos(measureNumberPos);
+              ImGui::Text(std::to_string(m + 1).c_str());
+              beatLineBegY = ImGui::GetCursorPosY();
+              measureNumberPos.x += kFullBeatWidth * song->GetBeatsPerMeasure();
+            }
+
+            noteSelectedStatus.resize(song->GetLineCount());
+
+            imGuiStyle.ItemSpacing.x = 0.0f;
+            imGuiStyle.ItemSpacing.y = 0.0f;
+
+            auto beatWidth = kFullBeatWidth / sequencer.GetSubdivision();
+            for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
+              auto& line = song->GetLine(lineIndex);
+
+              ImGui::NewLine();
+
+              // Notes (displayed at current beat zoom level)
+              uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
+              for (size_t beatIndex = 0; beatIndex < line.size(); beatIndex += beatStep) {
+                ImGui::SameLine();
+
+                // Bump the first square by 1 to the right so we can draw a 2-pixel beat line
+                if (!beatIndex) {
+                  ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 1.0f);
+                }
+
+                auto uniqueLabel("sl#" + std::to_string(lineIndex) + ":" + std::to_string(beatIndex));
+
+                auto& note = line[beatIndex];
+
+                // Draw empty or filled square radio button depending on whether or not it's enabled
+                auto buttonBegPos = ImGui::GetCursorPos();
+                auto buttonExtent = ImVec2(beatWidth, kKeyboardKeyHeight);
+                if (ImGui::SquareRadioButton(uniqueLabel.c_str(), note.GetEnabled(), buttonExtent.x, buttonExtent.y)) {
+                  // Clicking a disabled note enables it; clicking an enabled note selects it
+                  if (note.GetEnabled()) {
+                    if (!(InputState::Get().modState & KMOD_SHIFT)) {
+                      ClearSelectedNotes();
+                    }
+                    set_toggle<uint32>(noteSelectedStatus[lineIndex], beatIndex);
                   }
                   else {
-                    noteSelectedStatus[trackIndex][noteLocalIndex] = false;
+                    toggledNote = { lineIndex, beatIndex };
                   }
                 }
 
-                // Draw selection box around note if selected
-                if (noteSelectedStatus[trackIndex][noteLocalIndex]) {
-                  auto currentPos = ImGui::GetCursorPos();
-                  ImGui::SetCursorPos(cursorPos);
-                  ImGui::DrawRect(ImVec2(beatWidth,
-                    kKeyboardKeyHeight), ImGui::ColorConvertFloat4ToU32(kDragSelectColor));
+                if (ImGui::IsItemHovered()) {
+                  hoveredNote = { lineIndex, beatIndex };
                 }
 
-                // If it's playing, flash it
-                float flashPct = 0.0f;
-                {
-                  auto flashTime = playingNotesFlashTimes[0].find(noteGlobalIndex);
-                  if (flashTime != playingNotesFlashTimes[0].end()) {
-                    auto pct = static_cast<float>((Globals::currentTime - flashTime->second) / kPlayNoteFlashDuration);
-                    if (pct >= 1.0f) {
-                      playingNotesFlashTimes[0].erase(flashTime);
+                if (note.GetEnabled()) {
+                  // Draw filled note: TODO: Remove this, should draw it once above
+                  // https://trello.com/c/Ll8dgleN
+                  {
+                    ImVec4 noteColor = kDefaultNoteColor;
+                    if (note.GetGameIndex() >= 0 && note.GetGameIndex() < _countof(kFretColors)) {
+                      noteColor = kFretColors[note.GetGameIndex()];
+                    }
+                    ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
+                    ImGui::FillRect(ImVec2(buttonExtent.x - 2.0f,
+                      buttonExtent.y - 2.0f), ImGui::ColorConvertFloat4ToU32(noteColor));
+                  }
+
+                  // If we're drag-selecting, update the selected status
+                  if (dragBox.x >= 0.0f) {
+                    glm::vec4 noteBox(buttonBegPos.x, buttonBegPos.y,
+                      buttonBegPos.x + buttonExtent.x, buttonBegPos.y + buttonExtent.y);
+
+                    if (dragBox.x <= noteBox.z && noteBox.x <= dragBox.z &&
+                      dragBox.w >= noteBox.y && noteBox.w >= dragBox.y) {
+                      set_add<uint32>(noteSelectedStatus[lineIndex], beatIndex);
                     }
                     else {
-                      flashPct = 1.0f - pct;
+                      set_remove<uint32>(noteSelectedStatus[lineIndex], beatIndex);
                     }
+                  }
+
+                  // Draw selection box around note if selected
+                  if (set_contains<uint32>(noteSelectedStatus[lineIndex], beatIndex)) {
+                    ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
+                    ImGui::DrawRect(ImVec2(buttonExtent.x - 2.0f,
+                      buttonExtent.y - 2.0f), ImGui::ColorConvertFloat4ToU32(kDragSelectColor));
+                  }
+                }
+              }
+            }
+
+            ImGui::SetCursorPosY(songCanvasSize.y);
+            auto beatLineEndY = ImGui::GetCursorPosY();
+
+            imGuiStyle.ItemSpacing = defaultItemSpacing;
+
+            // Draw the beat demarcation lines
+            float cursorPosX = 0.0f;
+            for (uint32 m = 0; m < song->GetNumMeasures(); ++m) {
+              uint32 c = ImGui::ColorConvertFloat4ToU32(kMeasureDemarcationLineColor);
+              for (uint32 b = 0; b < song->GetBeatsPerMeasure(); ++b) {
+                ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
+                ImGui::FillRect(ImVec2(2.0f, beatLineEndY - beatLineBegY), c);
+                cursorPosX += kFullBeatWidth;
+                c = ImGui::ColorConvertFloat4ToU32(kBeatDemarcationLineColor);
+              }
+            }
+
+            // Draw the play line
+            // TODO: This jumps from sub-beat to sub-beat, would be nice to have it
+            // continuously update
+            // https://trello.com/c/VCzl1tUh
+            cursorPosX = beatWidth * (sequencer.GetPosition() /
+              (song->GetMinNoteValue() / sequencer.GetSubdivision()));
+            ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
+            ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
+              ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
+
+            // Keep it in sight while playing
+            if (Sequencer::Get().IsPlaying()) {
+              if (cursorPosX > ImGui::GetScrollX() + songCanvasSize.x) {
+                ImGui::SetScrollX(cursorPosX);
+              }
+            }
+
+            // Drag box
+            {
+              static ImVec2 mouseDragBeg;
+
+              // On mouse l-press, start the box recording (if we wait for drag to kick in we
+              // lose a few pixels)
+              if (ImGui::IsMouseClicked(0) && songWindowHovered) {
+                // Don't clear notes if they are attempting to add to the set
+                if (!(InputState::Get().modState & KMOD_SHIFT)) {
+                  // Don't clear notes if they are beginning a selected group drag
+                  if (hoveredNote.first == -1 || !set_contains<uint32>(noteSelectedStatus[hoveredNote.first], hoveredNote.second)) {
+                    ClearSelectedNotes();
                   }
                 }
 
-                if (flashPct > 0.0f) {
-                  auto flashCursorPos = cursorPos;
-
-                  flashCursorPos.x -= kPlayNoteFlashGrow * flashPct;
-                  flashCursorPos.y -= kPlayNoteFlashGrow * flashPct;
-
-                  ImGui::SetCursorPos(flashCursorPos);
-                  ImGui::FillRect(ImVec2(beatWidth + kPlayNoteFlashGrow * 2.0f * flashPct,
-                    kKeyboardKeyHeight + kPlayNoteFlashGrow * 2.0f * flashPct),
-                    (static_cast<uint32>(flashPct * 255.0f) << 24) | kPlayNoteFlashColor);
-                }
-
-                ImGui::SetCursorPos(currentPos);
+                songWindowClicked = true;
+                mouseDragBeg = ImGui::GetMousePos();
+                mouseDragBeg -= ImGui::GetWindowPos();
               }
 
-              noteLocalIndex += sequencer.GetMaxSubdivisions() / sequencer.GetSubdivision();
-              noteGlobalIndex += sequencer.GetMaxSubdivisions() / sequencer.GetSubdivision();
-            }
-          }
+              // On mouse release, clear drag box
+              if (ImGui::IsMouseReleased(0)) {
+                songWindowClicked = false;
+                dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
+              }
 
-          // Reset old X spacing to offset from keyboard key
-          imGuiStyle.ItemSpacing.x = oldItemSpacing.x;
-        }
-      }
-      // Drag box
-      {
-        static ImVec2 mouseDragBeg;
+              // Update drag box while dragging (if initiating click happened in song window)
+              if (ImGui::IsMouseDragging() && songWindowClicked) {
+                auto mouseDragCur = ImGui::GetIO().MousePos;
 
-        // On mouse l-press, start the box recording (if we wait for drag to kick in we
-        // lose a few pixels)
-        if (ImGui::IsMouseClicked(0)) {
-          mouseDragBeg = ImGui::GetMousePos();
-          if (mouseDragBeg.x < beatLabelStartX) {
-            mouseDragBeg.x = beatLabelStartX;
-          }
-          mouseDragBeg -= ImGui::GetWindowPos();
-        }
+                if (mouseDragCur.x != -FLT_MAX && mouseDragCur.y != -FLT_MAX) {
+                  mouseDragCur -= ImGui::GetWindowPos();
 
-        // On mouse release, clear drag box
-        if (ImGui::IsMouseReleased(0)) {
-          dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
-        }
-        
-        // Update drag box while dragging
-        if (ImGui::IsMouseDragging()) {
-          auto mouseDragCur = ImGui::GetIO().MousePos;
-        
-          if (mouseDragCur.x != -FLT_MAX && mouseDragCur.y != -FLT_MAX) {
-            if (mouseDragCur.x < beatLabelStartX) {
-              mouseDragCur.x = beatLabelStartX;
+                  dragBox.x = std::min(mouseDragBeg.x, mouseDragCur.x);
+                  dragBox.y = std::min(mouseDragBeg.y, mouseDragCur.y);
+                  dragBox.z = std::max(mouseDragBeg.x, mouseDragCur.x);
+                  dragBox.w = std::max(mouseDragBeg.y, mouseDragCur.y);
+                }
+              }
+
+              // Render drag box if valid
+              auto w = dragBox.z - dragBox.x;
+              auto h = dragBox.w - dragBox.y;
+
+              if (w > 0 && h > 0) {
+                auto oldCursorPos = ImGui::GetCursorPos();
+                ImGui::SetCursorPos(ImVec2(dragBox.x, dragBox.y));
+                ImGui::FillRect(ImVec2(static_cast<float>(w),
+                  static_cast<float>(h)), ImGui::GetColorU32(kDragBoxFillColor));
+                ImGui::DrawRect(ImVec2(static_cast<float>(w),
+                  static_cast<float>(h)), ImGui::GetColorU32(kDragBoxOutlineColor));
+                ImGui::SetCursorPos(oldCursorPos);
+              }
             }
 
-            mouseDragCur -= ImGui::GetWindowPos();
+            ImGui::EndChild();
+          } // Song child region          
+        } // if (song != nullptr)
 
-            dragBox.x = std::min(mouseDragBeg.x, mouseDragCur.x);
-            dragBox.y = std::min(mouseDragBeg.y, mouseDragCur.y);
-            dragBox.z = std::max(mouseDragBeg.x, mouseDragCur.x);
-            dragBox.w = std::max(mouseDragBeg.y, mouseDragCur.y);
-          }
-        }
-
-        // Render drag box if valid
-        auto w = dragBox.z - dragBox.x;
-        auto h = dragBox.w - dragBox.y;
-
-        if (w > 0 && h > 0) {
-          auto oldCursorPos = ImGui::GetCursorPos();
-          ImGui::SetCursorPos(ImVec2(dragBox.x, dragBox.y));
-          ImGui::DrawRect(ImVec2(static_cast<float>(w),
-            static_cast<float>(h)), ImGui::GetColorU32(kDragBoxColor));
-          ImGui::SetCursorPos(oldCursorPos);
-        }
-      }
-      ImGui::EndChild();
-
-      imGuiStyle.ItemSpacing = oldItemSpacing;
-
-      float beatLabelEndY = ImGui::GetCursorPosY() - imGuiStyle.ItemSpacing.y;
-
-      ImGui::Separator();
-      ImGui::NewLine();
+        ImGui::EndChild();
+      } // Track + Song vertical scroling region
 
       // Bottom tool bar
       {
-        imGuiStyle.ItemSpacing.x = 2;
+        auto song = sequencer.GetSong();
+
+        ImGui::Separator();
+
+        imGuiStyle.ItemSpacing.x = 2.0f;
 
         // Play/Pause button
         if (sequencer.IsPlaying()) {
@@ -896,36 +973,26 @@ void ComposerView::Render(ImVec2 canvasSize) {
           sequencer.Stop();
         }
 
-        imGuiStyle.ItemSpacing.x = oldItemSpacing.x + 5;
+        imGuiStyle.ItemSpacing = defaultItemSpacing;
 
-        // Measures
+        // BPM
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        int numMeasures = sequencer.GetNumMeasures();
-        if (ImGui::InputInt("Measures", &numMeasures)) {
+        int currentBpm = song ? song->GetTempo() : Globals::kDefaultTempo;
+        if (ImGui::InputInt("BPM", &currentBpm)) {
           // @Delay
-          pendingNumMeasures = std::max(std::min(static_cast<uint32>(numMeasures), kMaxMeasures), kMinMeasures);
+          pendingTempo = currentBpm;
         }
         ImGui::PopItemWidth();
 
-        // Beats per measure
+        // Grid (subdivision)
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        int beatsPerMeasure = sequencer.GetBeatsPerMeasure();
-        if (ImGui::InputInt("BeatsPerMeasure", &beatsPerMeasure)) {
-          // @Delay
-          pendingBeatsPerMeasure = std::max(std::min(static_cast<uint32>
-            (beatsPerMeasure), kMaxBeatsPerMeasure), kMinBeatsPerMeasure);
-        }
-        ImGui::PopItemWidth();
-
-        // Subdivision
-        ImGui::SameLine();
-        ImGui::PushItemWidth(100);
-        if (ImGui::BeginCombo("Subdivision", std::to_string(sequencer.GetSubdivision()).c_str())) {
+        if (ImGui::BeginCombo("Subdivision", (std::string("1/") +
+          std::to_string(sequencer.GetSubdivision())).c_str())) {
           std::vector<uint32> subDivs;
 
-          uint32 subDiv = Sequencer::Get().GetMaxSubdivisions();
+          uint32 subDiv = Globals::kDefaultMinNote;
           while (subDiv >= 2) {
             subDivs.push_back(subDiv);
             subDiv /= 2;
@@ -933,7 +1000,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
           for (auto revIter = subDivs.rbegin(); revIter != subDivs.rend(); ++revIter) {
             bool isSelected = (sequencer.GetSubdivision() == *revIter);
-            if (ImGui::Selectable(std::to_string(*revIter).c_str(), isSelected)) {
+            if (ImGui::Selectable((std::string("1/") +
+              std::to_string(*revIter)).c_str(), isSelected)) {
               // @Delay
               pendingSubdivision = *revIter;
             }
@@ -945,15 +1013,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
         }
         ImGui::PopItemWidth();
 
-        // BPM
-        ImGui::SameLine();
-        ImGui::PushItemWidth(100);
-        int currentBpm = sequencer.GetBeatsPerMinute();
-        if (ImGui::InputInt("BPM", &currentBpm)) {
-          // @Delay
-          pendingBeatsPerMinute = currentBpm;
-        }
-        ImGui::PopItemWidth();
 
         // Loop
         ImGui::SameLine();
@@ -983,32 +1042,11 @@ void ComposerView::Render(ImVec2 canvasSize) {
           // @Atomic
           Mixer::Get().SetMasterVolume(masterVolume);
         }
-      }
+      } // Bottom toolbar
 
-      auto oldCursorPos = ImGui::GetCursorPos();
-
-      // Draw the beat demarcation lines
-      cursorPosX = beatLabelStartX;
-      for (uint32 b = 0; b < sequencer.GetNumMeasures() * sequencer.GetBeatsPerMeasure(); ++b) {
-        ImGui::SetCursorPos(ImVec2(cursorPosX - 0, beatLabelStartY));
-        ImGui::FillRect(ImVec2(1, beatLabelEndY -
-          beatLabelStartY), ImGui::GetColorU32(ImGuiCol_FrameBgActive));
-        cursorPosX += kFullBeatWidth;
-      }
-
-      imGuiStyle.ItemSpacing = oldItemSpacing;
-
-      // Draw the play line
-      cursorPosX = beatLabelStartX + beatWidth * (sequencer.GetPosition() /
-        (sequencer.GetMaxSubdivisions() / sequencer.GetSubdivision()));
-      ImGui::SetCursorPos(ImVec2(cursorPosX - 0, beatLabelStartY));
-      ImGui::FillRect(ImVec2(1, beatLabelEndY - beatLabelStartY), 0x7FFFFFFF);
-
-      ImGui::SetCursorPos(oldCursorPos);
-    }
-
-    ImGui::End();
-  }
+      ImGui::End();
+    } // Sequencer window
+  } // if (instrument != nullptr)
 
   // Output window
   int32 outputWindowTop = static_cast<int32>(canvasSize.y - outputWindowHeight);
@@ -1057,6 +1095,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         }
 
         // TODO: rather than parse the string, create an expanded class
+        // https://trello.com/c/wksKPcRD
         static const ImVec4 logColors[Logging::Category::Count] = {
           ImVec4(1.0f, 1.0f, 1.0f, 1.0f), // Info = White
           ImVec4(0.7f, 0.7f, 0.0f, 1.0f), // Warn = Yellow
@@ -1070,11 +1109,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::PopStyleColor();
       }
     }
+
     if (outputWindowState.scrollToBottom) {
       ImGui::SetScrollY(ImGui::GetScrollMaxY());
       ImGui::SetScrollHere(1.0f);
       outputWindowState.scrollToBottom = false;
     }
+
     ImGui::PopStyleVar();
     ImGui::EndChild();
   }
@@ -1086,8 +1127,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
 void ComposerView::NotePlayedCallback(uint32 trackIndex, uint32 noteIndex) {
   playingTrackFlashTimes[1].insert({ trackIndex, Globals::currentTime });
-  playingNotesFlashTimes[1].insert({ Sequencer::Get().GetInstrument()->
-    GetTrack(trackIndex)->GetNoteCount() * trackIndex + noteIndex, Globals::currentTime });
 }
 
 void ComposerView::InitResources() {
@@ -1097,14 +1136,7 @@ void ComposerView::InitResources() {
 
   // Load UI textures
   int width, height;
-  glGenTextures(1, &playButtonIconTexture);
-  glBindTexture(GL_TEXTURE_2D, playButtonIconTexture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  uint8* iconData = SOIL_load_image("Assets\\play_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
-  SOIL_free_image_data(iconData);
-
+  uint8* iconData = nullptr;
   glGenTextures(1, &pauseButtonIconTexture);
   glBindTexture(GL_TEXTURE_2D, pauseButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1126,24 +1158,37 @@ void ComposerView::InitResources() {
   glBindTexture(GL_TEXTURE_2D, lastTexture);
 }
 
-ComposerView::ComposerView(uint32 mainWindowHandle, std::function<void()> exitFunction)
-: mainWindowHandle(mainWindowHandle)
-, exitFunction(exitFunction) {
+ComposerView::ComposerView(uint32 mainWindowHandle)
+: mainWindowHandle(mainWindowHandle) {
+
   logResponderId = Logging::AddResponder([=](const std::string_view& logLine) {
     outputWindowState.AddLog(logLine);
   });
 
   InitResources();
+}
 
+void ComposerView::Show() {
+  // Songs refer to instruments; if you load a song and it does not match the current
+  // instrument it needs a way to 'talk back' to us and ask us to load the correct
+  // instrument.
+  auto _mainWindowHandle = mainWindowHandle;
   Sequencer::Get().SetLoadInstrumentCallback(
-    [mainWindowHandle](std::string instrumentName) {
-      return LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle), instrumentName);
+    [_mainWindowHandle](std::string instrumentName) {
+      return LoadInstrument(reinterpret_cast<HWND>(_mainWindowHandle), instrumentName);
     });
 
-  Sequencer::Get().AddNotePlayedCallback(
+  notePlayedCallbackId = Sequencer::Get().AddNotePlayedCallback(
     [](uint32 trackIndex, uint32 noteIndex, void* payload) {
       reinterpret_cast<ComposerView*>(payload)->NotePlayedCallback(trackIndex, noteIndex);
     }, this);
+}
+
+void ComposerView::Hide() {
+  if (notePlayedCallbackId != UINT32_MAX) {
+    Sequencer::Get().RemoveNotePlayedCallback(notePlayedCallbackId);
+    notePlayedCallbackId = UINT32_MAX;
+  }
 }
 
 ComposerView::~ComposerView() {

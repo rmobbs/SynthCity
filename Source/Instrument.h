@@ -12,20 +12,16 @@ class Instrument {
 public:
   std::vector<Track*> tracks;
   std::string name;
-  uint32 numNotes;
   int32 soloTrack = -1;
 
   void AddTrack(Track* track);
   void ReplaceTrack(uint32 index, Track* track);
   void RemoveTrack(uint32 index);
-  void ClearNotes();
-  void Clear();
   void PlayTrack(uint32 trackIndex);
-  void SetNoteCount(uint32 numNotes);
   bool SaveInstrument(std::string fileName);
 
-  Instrument(const ReadSerializer& r, uint32 numNotes);
-  Instrument(std::string instrumentName, uint32 numNotes);
+  Instrument(const ReadSerializer& r);
+  Instrument(std::string instrumentName);
   ~Instrument();
 
   std::string GetName(void) const {
@@ -48,9 +44,9 @@ public:
 
   void SetSoloTrack(int32 trackIndex);
 
-  static Instrument* LoadInstrument(std::string fileName, uint32 numNotes);
+  static Instrument* LoadInstrument(std::string fileName);
 
-  bool SerializeRead(const ReadSerializer& serializer);
+  std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   bool SerializeWrite(const WriteSerializer& serializer);
 };
 

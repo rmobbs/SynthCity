@@ -30,7 +30,7 @@ static constexpr uint32 kMaxSimultaneousVoices = 64;
 static constexpr float kPeakVolumeRatio = 0.7f;
 static constexpr float kClipMax(0.7f);
 static constexpr float kClipMin(-0.7f);
-static constexpr uint32 kVoicePreallocCount = 64;
+static constexpr uint32 kVoicePreallocCount = kMaxSimultaneousVoices;
 
 // A voice is a playing instance of a patch
 class Voice {
@@ -81,6 +81,7 @@ public:
 
   }
 };
+
 int32 Voice::nextVoiceId = 0;
 
 static FreeList<Voice, const Patch*, float> voiceFreeList;
@@ -244,9 +245,9 @@ void Mixer::MixVoices(float* mixBuffer, uint32 numFrames) {
     }
 
     // Clip so we don't distort
-    for (uint32 curFrame = 0; curFrame < maxFrames; ++curFrame) {
-      mixBuffer[curFrame * 2 + 0] = std::max(std::min(mixBuffer[curFrame * 2 + 0], 0.7f), -0.7f);
-      mixBuffer[curFrame * 2 + 1] = std::max(std::min(mixBuffer[curFrame * 2 + 1], 0.7f), -0.7f);
+    for (uint32 curTicks = 0; curTicks < maxFrames; ++curTicks) {
+      mixBuffer[curTicks * 2 + 0] = std::max(std::min(mixBuffer[curTicks * 2 + 0], 0.7f), -0.7f);
+      mixBuffer[curTicks * 2 + 1] = std::max(std::min(mixBuffer[curTicks * 2 + 1], 0.7f), -0.7f);
     }
 
     // So people can query this without locking
@@ -270,10 +271,14 @@ void Mixer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   length /= 4;
 
   while (length > 0) {
-    // Mix and write audio
     int32 frames = std::min(std::min(ticksRemaining,
       static_cast<int32>(kMaxCallbackSampleFrames)), length);
 
+    // TODO: Need pre/post tick structure
+
+    curTicks += frames;
+
+    // Mix and write audio
     MixVoices(mixbuf.data(), frames);
     WriteOutput(mixbuf.data(), reinterpret_cast<int16 *>(stream), frames);
 
@@ -299,6 +304,7 @@ void Mixer::StopAllVoices() {
   voiceFreeList.ReturnAll();
   voices.clear();
   numActiveVoices = 0;
+  curTicks = 0;
 
   DrainExpiredPool();
 

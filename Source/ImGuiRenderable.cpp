@@ -12,9 +12,8 @@ ImGuiRenderable::ImGuiRenderable() {
   glGenBuffers(1, &elementBufferId);
 
   // Get our shader program
-  shaderProgram = GlobalRenderData::get().getShaderProgram("ImGuiProgram");
+  shaderProgram = GlobalRenderData::get().getShaderProgram("TexturedDiffuse2D");
   if (shaderProgram != nullptr) {
-    // Get the world/scale uniform (TODO: abstract this)
     fontTextureLoc = shaderProgram->GetUniform("Texture").location;
 
     // Bind vertex attributes
@@ -96,8 +95,12 @@ void ImGuiRenderable::Render() {
 
     shaderProgram->begin();
 
+    glm::mat4x4 worldScale(1.0f);
+    glUniformMatrix4fv(shaderProgram->GetUniform("WorldScale").
+      location, 1, GL_FALSE, reinterpret_cast<GLfloat*>(&worldScale));
+
     // Select the 0th texture
-    glUniform1i(fontTextureLoc, 0);
+    //glUniform1i(fontTextureLoc, 0);
 
     // Run through the ImGui draw lists
     for (int n = 0; n < imDrawData->CmdListsCount; ++n) {

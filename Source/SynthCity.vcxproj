@@ -197,6 +197,7 @@
     <ClInclude Include="DialogTrack.h" />
     <ClInclude Include="Factory.h" />
     <ClInclude Include="FreeList.h" />
+    <ClInclude Include="GamePreviewView.h" />
     <ClInclude Include="ImGuiExtensions.h" />
     <ClInclude Include="Patch.h" />
     <ClInclude Include="Process.h" />
@@ -204,6 +205,7 @@
     <ClInclude Include="ProcessDecay.h" />
     <ClInclude Include="ProcessFactory.h" />
     <ClInclude Include="SineSynthSound.h" />
+    <ClInclude Include="Song.h" />
     <ClInclude Include="Track.h" />
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="EnumIterator.h" />
@@ -226,6 +228,7 @@
     <ClInclude Include="SoundFactory.h" />
     <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
+    <ClInclude Include="View.h" />
     <ClInclude Include="WavBank.h" />
     <ClInclude Include="WavSound.h" />
   </ItemGroup>
@@ -238,6 +241,7 @@
     <ClCompile Include="AudioGlobals.cpp" />
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="DialogTrack.cpp" />
+    <ClCompile Include="GamePreviewView.cpp" />
     <ClCompile Include="Globals.cpp" />
     <ClCompile Include="ImGuiExtensions.cpp" />
     <ClCompile Include="InputState.cpp" />
@@ -247,6 +251,7 @@
     <ClCompile Include="ProcessDecay.cpp" />
     <ClCompile Include="ProcessFactory.cpp" />
     <ClCompile Include="SineSynthSound.cpp" />
+    <ClCompile Include="Song.cpp" />
     <ClCompile Include="Track.cpp" />
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />
@@ -264,6 +269,7 @@
     <ClCompile Include="SpriteRenderable.cpp" />
     <ClCompile Include="SynthCity.cpp" />
     <ClCompile Include="SynthSound.cpp" />
+    <ClCompile Include="View.cpp" />
     <ClCompile Include="WavBank.cpp" />
     <ClCompile Include="WavSound.cpp" />
   </ItemGroup>

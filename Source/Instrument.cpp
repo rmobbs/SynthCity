@@ -14,50 +14,53 @@ static constexpr const char* kNameTag("name");
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
+static constexpr uint32 kInstrumentFileVersion = 1;
 
-Instrument::Instrument(std::string instrumentName, uint32 numNotes) :
-  name(instrumentName),
-  numNotes(numNotes) {
+Instrument::Instrument(std::string instrumentName)
+  : name(instrumentName) {
 
 }
 
-Instrument::Instrument(const ReadSerializer& r, uint32 numNotes)
-  : numNotes(numNotes) {
-  if (!SerializeRead(r)) {
-    throw std::runtime_error("Instrument: Unable to serialize (read)");
+Instrument::Instrument(const ReadSerializer& r) {
+  auto result = SerializeRead(r);
+  if (!result.first) {
+    throw std::runtime_error(result.second);
   }
 }
 
 Instrument::~Instrument() {
-  Clear();
+  for (auto& track : tracks) {
+    delete track;
+  }
+  tracks.clear();
 }
 
-bool Instrument::SerializeRead(const ReadSerializer& serializer) {
+std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& serializer) {
   auto& d = serializer.d;
 
   // Version
-  if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsString()) {
-    MCLOG(Error, "Missing/invalid version tag in instrument file");
-    return false;
+  if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsUint()) {
+    return std::make_pair(false, "Missing/invalid version tag in instrument file");
   }
-  std::string version = d[Globals::kVersionTag].GetString();
 
-  if (version != std::string(Globals::kVersionString)) {
-    MCLOG(Error, "Invalid instrument file version");
-    return false;
+  auto version = d[Globals::kVersionTag].GetUint();
+
+  if (version != kInstrumentFileVersion) {
+    // Allow conversion of previous formats
+    // https://trello.com/c/O0SzcHfG
+    return std::make_pair(false, "Invalid instrument file version");
   }
+
 
   // Name
   if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
-    MCLOG(Error, "Missing/invalid name tag in instrument file");
-    return false;
+    return std::make_pair(false, "Missing/invalid name tag in instrument file");
   }
   SetName(d[kNameTag].GetString());
 
   // Tracks
   if (!d.HasMember(kTracksTag) || !d[kTracksTag].IsArray()) {
-    MCLOG(Error, "Invalid tracks array in instrument file");
-    return false;
+    return std::make_pair(false, "Invalid tracks array in instrument file");
   }
 
   const auto& tracksArray = d[kTracksTag];
@@ -70,7 +73,7 @@ bool Instrument::SerializeRead(const ReadSerializer& serializer) {
     }
   }
 
-  return true;
+  return std::make_pair(true, "");
 }
 
 bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
@@ -80,7 +83,7 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
 
   // Version tag:string
   w.Key(Globals::kVersionTag);
-  w.String(Globals::kVersionString);
+  w.Uint(kInstrumentFileVersion);
 
   // Name tag:string
   w.Key(kNameTag);
@@ -101,54 +104,21 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
   return true;
 }
 
-void Instrument::ClearNotes() {
-  AudioGlobals::LockAudio();
-  for (auto& track : tracks) {
-    track->ClearNotes();
-  }
-  AudioGlobals::UnlockAudio();
-}
-
-void Instrument::Clear() {
-  AudioGlobals::LockAudio();
-  for (auto& track : tracks) {
-    delete track;
-  }
-  tracks.clear();
-  AudioGlobals::UnlockAudio();
-}
-
-void Instrument::SetNoteCount(uint32 numNotes) {
-  AudioGlobals::LockAudio();
-  for (auto& track : tracks) {
-    track->SetNoteCount(numNotes);
-  }
-  AudioGlobals::UnlockAudio();
-}
-
 void Instrument::AddTrack(Track* track) {
-  AudioGlobals::LockAudio();
-  track->SetNoteCount(numNotes);
   tracks.push_back(track);
-  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
-  AudioGlobals::LockAudio();
-  newTrack->SetNotes(tracks[index]->GetNotes());
   delete tracks[index];
   tracks[index] = newTrack;
-  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::RemoveTrack(uint32 index) {
-  AudioGlobals::LockAudio();
   if (soloTrack == index) {
     soloTrack = -1;
   }
   delete tracks[index];
   tracks.erase(tracks.begin() + index);
-  AudioGlobals::UnlockAudio();
 }
 
 void Instrument::SetSoloTrack(int32 trackIndex) {
@@ -189,7 +159,7 @@ bool Instrument::SaveInstrument(std::string fileName) {
 }
 
 /* static */
-Instrument* Instrument::LoadInstrument(std::string fileName, uint32 numNotes) {
+Instrument* Instrument::LoadInstrument(std::string fileName) {
   MCLOG(Info, "Loading instrument from file \'%s\'", fileName.c_str());
 
   std::ifstream ifs(fileName);
@@ -217,10 +187,10 @@ Instrument* Instrument::LoadInstrument(std::string fileName, uint32 numNotes) {
 
   Instrument* newInstrument = nullptr;
   try {
-    newInstrument = new Instrument({ document }, numNotes);
+    newInstrument = new Instrument({ document });
   }
-  catch (...) {
-
+  catch (std::runtime_error& rte) {
+    MCLOG(Error, "Failed to serialize instrument: %s", rte.what());
   }
   return newInstrument;
 }

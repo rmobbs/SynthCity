@@ -2,6 +2,8 @@
 
 #include <list>
 #include <vector>
+#include <functional>
+#include <set>
 
 template<class ClassName, typename... Args> class StaticFreeList {
 private:
@@ -57,6 +59,7 @@ public:
 template<class ClassName, typename... Args> class FreeList {
 private:
   std::list<ClassName*> itemFree;
+  std::set<ClassName*> itemUsed;
   std::vector<ClassName*> itemHeap;
 public:
   FreeList() = default;
@@ -71,7 +74,7 @@ public:
 
   void Init(uint32 startCount) {
     for (uint32 i = 0; i < startCount; ++i) {
-      auto item = new ClassName;
+      auto item = reinterpret_cast<ClassName*>(new uint8[sizeof(ClassName)]);
       itemFree.push_back(item);
       itemHeap.push_back(item);
     }
@@ -79,28 +82,48 @@ public:
 
   void Term() {
     itemFree.clear();
+
+    for (auto& item : itemUsed) {
+      item->~ClassName();
+    }
+    itemUsed.clear();
+
     for (auto& item : itemHeap) {
-      delete item;
+      delete [] reinterpret_cast<uint8*>(item);
     }
     itemHeap.clear();
   }
 
   ClassName* Borrow(Args... args) {
+    ClassName* item = nullptr;
+
     if (itemFree.empty()) {
-      auto item = new ClassName;
+      item = reinterpret_cast<ClassName*>(new uint8[sizeof(ClassName)]);
       itemHeap.push_back(item);
-      itemFree.push_back(item);
     }
-    auto item = new (itemFree.front()) ClassName(args...);
-    itemFree.pop_front();
+    else {
+      item = itemFree.front();
+      itemFree.pop_front();
+    }
+
+    item = new (item) ClassName(args...);
+    itemUsed.insert(item);
+
     return item;
   }
 
   void Return(ClassName* item) {
+    item->~ClassName();
+    itemUsed.erase(item);
     itemFree.push_back(item);
   }
 
   void ReturnAll() {
+    for (auto& item : itemUsed) {
+      item->~ClassName();
+    }
+    itemUsed.clear();
+
     itemFree.clear();
     for (auto& item : itemHeap) {
       itemFree.push_back(item);
