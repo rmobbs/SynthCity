@@ -262,6 +262,8 @@ void GamePreviewView::Show() {
 }
 
 void GamePreviewView::Hide() {
+  fallingNotes.clear();
+
   if (beatCallbackId != UINT32_MAX) {
     Sequencer::Get().RemoveBeatCallback(beatCallbackId);
     beatCallbackId = UINT32_MAX;
