@@ -874,6 +874,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
             ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
               ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
 
+            // Keep it in sight while playing
+            if (Sequencer::Get().IsPlaying()) {
+              if (cursorPosX > ImGui::GetScrollX() + songCanvasSize.x) {
+                ImGui::SetScrollX(cursorPosX);
+              }
+            }
+
             // Drag box
             {
               static ImVec2 mouseDragBeg;
