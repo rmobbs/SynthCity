@@ -14,11 +14,10 @@
 static constexpr float kMinDialogWidth(600.0f);
 static constexpr float kMinDialogHeight(600.0f);
 
-DialogTrack::DialogTrack(std::string title, int32 trackIndex, Track* track, uint32 playButtonTexture, uint32 stopButtonTexture)
+DialogTrack::DialogTrack(std::string title, int32 trackIndex, Track* track, uint32 stopButtonTexture)
   : title(title)
   , trackIndex(trackIndex)
   , track(track)
-  , playButtonTexture(playButtonTexture)
   , stopButtonTexture(stopButtonTexture) {
 
 }

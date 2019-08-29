@@ -247,8 +247,8 @@ bool InitGL() {
   glewInit();
 
   // Load shader programs
-  GlobalRenderData::get().addShaderProgram(std::string("SpriteProgram"),
-    ShaderProgram(std::string("SpriteProgram"),
+  GlobalRenderData::get().addShaderProgram(std::string("Diffuse2D"),
+    ShaderProgram(std::string("Diffuse2D"),
       std::string("Shaders\\proj_pos2_scale_diffuse.vert"),
       std::string("Shaders\\diffuse.frag"),
       // Automatic uniforms
@@ -274,9 +274,9 @@ bool InitGL() {
       })
   );
 
-  GlobalRenderData::get().addShaderProgram(std::string("ImGuiProgram"),
-    ShaderProgram(std::string("ImGuiProgram"),
-      std::string("Shaders\\proj_pos2_uv_diffuse.vert"),
+  GlobalRenderData::get().addShaderProgram(std::string("TexturedDiffuse2D"),
+    ShaderProgram(std::string("TexturedDiffuse2D"),
+      std::string("Shaders\\proj_pos2_scale_uv_diffuse.vert"),
       std::string("Shaders\\diffuse_mul_uv.frag"),
       // Automatic uniforms
       {
@@ -288,6 +288,10 @@ bool InitGL() {
               reinterpret_cast<const GLfloat*>(&GlobalRenderData::get().
                   getMatrix(GlobalRenderData::MatrixType::ScreenOrthographic)));
           }
+        },
+        {
+          "WorldScale",
+          1,
         },
         // Fragment shader
         {
@@ -400,7 +404,7 @@ void Term() {
 
 int main(int argc, char **argv) {
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); // tells leak detector to dump report at any program exit
-  //_CrtSetBreakAlloc(3372);
+  //_CrtSetBreakAlloc(3050);
 
   if (!Init()) {
     return -1;

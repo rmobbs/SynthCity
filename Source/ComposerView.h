@@ -53,7 +53,6 @@ protected:
   std::pair<int32, int32> hoveredNote = { -1, -1 };
   std::pair<int32, float> pendingTrackVolume = { -1, 0.0f };
   std::pair<int32, bool> pendingTrackMute = { -1, false };
-  uint32 playButtonIconTexture = 0;
   uint32 stopButtonIconTexture = 0;
   uint32 pauseButtonIconTexture = 0;
   uint32 logResponderId = UINT32_MAX;

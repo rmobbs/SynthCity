@@ -12,19 +12,19 @@ static SpriteRenderable::SpriteVert vertexBufferData[] = {
   // TL anchor
   // TL
   {
-    { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
+    { 0.0f, 0.0f }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
   },
   // TR
   {
-    { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
+    { 1.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
   },
   // BR
   {
-    { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
+    { 1.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
   },
   // BL
   {
-    { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
+    { 0.0f, 1.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }
   },
 };
 
@@ -38,18 +38,30 @@ SpriteRenderable::SpriteRenderable(glm::vec2 extents, glm::vec4 color)
   Init();
 }
 
+void SpriteRenderable::SetPosition(const glm::vec2& position) {
+  this->position = position;
+}
+
+void SpriteRenderable::SetExtents(const glm::vec2& extents) {
+  this->extents = extents;
+}
+
+void SpriteRenderable::AddTexture(uint32 textureId) {
+  textures.push_back(textureId);
+}
+
 void SpriteRenderable::Init() {
   // Generate vertex buffer
   glGenBuffers(1, &vertexBufferId);
 
   // Get our shader program
-  shaderProgram = GlobalRenderData::get().getShaderProgram("SpriteProgram");
+  shaderProgram = GlobalRenderData::get().getShaderProgram("TexturedDiffuse2D");
   if (shaderProgram != nullptr) {
     // Bind vertex attributes
     addShaderAttribute(shaderProgram->getProgramId(),
       "Position", 2, GL_FLOAT, GL_FALSE, offsetof(SpriteRenderable::SpriteVert, pos));
-    //addShaderAttribute(shaderProgram->getProgramId(),
-    //"UV", 2, GL_FLOAT, GL_FALSE, offsetof(SpriteRenderable::SpriteVert, uv));
+    addShaderAttribute(shaderProgram->getProgramId(),
+      "UV", 2, GL_FLOAT, GL_FALSE, offsetof(SpriteRenderable::SpriteVert, uv));
     addShaderAttribute(shaderProgram->getProgramId(),
       "Color", 4, GL_FLOAT, GL_TRUE, offsetof(SpriteRenderable::SpriteVert, color));
   }
@@ -65,6 +77,17 @@ void SpriteRenderable::Render() {
     // Save state
     GLint lastArrayBuffer;
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &lastArrayBuffer);
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+
+    for (size_t t = 0; t < textures.size(); ++t) {
+      glActiveTexture(GL_TEXTURE0 + t);
+      glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(textures[t]));
+    }
 
     shaderProgram->begin();
 

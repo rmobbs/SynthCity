@@ -525,7 +525,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
     if (sequencer.GetInstrument() != nullptr) {
       if (ImGui::BeginMenu("Instrument")) {
         if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack("Add Track", -1, new Track(GetNewTrackName(kDefaultNewTrackName)), playButtonIconTexture, stopButtonIconTexture);
+          pendingDialog = new DialogTrack("Add Track", -1, new Track(GetNewTrackName(kDefaultNewTrackName)), stopButtonIconTexture);
         }
         ImGui::EndMenu();
       }
@@ -676,7 +676,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
               ImGui::SameLine();
               if (ImGui::Button("Properties...")) {
                 pendingDialog = new DialogTrack("Edit Track", trackIndex,
-                  new Track(*track), playButtonIconTexture, stopButtonIconTexture);
+                  new Track(*track), stopButtonIconTexture);
                 closePopup = true;
               }
 
@@ -1129,14 +1129,7 @@ void ComposerView::InitResources() {
 
   // Load UI textures
   int width, height;
-  glGenTextures(1, &playButtonIconTexture);
-  glBindTexture(GL_TEXTURE_2D, playButtonIconTexture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  uint8* iconData = SOIL_load_image("Assets\\play_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
-  SOIL_free_image_data(iconData);
-
+  uint8* iconData = nullptr;
   glGenTextures(1, &pauseButtonIconTexture);
   glBindTexture(GL_TEXTURE_2D, pauseButtonIconTexture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
