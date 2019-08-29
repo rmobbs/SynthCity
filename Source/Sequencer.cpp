@@ -376,6 +376,20 @@ void Sequencer::LoadSongJson(std::string fileName) {
       return;
     }
 
+    if (newSong->GetInstrumentName() != instrument->GetName()) {
+      if (!loadInstrumentCallback) {
+        MCLOG(Error, "Song requires instrument \'%s\' but no load instrument "
+          "callback was provided", newSong->GetInstrumentName().c_str());
+        delete newSong;
+        return;
+      }
+      if (!loadInstrumentCallback(newSong->GetInstrumentName())) {
+        MCLOG(Error, "Incorrect instrument loaded for song");
+        delete newSong;
+        return;
+      }
+    }
+
     delete song;
     song = newSong;
 
