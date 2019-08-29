@@ -363,4 +363,15 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
       ++fretNoteIter;
     }
   }
+
+  ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
+  ImGui::NewFrame();
+  ImGui::SetNextWindowPos(ImVec2(canvasSize.x - 150.0f, 10.0f));
+  ImGui::Begin("Instructions");
+  {
+    ImGui::Text("Press ESC to exit");
+    ImGui::End();
+  }
+
+  renderable.Render();
 }
