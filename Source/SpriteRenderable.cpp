@@ -32,6 +32,13 @@ SpriteRenderable::SpriteRenderable() {
   Init();
 }
 
+SpriteRenderable::~SpriteRenderable() {
+  if (vertexBufferId != UINT32_MAX) {
+    glDeleteBuffers(1, &vertexBufferId);
+    vertexBufferId = UINT32_MAX;
+  }
+}
+
 SpriteRenderable::SpriteRenderable(glm::vec2 extents, glm::vec4 color)
   : extents(extents)
   , color(color) {

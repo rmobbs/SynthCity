@@ -352,6 +352,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
       (fretNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
     if (notePosY >= targetLinePosition.y) {
       fretNoteIter = fallingNotes.erase(fretNoteIter);
+      fretNoteFreeList.Return(fretNote);
     }
     else if (notePosY < -100.0f) {
       break;

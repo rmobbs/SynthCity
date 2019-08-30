@@ -12,7 +12,7 @@ public:
     glm::vec4 color;
   };
 
-  uint32 vertexBufferId;
+  uint32 vertexBufferId = UINT32_MAX;
 
   std::vector<uint32> textures;
 
@@ -24,6 +24,7 @@ public:
 public:
   SpriteRenderable();
   SpriteRenderable(glm::vec2 extents, glm::vec4 color);
+  ~SpriteRenderable();
 
   void Render() override;
 
