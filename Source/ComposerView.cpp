@@ -64,6 +64,8 @@ static const ImVec4 kFretColors[] = {
 static const ImVec4 kMeasureDemarcationLineColor(1.0f, 1.0f, 1.0f, 1.0f);
 static const ImVec4 kBeatDemarcationLineColor(0.6f, 0.6f, 0.6f, 1.0f);
 static const ImVec4 kPlayLineColor(1.0f, 1.0f, 0.0f, 1.0f);
+static constexpr uint32 kMinMeasuresToAdd = 1;
+static constexpr uint32 kMaxMeasuresToAdd = 256;
 
 void ComposerView::OutputWindowState::ClearLog() {
   displayHistory.clear();
@@ -395,8 +397,6 @@ void ComposerView::ProcessPendingActions() {
       note.SetEnabled(!note.GetEnabled());
     }
 
-    // Change a note's fret index
-
     // Track cloned via dialog previous frame
     if (pendingCloneTrack != -1) {
       auto oldTrack = instrument->GetTrack(pendingCloneTrack);
@@ -414,6 +414,13 @@ void ComposerView::ProcessPendingActions() {
       noteSelectedStatus.erase(noteSelectedStatus.begin() + pendingRemoveTrack);
       instrument->RemoveTrack(pendingRemoveTrack);
       Sequencer::Get().GetSong()->RemoveLine(pendingRemoveTrack);
+    }
+  }
+
+  auto song = Sequencer::Get().GetSong();
+  if (song != nullptr) {
+    if (pendingAddMeasures != -1) {
+      song->AddMeasures(pendingAddMeasures);
     }
   }
 
@@ -455,6 +462,7 @@ void ComposerView::ProcessPendingActions() {
   pendingRemoveTrack = -1;
   pendingCloneTrack = -1;
   pendingSoloTrack = -2;
+  pendingAddMeasures = -1;
   toggledNote = { -1, -1 };
   pendingNewInstrument = false;
   pendingLoadInstrument = false;
@@ -483,6 +491,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
+
+  auto imGuiFont = ImGui::GetFont();
+  auto& imGuiStyle = ImGui::GetStyle();
+  auto defaultItemSpacing = imGuiStyle.ItemSpacing;
 
   auto mainMenuBarHeight = 0.0f;
   if (ImGui::BeginMainMenuBar()) {
@@ -517,9 +529,55 @@ void ComposerView::Render(ImVec2 canvasSize) {
         if (ImGui::MenuItem("Load Song")) {
           pendingLoadSong = true;
         }
+
+        auto song = Sequencer::Get().GetSong();
+
+        bool localDisable = !(song != nullptr && song->GetLineCount() > 0);
+        if (localDisable) {
+          ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+          ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+
         if (ImGui::MenuItem("Save Song")) {
           pendingSaveSong = true;
         }
+
+        if (ImGui::BeginMenu("Options")) {
+
+          ImGui::PushItemWidth(75);
+
+          int currentBpm = song->GetTempo();
+          if (ImGui::InputInt("BPM", &currentBpm)) {
+            // @Delay
+            pendingTempo = currentBpm;
+          }
+
+          imGuiStyle.ItemSpacing.x = 4;
+
+          int measuresToAdd = addMeasureCount;
+          if (ImGui::InputInt("", &measuresToAdd)) {
+            addMeasureCount = std::min(std::max(kMinMeasuresToAdd,
+              static_cast<uint32>(measuresToAdd)), kMaxMeasuresToAdd);
+          }
+
+          ImGui::SameLine();
+
+          if (ImGui::MenuItem("Add measure(s)")) {
+            // @Delay
+            pendingAddMeasures = addMeasureCount;
+          }
+
+          imGuiStyle.ItemSpacing.x = defaultItemSpacing.x;
+
+          ImGui::PopItemWidth();
+          ImGui::EndMenu();
+        }
+
+        if (localDisable) {
+          ImGui::PopStyleVar();
+          ImGui::PopItemFlag();
+        }
+
         ImGui::EndMenu();
       }
 
@@ -555,10 +613,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
       }
     }
   }
-
-  auto imGuiFont = ImGui::GetFont();
-  auto& imGuiStyle = ImGui::GetStyle();
-  auto defaultItemSpacing = imGuiStyle.ItemSpacing;
 
   // Vertically resize the main window based on console being open/closed
   float outputWindowHeight = canvasSize.y * kOutputWindowWindowScreenHeightPercentage;
@@ -956,20 +1010,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
         imGuiStyle.ItemSpacing = defaultItemSpacing;
 
-        // BPM
-        ImGui::SameLine();
-        ImGui::PushItemWidth(100);
-        int currentBpm = song ? song->GetTempo() : Globals::kDefaultTempo;
-        if (ImGui::InputInt("BPM", &currentBpm)) {
-          // @Delay
-          pendingTempo = currentBpm;
-        }
-        ImGui::PopItemWidth();
-
         // Grid (subdivision)
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        if (ImGui::BeginCombo("Subdivision", (std::string("1/") +
+        if (ImGui::BeginCombo("Grid", (std::string("1/") +
           std::to_string(sequencer.GetSubdivision())).c_str())) {
           std::vector<uint32> subDivs;
 

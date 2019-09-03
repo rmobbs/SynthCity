@@ -89,6 +89,7 @@ public:
     return GetNoteCount() / (minNoteValue * beatsPerMeasure);
   }
 
+  void AddMeasures(uint32 numMeasures);
   void AddLine();
   void RemoveLine(uint32 lineIndex);
   void ToggleNoteEnabled(uint32 lineIndex, uint32 noteIndex);

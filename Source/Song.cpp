@@ -210,6 +210,11 @@ std::pair<bool, std::string> Song::SerializeWrite(const WriteSerializer& seriali
   return std::make_pair(true, "");
 }
 
+void Song::AddMeasures(uint32 numMeasures) {
+  for (auto& line : barLines) {
+    line.resize(line.size() + numMeasures * minNoteValue * beatsPerMeasure);
+  }
+}
 
 void Song::AddLine() {
   barLines.push_back(std::vector<Note>(GetNoteCount()));

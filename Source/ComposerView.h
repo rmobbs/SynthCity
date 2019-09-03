@@ -33,6 +33,7 @@ protected:
   int32 pendingCloneTrack = -1;
   int32 pendingSubdivision = -1;
   int32 pendingTempo = -1;
+  int32 pendingAddMeasures = -1;
   float pendingMasterVolume = -1.0f;
   bool pendingNewInstrument = false;
   bool pendingLoadInstrument = false;
@@ -58,6 +59,7 @@ protected:
   Dialog* activeDialog = nullptr;
   ImGuiRenderable renderable;
   bool songWindowClicked = false;
+  uint32 addMeasureCount = 1;
 
   std::map<int, double> playingTrackFlashTimes[2];
 
