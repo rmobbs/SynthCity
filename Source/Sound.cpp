@@ -9,7 +9,8 @@ SoundInstance::SoundInstance(Sound* sound)
 
 Sound::Sound(const Sound& that)
   : className(that.className)
-  , classHash(that.classHash) {
+  , classHash(that.classHash)
+  , duration(that.duration) {
 
 }
 

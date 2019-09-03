@@ -30,8 +30,8 @@ public:
 class Sound {
 protected:
   std::string className;
-  float duration = 0.0f;
   uint32 classHash = 0;
+  float duration = 0.0f;
 public:
   Sound(const Sound& that);
   Sound(const std::string& className);
