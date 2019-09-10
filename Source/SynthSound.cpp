@@ -1,7 +1,6 @@
 #include "SynthSound.h"
 #include "SerializeImpl.h"
 #include "Logging.h"
-#include "Mixer.h"
 #include "SoundFactory.h"
 #include "Sequencer.h"
 #include <algorithm>

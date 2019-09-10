@@ -18,7 +18,6 @@
 #include "ComposerView.h"
 #include "GamePreviewView.h"
 #include "InputState.h"
-#include "Mixer.h"
 #include "Globals.h"
 #include "WavBank.h"
 #include "Process.h"
@@ -42,7 +41,6 @@ static constexpr uint32 kDefaultBeatsPerMeasure = 4;
 static constexpr uint32 kDefaultSubdivisions = 4;
 static constexpr uint32 kDefaultBpm = 120;
 static constexpr uint32 kMaxSubdivisions = 8;
-static constexpr int kAudioBufferSize = 2048;
 
 static bool wantQuit = false;
 static SDL_SysWMinfo sysWmInfo;
@@ -353,21 +351,12 @@ bool Init() {
     return false;
   }
 
-  // Initialize mixer before sequencer, as sequencer will interact with mixer on load
-  if (!Mixer::InitSingleton(kAudioBufferSize)) {
-    MCLOG(Error, "Unable to init Mixer.");
-    SDL_Quit();
-    return false;
-  }
-
   // Initialize sequencer
   if (!Sequencer::InitSingleton()) {
-    MCLOG(Error, "Unable to initialize mixer");
+    MCLOG(Error, "Unable to initialize sequencer");
     SDL_Quit();
     return false;
   }
-
-  Mixer::Get().SetController(&Sequencer::Get());
 
   // Initialize the views
   View::RegisterView<ComposerView>(new ComposerView(reinterpret_cast<uint32>(sysWmInfo.info.win.window)));
@@ -383,10 +372,6 @@ bool Init() {
 }
 
 void Term() {
-  // Term the mixer first, as it has to clean up sound instances which can refer to
-  // sounds that are being kept alive by the sequencer/instrument
-  Mixer::TermSingleton();
-
   // Term the sequencer
   Sequencer::TermSingleton();
 

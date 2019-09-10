@@ -7,7 +7,6 @@
 #include "Sequencer.h"
 #include "Instrument.h"
 #include "Song.h"
-#include "Mixer.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -53,16 +52,16 @@ bool DialogTrack::Render() {
 
     if (ImGui::ArrowButtonEx("PlayButton", ImGuiDir_Right, ImVec2(22, 20), 0)) {
       if (playingVoiceId != -1) {
-        Mixer::Get().StopVoice(playingVoiceId);
+        Sequencer::Get().StopVoice(playingVoiceId);
       }
-      playingVoiceId = Mixer::Get().PlayPatch(track->GetPatch(), 1.0f);
+      playingVoiceId = Sequencer::Get().PlayPatch(track->GetPatch(), 1.0f);
     }
 
     ImGui::SameLine();
 
     if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonTexture), ImVec2(14, 14))) {
       if (playingVoiceId != -1) {
-        Mixer::Get().StopVoice(playingVoiceId);
+        Sequencer::Get().StopVoice(playingVoiceId);
         playingVoiceId = -1;
       }
     }
@@ -91,7 +90,7 @@ bool DialogTrack::Render() {
 
   if (!isOpen) {
     if (playingVoiceId != -1) {
-      Mixer::Get().StopVoice(playingVoiceId);
+      Sequencer::Get().StopVoice(playingVoiceId);
       playingVoiceId = -1;
     }
 

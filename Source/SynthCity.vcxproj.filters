@@ -111,9 +111,6 @@
     <ClInclude Include="MidiSource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mixer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="OddsAndEnds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -177,9 +174,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Sequencer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Mixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MidiSource.cpp">

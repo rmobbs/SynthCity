@@ -220,7 +220,6 @@
     <ClInclude Include="Renderable.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sequencer.h" />
-    <ClInclude Include="Mixer.h" />
     <ClInclude Include="SerializeFwd.h" />
     <ClInclude Include="SerializeImpl.h" />
     <ClInclude Include="ShaderProgram.h" />
@@ -262,7 +261,6 @@
     <ClCompile Include="OddsAndEnds.cpp" />
     <ClCompile Include="Renderable.cpp" />
     <ClCompile Include="Sequencer.cpp" />
-    <ClCompile Include="Mixer.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="SoundFactory.cpp" />

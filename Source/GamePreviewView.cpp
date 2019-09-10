@@ -233,8 +233,10 @@ void GamePreviewView::OnBeat() {
 }
 
 void GamePreviewView::Show() {
+  auto& sequencer = Sequencer::Get();
+
   // Length of a full beat in frames
-  beatTickLength = Mixer::kDefaultFrequency / Sequencer::Get().GetTempo() * 60.0f;
+  beatTickLength = sequencer.GetFrequency() / Sequencer::Get().GetTempo() * 60.0f;
 
   auto song = Sequencer::Get().GetSong();
   // Pre-spawn any necessary notes
@@ -256,8 +258,8 @@ void GamePreviewView::Show() {
     }
   }
 
-  Sequencer::Get().SetLooping(false);
-  Sequencer::Get().ResetFrameCounter();
+  sequencer.SetLooping(false);
+  sequencer.ResetFrameCounter();
   beatCallbackId = Sequencer::Get().AddBeatCallback(
     [](void* payload) {
       reinterpret_cast<GamePreviewView*>(payload)->OnBeat();
@@ -268,13 +270,15 @@ void GamePreviewView::Show() {
 }
 
 void GamePreviewView::Hide() {
+  auto& sequencer = Sequencer::Get();
+
   fallingNotes.clear();
 
   if (beatCallbackId != UINT32_MAX) {
-    Sequencer::Get().RemoveBeatCallback(beatCallbackId);
+    sequencer.RemoveBeatCallback(beatCallbackId);
     beatCallbackId = UINT32_MAX;
   }
-  Sequencer::Get().Stop();
+  sequencer.Stop();
 }
 
 void GamePreviewView::HandleInput() {
@@ -330,7 +334,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   }
 
   // Get current high-precision beat time
-  float beatTime = mode != Mode::Ready ? static_cast<float>(Mixer::Get().GetCurTicks()) / beatTickLength : 0.0f;
+  float beatTime = mode != Mode::Ready ? static_cast<float>(Sequencer::Get().GetCurTicks()) / beatTickLength : 0.0f;
   float beatFrac = beatTime - std::floorf(beatTime);
 
   float bottomY = targetLinePosition.y + kDistanceBetweenQuarterNotes * kNumFretsPastTargetLine;

@@ -1,18 +1,20 @@
 #pragma once
 
 #include "BaseTypes.h"
-#include "Mixer.h"
 #include "SerializeFwd.h"
 
 #include <vector>
 #include <string>
 #include <functional>
+#include <map>
+#include <atomic>
 
 class Instrument;
 class Patch;
 class Song;
+class Voice;
 
-class Sequencer : public Mixer::Controller {
+class Sequencer {
 public:
   static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kDfeaultBeatSubdivision = 4;
@@ -20,6 +22,7 @@ public:
   static constexpr uint32 kMaxTempo = 220;
   static constexpr uint32 kDefaultTempo = 120;
   static constexpr uint32 kDefaultInterval = 1000;
+  static constexpr float kDefaultMasterVolume = 0.7f;
 
   // Loaded MIDI is passed to the host; they interact with the user to determine what
   // parameters will be used to convert that MIDI to our song format
@@ -46,9 +49,6 @@ private:
 
   uint32 loopIndex = 0;
   uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
-  std::atomic<bool> isPlaying = false;
-  std::atomic<bool> isMetrononeOn = false;
-  std::atomic<bool> isLooping = true;
   std::vector<std::pair<BeatPlayedCallback, void*>> beatPlayedCallbacks;
   std::vector<std::pair<NotePlayedCallback, void*>> notePlayedCallbacks;
   std::vector<std::pair<FrameCallback, void*>> frameCallbacks;
@@ -64,15 +64,30 @@ private:
   std::vector<Patch*> reservedPatches;
   std::function<bool(std::string)> loadInstrumentCallback;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
+  int32 ticksPerFrame = 0;
+  int32 ticksRemaining = 0;
+  uint32 curTicks = 0;
+  std::vector<float> mixbuf;
+  std::list<Voice*> voices;
+  std::map<int32, Voice*> voiceMap;
+
+  std::atomic<bool> isPlaying = false;
+  std::atomic<bool> isMetrononeOn = false;
+  std::atomic<bool> isLooping = true;
+  std::atomic<float> masterVolume = kDefaultMasterVolume;
+  std::atomic<uint32> numActiveVoices;
 
   void OnFrame();
   void OnBeat();
   void OnNote(bool isMeasure);
   uint32 UpdateInterval();
-
-
-  // Mixer
-  uint32 NextFrame() override;
+  void WriteOutput(float *input, int16 *output, int32 frames);
+  void DrainExpiredPool();
+  uint32 NextFrame();
+  void AudioCallback(void *userData, uint8 *stream, int32 length);
+  void MixVoices(float* mixBuffer, uint32 numFrames);
+  void StopAllVoices();
+  void ApplyInterval(uint32 interval);
 
 public:
   inline bool IsMetronomeOn() const {
@@ -116,6 +131,21 @@ public:
     return isLooping;
   }
 
+  inline uint32 GetNumActiveVoices() const {
+    return numActiveVoices;
+  }
+
+  inline float GetMasterVolume() const {
+    return masterVolume;
+  }
+  void SetMasterVolume(float masterVolume);
+
+  inline uint32 GetCurTicks() const {
+    return curTicks;
+  }
+
+  uint32 GetFrequency() const;
+
   void SetLooping(bool looping);
 
   void Play();
@@ -124,6 +154,8 @@ public:
   void Stop();
   void ResetFrameCounter();
   bool LoadInstrument(std::string fileName, std::string mustMatch);
+  void StopVoice(int32 voiceId);
+  int32 PlayPatch(const Patch* patch, float volume);
 
   void NewSong();
   bool SaveSong(std::string fileName);

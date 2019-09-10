@@ -1,6 +1,6 @@
 #include "SineSynthSound.h"
 #include "SoundFactory.h"
-#include "Mixer.h" // TODO: Make this global
+#include "Sequencer.h"
 #include "imgui.h"
 #include <algorithm>
 
@@ -21,7 +21,7 @@ public:
   SineSynthSoundInstance(Sound* sound)
     : SoundInstance(sound) {
     radstep = static_cast<float>((2.0 * M_PI * static_cast<double>
-      (static_cast<SynthSound*>(sound)->GetFrequency())) / static_cast<double>(Mixer::kDefaultFrequency));
+      (static_cast<SynthSound*>(sound)->GetFrequency())) / static_cast<double>(Sequencer::Get().GetFrequency()));
   }
 
   uint8 GetSamplesForFrame(float* samples, uint8 channels, uint32 frame) override {

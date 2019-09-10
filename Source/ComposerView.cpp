@@ -358,11 +358,6 @@ void ComposerView::ProcessPendingActions() {
     sequencer.SetTempo(pendingTempo);
   }
 
-  // Master volume changed
-  if (pendingMasterVolume >= 0.0f) {
-    Mixer::Get().SetMasterVolume(pendingMasterVolume);
-  }
-
   auto instrument = sequencer.GetInstrument();
   if (instrument != nullptr) {
     // Track volume changed
@@ -455,7 +450,6 @@ void ComposerView::ProcessPendingActions() {
   // Reset all pendings
   pendingSubdivision = -1;
   pendingTempo = -1;
-  pendingMasterVolume = -1.0f;
   pendingTrackVolume = { -1, 0.0f };
   pendingTrackMute = { -1, false };
   pendingPlayTrack = -1;
@@ -1062,10 +1056,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // Master volume
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        float masterVolume = Mixer::Get().GetMasterVolume();
+        float masterVolume = sequencer.GetMasterVolume();
         if (ImGui::SliderFloat("Master", &masterVolume, 0.0f, 1.0f)) {
           // @Atomic
-          Mixer::Get().SetMasterVolume(masterVolume);
+          sequencer.SetMasterVolume(masterVolume);
         }
       } // Bottom toolbar
 
@@ -1104,7 +1098,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
       ImGui::OpenPopup("Options");
     }
     ImGui::SameLine();
-    ImGui::Text("Voices: %d", Mixer::Get().GetNumActiveVoices());
+    ImGui::Text("Voices: %d", sequencer.GetNumActiveVoices());
     ImGui::Separator();
 
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
