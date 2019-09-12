@@ -20,8 +20,8 @@ static glm::vec2 fretExtents(250, 10);
 static constexpr uint32 kNumFrets(5);
 static glm::vec4 fretColor(0.2f, 0.2f, 0.2f, 1.0f);
 
-static glm::vec2 fretNoteExtent(70.0f, 20.0f);
-static glm::vec4 fretNoteColors[] = {
+static glm::vec2 fallingNoteExtent(70.0f, 20.0f);
+static glm::vec4 fallingNoteColors[] = {
   glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
   glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
   glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
@@ -49,31 +49,31 @@ static glm::vec2 placardLocations[] = {
 };
 static glm::vec2 readyPlacardLocation(600.0f, 200.0f);
 
-class FretNote : public SpriteRenderable {
+class NoteSprite : public SpriteRenderable {
 protected:
-  uint32 fretIndex = UINT32_MAX;
+  uint32 lineIndex = UINT32_MAX;
   float beatTime = 0.0f;
 public:
-  FretNote() {
+  NoteSprite() {
 
   }
 
-  FretNote(float beatTime, uint32 fretIndex)
-  : SpriteRenderable(fretNoteExtent, fretNoteColors[fretIndex])
+  NoteSprite(float beatTime, uint32 lineIndex)
+  : SpriteRenderable(fallingNoteExtent, fallingNoteColors[lineIndex])
   , beatTime(beatTime)
-  , fretIndex(fretIndex) {
+  , lineIndex(lineIndex) {
 
   }
 
   inline float GetBeatTime() const {
     return beatTime;
   }
-  inline uint32 GetFretIndex() const {
-    return fretIndex;
+  inline uint32 GetGameLineIndex() const {
+    return lineIndex;
   }
 };
 
-FreeList<FretNote, float, uint32> fretNoteFreeList;
+FreeList<NoteSprite, float, uint32> fallingNoteFreeList;
 
 GamePreviewView::GamePreviewView(uint32 mainWindowHandle)
   : mainWindowHandle(mainWindowHandle) {
@@ -180,7 +180,7 @@ void GamePreviewView::InitResources() {
   fallingNoteTextureId = LoadTexture("Assets\\droprectangle.png", &w, &h);
   fallingNoteTextureSize.x = static_cast<float>(w);
   fallingNoteTextureSize.y = static_cast<float>(h);
-  fretNoteFreeList.Init(kFretNoteFreListDefaultSize);
+  fallingNoteFreeList.Init(kFretNoteFreListDefaultSize);
 }
 
 void GamePreviewView::TermResources() {
@@ -235,8 +235,11 @@ void GamePreviewView::OnBeat() {
 void GamePreviewView::Show() {
   auto& sequencer = Sequencer::Get();
 
+  sequencer.PrepareGameplay(4);
+  sequencer.SetGameplayMode(true);
+
   // Length of a full beat in frames
-  beatTickLength = sequencer.GetFrequency() / Sequencer::Get().GetTempo() * 60.0f;
+  beatFrameLength = sequencer.GetFrequency() / Sequencer::Get().GetTempo() * 60.0f;
 
   auto song = Sequencer::Get().GetSong();
   // Pre-spawn any necessary notes
@@ -249,11 +252,11 @@ void GamePreviewView::Show() {
     for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
       const auto& note = song->GetLine(lineIndex)[noteIndex];
       if (note.GetEnabled() && note.GetGameIndex() != -1) {
-        auto fretNote = fretNoteFreeList.Borrow(offset + static_cast<float>(noteIndex) /
+        auto fallingNote = fallingNoteFreeList.Borrow(offset + static_cast<float>(noteIndex) /
           static_cast<float>(song->GetMinNoteValue()), note.GetGameIndex());
-        fretNote->SetExtents(fallingNoteTextureSize);
-        fretNote->AddTexture(fallingNoteTextureId);
-        fallingNotes.push_back(fretNote);
+        fallingNote->SetExtents(fallingNoteTextureSize);
+        fallingNote->AddTexture(fallingNoteTextureId);
+        fallingNotes.push_back(fallingNote);
       }
     }
   }
@@ -271,6 +274,8 @@ void GamePreviewView::Show() {
 
 void GamePreviewView::Hide() {
   auto& sequencer = Sequencer::Get();
+
+  sequencer.SetGameplayMode(false);
 
   fallingNotes.clear();
 
@@ -334,7 +339,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   }
 
   // Get current high-precision beat time
-  float beatTime = mode != Mode::Ready ? static_cast<float>(Sequencer::Get().GetCurTicks()) / beatTickLength : 0.0f;
+  float beatTime = mode != Mode::Ready ? static_cast<float>(Sequencer::Get().GetAudioFrame()) / beatFrameLength : 0.0f;
   float beatFrac = beatTime - std::floorf(beatTime);
 
   float bottomY = targetLinePosition.y + kDistanceBetweenQuarterNotes * kNumFretsPastTargetLine;
@@ -347,27 +352,75 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     renderable->Render();
   }
 
-  // Update falling notes
-  auto fretNoteIter = fallingNotes.begin();
-  while (fretNoteIter != fallingNotes.end()) {
-    auto fretNote = reinterpret_cast<FretNote*>(*fretNoteIter);
+  // Check for button presses
+  static constexpr float kBeatSlop = 1.0f;
+  static constexpr float kBeatGameplayWindowPos =  2.0f;
+  static constexpr float kBeatGameplayWindowNeg = -0.25f;
+  std::array<float, Sequencer::kGameplayLineCount> buttonPresses;
+  Sequencer::Get().ConsumeButtonPresses(buttonPresses);
+  for (uint32 gameLineIndex = 0; gameLineIndex < Sequencer::kGameplayLineCount; ++gameLineIndex) {
+    if (buttonPresses[gameLineIndex] > 0.0f) {
+      auto fallingNoteIter = fallingNotes.begin();
+      while (fallingNoteIter != fallingNotes.end()) {
+        auto fallingNote = reinterpret_cast<NoteSprite*>(*fallingNoteIter);
 
-    float notePosY = (targetLinePosition.y + (targetLineExtents.y * 0.5f)) - (fretNoteExtent.y * 0.5f) -
-      (fretNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
-    if (notePosY >= targetLinePosition.y) {
-      fretNoteIter = fallingNotes.erase(fretNoteIter);
-      fretNoteFreeList.Return(fretNote);
+        auto delta = fallingNote->GetBeatTime() - static_cast<float>(kReadyBeats + kCountdownBeats) - buttonPresses[gameLineIndex];
+
+        // If first note is too far in the future we can stop checking
+        if (delta > kBeatGameplayWindowPos) {
+          gameLineIndex = Sequencer::kGameplayLineCount;
+          break;
+        }
+
+        // Don't consider notes that went too far past the target line
+        if (delta > kBeatGameplayWindowNeg) {
+          // If it's on the line that has been tapped
+          if (fallingNote->GetGameLineIndex() == gameLineIndex) {
+            if (std::fabsf(delta) < kBeatSlop) {
+              // Log success
+            }
+            else {
+              // Log failure
+            }
+
+            // Remove it
+            fallingNotes.erase(fallingNoteIter);
+
+            // Continue with other lines
+            break;
+          }
+        }
+
+        ++fallingNoteIter;
+      }
     }
+  }
+
+  // Update falling notes
+  auto fallingNoteIter = fallingNotes.begin();
+  while (fallingNoteIter != fallingNotes.end()) {
+    auto fallingNote = reinterpret_cast<NoteSprite*>(*fallingNoteIter);
+
+    float notePosY = (targetLinePosition.y + (targetLineExtents.y * 0.5f)) - (fallingNoteExtent.y * 0.5f) -
+      (fallingNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
+    if (notePosY >= canvasSize.y) {
+      fallingNoteIter = fallingNotes.erase(fallingNoteIter);
+      fallingNoteFreeList.Return(fallingNote);
+    }
+    // No need to update the ones that are offscreen
+    // TODO: Need to be paging the notes in, not spawning them all at once
     else if (notePosY < -100.0f) {
       break;
     }
     else {
-      fretNote->position = glm::vec2(noteLanePosition[fretNote->
-        GetFretIndex()].x + (noteLaneExtents.x * 0.5f) - fretNoteExtent.x * 0.5f, notePosY);
-      fretNote->Render();
-      ++fretNoteIter;
+      fallingNote->position = glm::vec2(noteLanePosition[fallingNote->
+        GetGameLineIndex()].x + (noteLaneExtents.x * 0.5f) - fallingNoteExtent.x * 0.5f, notePosY);
+      fallingNote->Render();
+      ++fallingNoteIter;
     }
   }
+
+
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();

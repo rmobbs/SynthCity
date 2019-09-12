@@ -13,6 +13,7 @@
 #include "Patch.h"
 #include "Song.h"
 #include "FreeList.h"
+#include "InputState.h"
 #include "SDL.h"
 
 #include <array>
@@ -38,6 +39,8 @@ static constexpr uint32 kDefaultFrequency = 44100;
 static constexpr uint32 kDefaultChannels = 2;
 static constexpr float kDefaultMasterVolume = 0.7f;
 static constexpr uint32 kDefaultAudioBufferSize = 2048;
+
+static constexpr char kGameplayKeys[] = { 'a', 's', 'd', 'f' };
 
 // A voice is a playing instance of a patch
 class Voice {
@@ -89,6 +92,7 @@ public:
   }
 };
 
+
 int32 Voice::nextVoiceId = 0;
 
 static FreeList<Voice, const Patch*, float> voiceFreeList;
@@ -126,6 +130,94 @@ bool Sequencer::TermSingleton() {
   return true;
 }
 
+Sequencer::Sequencer() {
+  gameInputState = std::make_unique<InputState>();
+}
+
+bool Sequencer::Init() {
+  voiceFreeList.Init(kVoicePreallocCount);
+
+  SDL_AudioSpec as = { 0 };
+
+  mixbuf.resize(kMaxCallbackSampleFrames * 2);
+
+  if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
+    MCLOG(Error, "Couldn't init SDL audio: %s\n", SDL_GetError());
+    return false;
+  }
+
+  SDL_AudioSpec audioSpec = { 0 };
+  SDL_AudioDeviceID audioDeviceId = 0;
+  as.freq = kDefaultFrequency;
+  as.format = AUDIO_S16SYS;
+  as.channels = 2;
+  as.samples = kDefaultAudioBufferSize;
+  as.userdata = this;
+  as.callback = [](void *userData, uint8 *stream, int32 length) {
+    reinterpret_cast<Sequencer*>(userData)->AudioCallback(userData, stream, length);
+  };
+
+  audioDeviceId = SDL_OpenAudioDevice(nullptr, 0, &as, &audioSpec, 0);
+  if (audioDeviceId == 0) {
+    MCLOG(Error, "Couldn't open SDL audio: %s\n", SDL_GetError());
+    return false;
+  }
+
+  AudioGlobals::SetAudioDeviceId(audioDeviceId);
+
+  if (audioSpec.format != AUDIO_S16SYS) {
+    MCLOG(Error, "Wrong audio format!");
+    return false;
+  }
+
+  SDL_PauseAudioDevice(audioDeviceId, 0);
+
+  // Load the reserved sounds
+  reservedPatches.resize(static_cast<int32>(ReservedSounds::Count));
+  try {
+    reservedPatches[static_cast<int32>(ReservedSounds::MetronomeFull)] =
+      new Patch({ }, { new WavSound("Assets\\Metronome\\seikosq50_hi.wav") });
+  }
+  catch (...) {
+    MCLOG(Error, "Unable to load downbeat metronome WAV file");
+    // Survivable
+  }
+  try {
+    reservedPatches[static_cast<int32>(ReservedSounds::MetronomePartial)] =
+      new Patch({ }, { new WavSound("Assets\\Metronome\\seikosq50_lo.wav") });
+  }
+  catch (...) {
+    MCLOG(Error, "Unable to load upbeat metronome WAV file");
+    // Survivable
+  }
+
+  return true;
+}
+
+Sequencer::~Sequencer() {
+  AudioGlobals::LockAudio();
+
+  delete song;
+  song = nullptr;
+
+  delete instrument;
+  instrument = nullptr;
+
+  for (auto& reservedPatch : reservedPatches) {
+    delete reservedPatch;
+  }
+  reservedPatches.clear();
+
+  AudioGlobals::UnlockAudio();
+
+  if (AudioGlobals::GetAudioDeviceId() != 0) {
+    SDL_CloseAudioDevice(AudioGlobals::GetAudioDeviceId());
+    AudioGlobals::SetAudioDeviceId(0);
+  }
+
+  voiceFreeList.Term();
+}
+
 uint32 Sequencer::GetFrequency() const {
   return kDefaultFrequency;
 }
@@ -154,7 +246,9 @@ uint32 Sequencer::UpdateInterval() {
 
   interval = static_cast<uint32>((kDefaultFrequency /
     GetTempo() * 60.0) / static_cast<double>(noteInterval));
-  ApplyInterval(interval);
+
+  // Don't wait for a longer interval to apply a shorter interval
+  ticksRemaining = std::min(ticksRemaining, static_cast<int32>(interval));
 
   return interval;
 }
@@ -201,6 +295,7 @@ void Sequencer::PlayMetronome(bool downBeat) {
 
 void Sequencer::Play() {
   isPlaying = true;
+  songStartFrame = frameCounter;
 }
 
 void Sequencer::Pause() {
@@ -297,8 +392,9 @@ uint32 Sequencer::NextFrame()
         continue;
       }
 
+      // TODO: Separate out composer and gameplay frame logic
       auto d = song->GetLine(lineIndex).data() + currSongPosition;
-      if (d->GetEnabled()) {
+      if (d->GetEnabled() && (!isGameplayMode || d->GetGameIndex() == -1)) {
         for (auto& notePlayedCallback : notePlayedCallbacks) {
           notePlayedCallback.first(lineIndex, currSongPosition, notePlayedCallback.second);
         }
@@ -307,6 +403,125 @@ uint32 Sequencer::NextFrame()
     }
   }
   return interval;
+}
+
+void Sequencer::MixVoices(float* mixBuffer, uint32 numFrames) {
+  uint32 maxFrames = 0;
+
+  // Fill remainder with zeroes
+  std::memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
+
+  if (voices.size() > 0) {
+    // Mix active voices
+    auto voiceIter = voices.begin();
+    while (voiceIter != voices.end()) {
+      auto v = *voiceIter;
+
+      uint32 outFrame = 0;
+      while (outFrame < numFrames) {
+        float samples[2] = { 0 }; // Stereo
+
+        for (uint32 i = 0; i < v->numSounds; ++i) {
+          if (v->bitSounds & (1 << i)) {
+            if (v->sounds[i]->GetSamplesForFrame(samples, 2, v->frame) != 2) {
+              v->bitSounds &= ~(1 << i);
+            }
+          }
+        }
+
+        for (uint32 i = 0; i < v->numProcesses; ++i) {
+          if (v->bitProcesses & (1 << i)) {
+            if (!v->processes[i]->ProcessSamples(samples, 2, v->frame)) {
+              v->bitProcesses &= ~(1 << i);
+            }
+          }
+        }
+
+        if (v->bitSounds == 0 || (v->numProcesses > 0 && v->bitProcesses == 0)) {
+          break;
+        }
+
+        mixBuffer[outFrame * 2 + 0] += samples[0] * masterVolume * v->volume * kPeakVolumeRatio;
+        mixBuffer[outFrame * 2 + 1] += samples[1] * masterVolume * v->volume * kPeakVolumeRatio;
+
+        ++v->frame;
+        ++outFrame;
+      }
+
+      if (maxFrames < outFrame) {
+        maxFrames = outFrame;
+      }
+
+      if (v->bitSounds == 0 || (v->numProcesses > 0 && v->bitProcesses == 0)) {
+        expiredVoices.push(*voiceIter);
+        voiceMap.erase((*voiceIter)->voiceId);
+        voiceIter = voices.erase(voiceIter);
+      }
+      else {
+        ++voiceIter;
+      }
+    }
+
+    // Clip so we don't distort
+    for (uint32 frameIndex = 0; frameIndex < maxFrames; ++frameIndex) {
+      mixBuffer[frameIndex * 2 + 0] = std::max(std::min(mixBuffer[frameIndex * 2 + 0], 0.7f), -0.7f);
+      mixBuffer[frameIndex * 2 + 1] = std::max(std::min(mixBuffer[frameIndex * 2 + 1], 0.7f), -0.7f);
+    }
+
+    // So people can query this without locking
+    numActiveVoices = voices.size();
+  }
+}
+
+void Sequencer::WriteOutput(float *input, int16 *output, int32 frames) {
+  int32 i = 0;
+  frames *= 2;	// Stereo
+  while (i < frames) {
+    output[i] = static_cast<int16>(input[i] * SHRT_MAX);
+    ++i;
+    output[i] = static_cast<int16>(input[i] * SHRT_MAX);
+    ++i;
+  }
+}
+
+void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
+  // TODO: This should only happen in the game mode audio callback
+  if (isPlaying && instrument && isGameplayMode) {
+    gameInputState.get()->SetFromKeyboardState();
+
+    for (size_t gameLineIndex = 0; gameLineIndex < gameplayLines.size(); ++gameLineIndex) {
+      if (gameInputState.get()->pressed[kGameplayKeys[gameLineIndex]]) {
+        // Record the gameplay press
+        lastButtonPress[gameLineIndex] = (static_cast<float>(frameCounter - songStartFrame) /
+          static_cast<float>(interval)) / static_cast<float>(song->GetMinNoteValue());
+
+        // Trigger the sound associated with the line
+        instrument->PlayTrack(gameplayLines[gameLineIndex].soundLine);
+      }
+    }
+  }
+
+  // 2 channels, 2 bytes/sample = 4 bytes/frame
+  length /= 4;
+
+  while (length > 0) {
+    int32 frames = std::min(std::min(ticksRemaining,
+      static_cast<int32>(kMaxCallbackSampleFrames)), length);
+
+    frameCounter += frames;
+
+    // Mix and write audio
+    MixVoices(mixbuf.data(), frames);
+    WriteOutput(mixbuf.data(), reinterpret_cast<int16 *>(stream), frames);
+
+    stream += frames * sizeof(int16) * 2;
+    length -= frames;
+
+    ticksRemaining -= frames;
+    if (ticksRemaining <= 0) {
+      ticksPerFrame = ticksRemaining = NextFrame();
+    }
+  }
 }
 
 uint32 Sequencer::AddBeatPlayedCallback(Sequencer::BeatPlayedCallback beatPlayedCallback, void* beatPlayedPayload) {
@@ -344,6 +559,41 @@ uint32 Sequencer::AddBeatCallback(BeatCallback beatCallback, void* beatPayload) 
 void Sequencer::RemoveBeatCallback(uint32 callbackId) {
   beatCallbacks.erase(beatCallbacks.begin() + callbackId);
 }
+
+void Sequencer::PrepareGameplay(uint32 lineCount) {
+  gameplayLines.clear();
+
+  if (song != nullptr) {
+    gameplayLines.resize(lineCount);
+
+    auto& beatLines = song->GetBarLines();
+
+    // Sort into gameplay line buckets
+    for (size_t lineIndex = 0; lineIndex < beatLines.size(); ++lineIndex) {
+      const auto& line = beatLines[lineIndex];
+      for (size_t beatIndex = 0; beatIndex < line.size(); ++beatIndex) {
+        const auto& beat = line[beatIndex];
+
+        if (beat.GetEnabled()) {
+          const auto gameIndex = beat.GetGameIndex();
+
+          if (gameIndex >= 0) {
+            if (gameIndex >= static_cast<int32>(lineCount)) {
+              MCLOG(Warn, "Game is being prepared for %d lines but song has reference to game line %d", lineCount, gameIndex);
+            }
+            else {
+              auto& gameLine = gameplayLines[gameIndex];
+
+              gameLine.notes.push_back({ beatIndex, beatIndex * interval });
+              gameLine.soundLine = lineIndex;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 
 bool Sequencer::NewInstrument() {
   Instrument* newInstrument = new Instrument(std::string(kNewInstrumentDefaultName));
@@ -561,210 +811,13 @@ void Sequencer::LoadSong(std::string fileName) {
   }
 }
 
-bool Sequencer::Init() {
-  voiceFreeList.Init(kVoicePreallocCount);
-
-  SDL_AudioSpec as = { 0 };
-
-  mixbuf.resize(kMaxCallbackSampleFrames * 2);
-
-  if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
-    MCLOG(Error, "Couldn't init SDL audio: %s\n", SDL_GetError());
-    return false;
-  }
-
-  SDL_AudioSpec audioSpec = { 0 };
-  SDL_AudioDeviceID audioDeviceId = 0;
-  as.freq = kDefaultFrequency;
-  as.format = AUDIO_S16SYS;
-  as.channels = 2;
-  as.samples = kDefaultAudioBufferSize;
-  as.userdata = this;
-  as.callback = [](void *userData, uint8 *stream, int32 length) {
-    reinterpret_cast<Sequencer*>(userData)->AudioCallback(userData, stream, length);
-  };
-
-  audioDeviceId = SDL_OpenAudioDevice(nullptr, 0, &as, &audioSpec, 0);
-  if (audioDeviceId == 0) {
-    MCLOG(Error, "Couldn't open SDL audio: %s\n", SDL_GetError());
-    return false;
-  }
-
-  AudioGlobals::SetAudioDeviceId(audioDeviceId);
-
-  if (audioSpec.format != AUDIO_S16SYS) {
-    MCLOG(Error, "Wrong audio format!");
-    return false;
-  }
-
-  SDL_PauseAudioDevice(audioDeviceId, 0);
-
-  // Load the reserved sounds
-  reservedPatches.resize(static_cast<int32>(ReservedSounds::Count));
-  try {
-    reservedPatches[static_cast<int32>(ReservedSounds::MetronomeFull)] =
-      new Patch({ }, { new WavSound("Assets\\Metronome\\seikosq50_hi.wav") });
-  }
-  catch (...) {
-    MCLOG(Error, "Unable to load downbeat metronome WAV file");
-    // Survivable
-  }
-  try {
-    reservedPatches[static_cast<int32>(ReservedSounds::MetronomePartial)] =
-      new Patch({ }, { new WavSound("Assets\\Metronome\\seikosq50_lo.wav") });
-  }
-  catch (...) {
-    MCLOG(Error, "Unable to load upbeat metronome WAV file");
-    // Survivable
-  }
-
-  return true;
-}
-
-Sequencer::~Sequencer() {
-  AudioGlobals::LockAudio();
-  
-  delete song;
-  song = nullptr;
-
-  delete instrument;
-  instrument = nullptr;
-
-  for (auto& reservedPatch : reservedPatches) {
-    delete reservedPatch;
-  }
-  reservedPatches.clear();
-
-  AudioGlobals::UnlockAudio();
-
-  if (AudioGlobals::GetAudioDeviceId() != 0) {
-    SDL_CloseAudioDevice(AudioGlobals::GetAudioDeviceId());
-    AudioGlobals::SetAudioDeviceId(0);
-  }
-
-  voiceFreeList.Term();
-}
-
-void Sequencer::SetMasterVolume(float masterVolume) {
-  this->masterVolume = masterVolume;
-}
-
-void Sequencer::ApplyInterval(uint32 ticksPerFrame) {
-  ticksRemaining = std::min(ticksRemaining, static_cast<int32>(ticksPerFrame));
-}
-
-void Sequencer::MixVoices(float* mixBuffer, uint32 numFrames) {
-  uint32 maxFrames = 0;
-
-  // Fill remainder with zeroes
-  std::memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
-
-  if (voices.size() > 0) {
-    // Mix active voices
-    auto voiceIter = voices.begin();
-    while (voiceIter != voices.end()) {
-      auto v = *voiceIter;
-
-      uint32 outFrame = 0;
-      while (outFrame < numFrames) {
-        float samples[2] = { 0 }; // Stereo
-
-        for (uint32 i = 0; i < v->numSounds; ++i) {
-          if (v->bitSounds & (1 << i)) {
-            if (v->sounds[i]->GetSamplesForFrame(samples, 2, v->frame) != 2) {
-              v->bitSounds &= ~(1 << i);
-            }
-          }
-        }
-
-        for (uint32 i = 0; i < v->numProcesses; ++i) {
-          if (v->bitProcesses & (1 << i)) {
-            if (!v->processes[i]->ProcessSamples(samples, 2, v->frame)) {
-              v->bitProcesses &= ~(1 << i);
-            }
-          }
-        }
-
-        if (v->bitSounds == 0 || (v->numProcesses > 0 && v->bitProcesses == 0)) {
-          break;
-        }
-
-        mixBuffer[outFrame * 2 + 0] += samples[0] * masterVolume * v->volume * kPeakVolumeRatio;
-        mixBuffer[outFrame * 2 + 1] += samples[1] * masterVolume * v->volume * kPeakVolumeRatio;
-
-        ++v->frame;
-        ++outFrame;
-      }
-
-      if (maxFrames < outFrame) {
-        maxFrames = outFrame;
-      }
-
-      if (v->bitSounds == 0 || (v->numProcesses > 0 && v->bitProcesses == 0)) {
-        expiredVoices.push(*voiceIter);
-        voiceMap.erase((*voiceIter)->voiceId);
-        voiceIter = voices.erase(voiceIter);
-      }
-      else {
-        ++voiceIter;
-      }
-    }
-
-    // Clip so we don't distort
-    for (uint32 curTicks = 0; curTicks < maxFrames; ++curTicks) {
-      mixBuffer[curTicks * 2 + 0] = std::max(std::min(mixBuffer[curTicks * 2 + 0], 0.7f), -0.7f);
-      mixBuffer[curTicks * 2 + 1] = std::max(std::min(mixBuffer[curTicks * 2 + 1], 0.7f), -0.7f);
-    }
-
-    // So people can query this without locking
-    numActiveVoices = voices.size();
-  }
-}
-
-void Sequencer::WriteOutput(float *input, int16 *output, int32 frames) {
-  int32 i = 0;
-  frames *= 2;	// Stereo
-  while (i < frames) {
-    output[i] = static_cast<int16>(input[i] * SHRT_MAX);
-    ++i;
-    output[i] = static_cast<int16>(input[i] * SHRT_MAX);
-    ++i;
-  }
-}
-
-void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
-  // 2 channels, 2 bytes/sample = 4 bytes/frame
-  length /= 4;
-
-  while (length > 0) {
-    int32 frames = std::min(std::min(ticksRemaining,
-      static_cast<int32>(kMaxCallbackSampleFrames)), length);
-
-    // TODO: Need pre/post tick structure
-
-    curTicks += frames;
-
-    // Mix and write audio
-    MixVoices(mixbuf.data(), frames);
-    WriteOutput(mixbuf.data(), reinterpret_cast<int16 *>(stream), frames);
-
-    stream += frames * sizeof(int16) * 2;
-    length -= frames;
-
-    ticksRemaining -= frames;
-    if (ticksRemaining <= 0) {
-      ticksPerFrame = ticksRemaining = NextFrame();
-    }
-  }
-}
-
 void Sequencer::StopAllVoices() {
   AudioGlobals::LockAudio();
 
   voiceFreeList.ReturnAll();
   voices.clear();
   numActiveVoices = 0;
-  curTicks = 0;
+  frameCounter = 0;
 
   DrainExpiredPool();
 

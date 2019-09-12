@@ -23,7 +23,7 @@ protected:
   std::list<SpriteRenderable*> fallingNotes;
   std::vector<SpriteRenderable*> countdownPlacards;
   SpriteRenderable* readyPlacard = nullptr;
-  float beatTickLength = 0;
+  float beatFrameLength = 0;
   uint32 beatCallbackId = UINT32_MAX;
   std::vector<uint32> loadedTextures;
   uint32 fallingNoteTextureId;

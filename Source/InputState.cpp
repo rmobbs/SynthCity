@@ -1,4 +1,6 @@
 #include "InputState.h"
+#include "SDL.h"
+
 void InputState::BeginFrame() {
   inputText.clear();
 
@@ -7,4 +9,33 @@ void InputState::BeginFrame() {
   std::fill(mouseButtonRelease.begin(), mouseButtonRelease.end(), false);
 
   mouseScrollSign = 0;
+}
+
+void InputState::SetFromKeyboardState() {
+  std::fill(pressed.begin(), pressed.end(), false);
+
+  int32 sdlKeyboardCount = 0;
+  auto sdlKeyboardState = SDL_GetKeyboardState(&sdlKeyboardCount);
+  if (lastKeyboardState.size() < static_cast<size_t>(sdlKeyboardCount)) {
+    lastKeyboardState.resize(sdlKeyboardCount);
+  }
+  if (sdlKeyboardState) {
+    for (int32 k = 0; k < sdlKeyboardCount; ++k) {
+      auto keyCode = SDL_GetKeyFromScancode(static_cast<SDL_Scancode>(k));
+
+      if (keyCode < InputState::kMaxKey) {
+        if (sdlKeyboardState[k]) {
+          keyDown[keyCode] = true;
+
+          if (!lastKeyboardState[k]) {
+            pressed[keyCode] = true;
+          }
+        }
+        else {
+          keyDown[keyCode] = false;
+        }
+        lastKeyboardState[k] = sdlKeyboardState[k];
+      }
+    }
+  }
 }

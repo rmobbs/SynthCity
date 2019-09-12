@@ -7,12 +7,14 @@
 #include <string>
 #include <functional>
 #include <map>
+#include <array>
 #include <atomic>
 
 class Instrument;
 class Patch;
 class Song;
 class Voice;
+class InputState;
 
 class Sequencer {
 public:
@@ -23,6 +25,9 @@ public:
   static constexpr uint32 kDefaultTempo = 120;
   static constexpr uint32 kDefaultInterval = 1000;
   static constexpr float kDefaultMasterVolume = 0.7f;
+
+  // TODO: You know what to do
+  static constexpr uint32 kGameplayLineCount = 4;
 
   // Loaded MIDI is passed to the host; they interact with the user to determine what
   // parameters will be used to convert that MIDI to our song format
@@ -47,6 +52,19 @@ public:
 private:
   static Sequencer* singleton;
 
+  struct GameplayLine {
+    struct NoteEntry {
+      uint32 beat = 0;
+      uint32 frame = 0;
+    };
+
+    std::list<NoteEntry> notes;
+    int32 soundLine = -1;
+  };
+
+  std::unique_ptr<InputState> gameInputState;
+
+  std::vector<GameplayLine> gameplayLines;
   uint32 loopIndex = 0;
   uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
   std::vector<std::pair<BeatPlayedCallback, void*>> beatPlayedCallbacks;
@@ -66,16 +84,22 @@ private:
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
-  uint32 curTicks = 0;
+  uint32 songStartFrame = 0;
   std::vector<float> mixbuf;
   std::list<Voice*> voices;
   std::map<int32, Voice*> voiceMap;
 
+  std::atomic<bool> isGameplayMode = false;
   std::atomic<bool> isPlaying = false;
   std::atomic<bool> isMetrononeOn = false;
   std::atomic<bool> isLooping = true;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
-  std::atomic<uint32> numActiveVoices;
+  std::atomic<uint32> frameCounter = 0;
+  std::atomic<uint32> numActiveVoices = 0;
+
+  // TODO: You know what to do
+  // Recorded as beat_index.beat_fraction
+  std::array<std::atomic<float>, kGameplayLineCount> lastButtonPress = { 0 };
 
   void OnFrame();
   void OnBeat();
@@ -87,7 +111,6 @@ private:
   void AudioCallback(void *userData, uint8 *stream, int32 length);
   void MixVoices(float* mixBuffer, uint32 numFrames);
   void StopAllVoices();
-  void ApplyInterval(uint32 interval);
 
 public:
   inline bool IsMetronomeOn() const {
@@ -138,15 +161,36 @@ public:
   inline float GetMasterVolume() const {
     return masterVolume;
   }
-  void SetMasterVolume(float masterVolume);
+  void SetMasterVolume(float masterVolume) {
+    this->masterVolume = masterVolume;
+  }
 
-  inline uint32 GetCurTicks() const {
-    return curTicks;
+  inline uint32 GetAudioFrame() const {
+    return frameCounter;
+  }
+
+  void PrepareGameplay(uint32 lineCount);
+
+  inline void SetGameplayMode(bool gameplayMode) {
+    isGameplayMode = gameplayMode;
   }
 
   uint32 GetFrequency() const;
 
   void SetLooping(bool looping);
+
+  inline float ConsumeButtonPress(uint32 gameLineIndex) {
+    return lastButtonPress[gameLineIndex].exchange(0.0f);
+  }
+
+  inline bool ConsumeButtonPresses(std::array<float, kGameplayLineCount>& buttonPresses) {
+    bool buttonPressed = false;
+    for (size_t b = 0; b < kGameplayLineCount; ++b) {
+      buttonPresses[b] = lastButtonPress[b].exchange(0.0f);
+      buttonPressed |= buttonPresses[b] > 0.0f;
+    }
+    return buttonPressed;
+  }
 
   void Play();
   void Pause();
@@ -188,12 +232,11 @@ public:
   void RemoveBeatCallback(uint32 callbackId);
   bool NewInstrument();
 
-   Sequencer() {}
+   Sequencer();
   ~Sequencer();
 
   static bool InitSingleton();
   static bool TermSingleton();
-
 
   static inline Sequencer& Get() {
     return *singleton;
