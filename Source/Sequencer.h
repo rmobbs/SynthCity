@@ -3,12 +3,16 @@
 #include "BaseTypes.h"
 #include "SerializeFwd.h"
 
+// NO NO NO
+#include "GameInput.h"
+
 #include <vector>
 #include <string>
 #include <functional>
 #include <map>
 #include <array>
 #include <atomic>
+#include <queue>
 
 class Instrument;
 class Patch;
@@ -26,9 +30,6 @@ public:
   static constexpr uint32 kDefaultInterval = 1000;
   static constexpr float kDefaultMasterVolume = 0.7f;
 
-  // TODO: You know what to do
-  static constexpr uint32 kGameplayLineCount = 4;
-
   // Loaded MIDI is passed to the host; they interact with the user to determine what
   // parameters will be used to convert that MIDI to our song format
   struct MidiConversionParams {
@@ -38,44 +39,26 @@ public:
   };
 
   // Called when a song note is played
-  typedef void(*NotePlayedCallback)(uint32 trackIndex, uint32 noteIndex, void* payload);
-  // Called when a song beat is played (differentiated from the previous by the fact
-  // that there may not be an active note on this beat)
-  typedef void(*BeatPlayedCallback)(bool isMeasure, void* payload);
-  // Called whenever the sequencer steps a frame (while a song is loaded) regardless of
-  // whether the song is playing or this beat has a note
-  typedef void(*FrameCallback)(void* payload);
-  // Called whenever the sequencer steps a beat (while a song is loaded) regardless of
-  // whether the song is playing or this beat has a note
-  typedef void(*BeatCallback)(void* payload);
+  typedef void(*NoteCallback)(uint32 trackIndex, uint32 noteIndex, void* payload);
+
+  // Called for every beat of a playing song (including intro). Note that, for
+  // ease of use, the beat is 1-based
+  typedef void(*BeatCallback)(uint32 beat, bool isDownBeat, void* payload);
 
 private:
   static Sequencer* singleton;
 
-  struct GameplayLine {
-    struct NoteEntry {
-      uint32 beat = 0;
-      uint32 frame = 0;
-    };
+  GameInput gameInput;
 
-    std::list<NoteEntry> notes;
-    int32 soundLine = -1;
-  };
-
-  std::unique_ptr<InputState> gameInputState;
-
-  std::vector<GameplayLine> gameplayLines;
   uint32 loopIndex = 0;
   uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
-  std::vector<std::pair<BeatPlayedCallback, void*>> beatPlayedCallbacks;
-  std::vector<std::pair<NotePlayedCallback, void*>> notePlayedCallbacks;
-  std::vector<std::pair<FrameCallback, void*>> frameCallbacks;
   std::vector<std::pair<BeatCallback, void*>> beatCallbacks;
+  std::vector<std::pair<NoteCallback, void*>> noteCallbacks;
   void* notePlayedPayload = nullptr;
   uint32 currFrame = 0;
-  uint32 songFrame = 0;
-  uint32 currSongPosition = 0;
-  uint32 nextSongPosition = 0;
+  uint32 nextFrame = 0;
+  uint32 currBeat = 0;
+  uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
   Instrument* instrument = nullptr;
   Song* song = nullptr;
@@ -85,6 +68,7 @@ private:
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
   uint32 songStartFrame = 0;
+  uint32 introBeatCount = 0;
   std::vector<float> mixbuf;
   std::list<Voice*> voices;
   std::map<int32, Voice*> voiceMap;
@@ -96,14 +80,9 @@ private:
   std::atomic<float> masterVolume = kDefaultMasterVolume;
   std::atomic<uint32> frameCounter = 0;
   std::atomic<uint32> numActiveVoices = 0;
+  std::atomic<float> beatTime = 0.0f;
 
-  // TODO: You know what to do
-  // Recorded as beat_index.beat_fraction
-  std::array<std::atomic<float>, kGameplayLineCount> lastButtonPress = { 0 };
-
-  void OnFrame();
-  void OnBeat();
-  void OnNote(bool isMeasure);
+  void OnBeat(uint32 beat, bool isDownBeat);
   uint32 UpdateInterval();
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
@@ -123,6 +102,16 @@ public:
 
   inline Song* GetSong() const {
     return song;
+  }
+
+  inline GameInput& GetGameInput() {
+    return gameInput;
+  }
+
+  // Expects full beats
+  void SetIntroBeats(uint32 introBeatCount);
+  inline uint32 GetIntroBeats() const {
+    return introBeatCount;
   }
 
   inline void EnableMetronome(bool enabled) {
@@ -175,22 +164,13 @@ public:
     isGameplayMode = gameplayMode;
   }
 
+  inline float GetBeatTime() const {
+    return beatTime;
+  }
+
   uint32 GetFrequency() const;
 
   void SetLooping(bool looping);
-
-  inline float ConsumeButtonPress(uint32 gameLineIndex) {
-    return lastButtonPress[gameLineIndex].exchange(0.0f);
-  }
-
-  inline bool ConsumeButtonPresses(std::array<float, kGameplayLineCount>& buttonPresses) {
-    bool buttonPressed = false;
-    for (size_t b = 0; b < kGameplayLineCount; ++b) {
-      buttonPresses[b] = lastButtonPress[b].exchange(0.0f);
-      buttonPressed |= buttonPresses[b] > 0.0f;
-    }
-    return buttonPressed;
-  }
 
   void Play();
   void Pause();
@@ -222,14 +202,10 @@ public:
   bool Init();
 
   void SetPosition(uint32 newPosition);
-  uint32 AddBeatPlayedCallback(BeatPlayedCallback beatPlayedCallback, void* beatPlayedPayload);
-  void RemoveBeatPlayedCallback(uint32 callbackId);
-  uint32 AddNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
-  void RemoveNotePlayedCallback(uint32 callbackId);
-  uint32 AddFrameCallback(FrameCallback frameCallback, void* framePayload);
-  void RemoveFrameCallback(uint32 callbackId);
-  uint32 AddBeatCallback(BeatCallback beatCallback, void* beatPayload);
+  uint32 AddBeatCallback(BeatCallback rootBeatCallback, void* beatPlayedPayload);
   void RemoveBeatCallback(uint32 callbackId);
+  uint32 AddNoteCallback(NoteCallback notePlayedCallback, void* notePlayedPayload);
+  void RemoveNoteCallback(uint32 callbackId);
   bool NewInstrument();
 
    Sequencer();

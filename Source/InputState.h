@@ -27,6 +27,7 @@ public:
   std::string inputText;
   std::array<uint8, kMaxKey> keyDown;
   std::array<uint8, kMaxKey> pressed;
+  std::array<uint8, kMaxKey> released;
 
   // Hardware key state tracker
   std::vector<bool> lastKeyboardState;

@@ -130,8 +130,9 @@ bool Sequencer::TermSingleton() {
   return true;
 }
 
-Sequencer::Sequencer() {
-  gameInputState = std::make_unique<InputState>();
+Sequencer::Sequencer() 
+  : gameInput({ 'a', 's', 'd', 'f' }) {
+
 }
 
 bool Sequencer::Init() {
@@ -263,25 +264,13 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
   //UpdateInterval();
 }
 
-void Sequencer::OnFrame() {
-  for (const auto& frameCallback : frameCallbacks) {
-    frameCallback.first(frameCallback.second);
-  }
-}
-
-void Sequencer::OnBeat() {
-  for (const auto& beatCallback : beatCallbacks) {
-    beatCallback.first(beatCallback.second);
-  }
-}
-
-void Sequencer::OnNote(bool isMeasure) {
+void Sequencer::OnBeat(uint32 beat, bool isDownBeat) {
   if (IsMetronomeOn()) {
-    PlayMetronome(isMeasure);
+    PlayMetronome(isDownBeat);
   }
 
-  for (const auto& beatPlayedCallback : beatPlayedCallbacks) {
-    beatPlayedCallback.first(isMeasure, beatPlayedCallback.second);
+  for (const auto& rootBeatCallback : beatCallbacks) {
+    rootBeatCallback.first(beat, isDownBeat, rootBeatCallback.second);
   }
 }
 
@@ -294,8 +283,11 @@ void Sequencer::PlayMetronome(bool downBeat) {
 }
 
 void Sequencer::Play() {
+  AudioGlobals::LockAudio();
   isPlaying = true;
   songStartFrame = frameCounter;
+  ticksRemaining = 0;
+  AudioGlobals::UnlockAudio();
 }
 
 void Sequencer::Pause() {
@@ -312,13 +304,13 @@ void Sequencer::Stop() {
 
   isPlaying = false;
   loopIndex = 0;
+  beatTime = 0.0f;
 
   SetPosition(0);
 }
 
 void Sequencer::SetPosition(uint32 newPosition) {
-  currSongPosition = newPosition;
-  nextSongPosition = currSongPosition;
+  nextBeat = currBeat = newPosition;
 }
 
 void Sequencer::SetLooping(bool looping) {
@@ -326,54 +318,39 @@ void Sequencer::SetLooping(bool looping) {
 }
 
 uint32 Sequencer::GetPosition() const {
-  return currSongPosition;
+  return currBeat;
 }
 
 uint32 Sequencer::GetNextPosition() const {
-  return nextSongPosition;
+  return nextBeat;
 }
 
 void Sequencer::ResetFrameCounter() {
   AudioGlobals::LockAudio();
-  currFrame = 0;
+  nextFrame = currFrame = 0;
   AudioGlobals::UnlockAudio();
 }
 
 uint32 Sequencer::NextFrame()
 {
-  // NOTE: Called from SDL audio callback so SM_LockAudio is in effect
-  if (!instrument || !song) {
+  currFrame = nextFrame++;
+
+  if (!instrument || !song || !isPlaying) {
     return interval;
   }
 
-  ++currFrame;
-  OnFrame();
+  currBeat = nextBeat++;
 
-  if ((currFrame % song->GetMinNoteValue()) == 0) {
-    OnBeat();
+  if ((currBeat % song->GetMinNoteValue()) == 0) {
+    OnBeat((currBeat / song->GetMinNoteValue()) + 1,
+      (currBeat % (song->GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
   }
-
-  if (!isPlaying) {
-    return interval;
-  }
-
-  currSongPosition = nextSongPosition;
-
-  if ((currSongPosition % song->GetMinNoteValue()) == 0) {
-    OnNote((currSongPosition % (song->GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
-  }
-
-  // Commenting out divide so grid display doesn't affect note playback
-  // https://trello.com/c/05XYJTLP
-  nextSongPosition = currSongPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
 
   // Handle end-of-track / looping
-  if (currSongPosition >= static_cast<int32>(song->GetNoteCount())) {
+  if (currBeat >= static_cast<int32>(song->GetNoteCount())) {
     if (isLooping) {
-      currSongPosition = 0;
-      // Commenting out divide so grid display doesn't affect note playback
-      // https://trello.com/c/05XYJTLP
-      nextSongPosition = currSongPosition + 1;// song->GetMinNoteValue() / currBeatSubdivision;
+      currBeat = 0;
+      nextBeat = 1;
       ++loopIndex;
     }
     else {
@@ -382,23 +359,27 @@ uint32 Sequencer::NextFrame()
   }
 
   if (isPlaying) {
-    for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
-      // NOTE: Will lines and tracks always be 1:1?
-      if (instrument->tracks[lineIndex]->GetMute()) {
-        continue;
-      }
-      auto soloTrackIndex = instrument->GetSoloTrack();
-      if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
-        continue;
-      }
-
-      // TODO: Separate out composer and gameplay frame logic
-      auto d = song->GetLine(lineIndex).data() + currSongPosition;
-      if (d->GetEnabled() && (!isGameplayMode || d->GetGameIndex() == -1)) {
-        for (auto& notePlayedCallback : notePlayedCallbacks) {
-          notePlayedCallback.first(lineIndex, currSongPosition, notePlayedCallback.second);
+    // TODO: This is only meaningful in gameplay mode!
+    int32 currNote = currBeat - introBeatCount * song->GetMinNoteValue();
+    if (currNote >= 0) {
+      for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
+        // NOTE: Will lines and tracks always be 1:1?
+        if (instrument->tracks[lineIndex]->GetMute()) {
+          continue;
         }
-        instrument->PlayTrack(lineIndex);
+        auto soloTrackIndex = instrument->GetSoloTrack();
+        if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
+          continue;
+        }
+
+        // TODO: Separate out composer and gameplay frame logic
+        auto d = song->GetLine(lineIndex).data() + currNote;
+        if (d->GetEnabled() && (!isGameplayMode || d->GetGameIndex() == -1)) {
+          for (auto& noteCallback : noteCallbacks) {
+            noteCallback.first(lineIndex, currNote, noteCallback.second);
+          }
+          instrument->PlayTrack(lineIndex);
+        }
       }
     }
   }
@@ -485,29 +466,38 @@ void Sequencer::WriteOutput(float *input, int16 *output, int32 frames) {
 }
 
 void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
-  // TODO: This should only happen in the game mode audio callback
-  if (isPlaying && instrument && isGameplayMode) {
-    gameInputState.get()->SetFromKeyboardState();
-
-    for (size_t gameLineIndex = 0; gameLineIndex < gameplayLines.size(); ++gameLineIndex) {
-      if (gameInputState.get()->pressed[kGameplayKeys[gameLineIndex]]) {
-        // Record the gameplay press
-        lastButtonPress[gameLineIndex] = (static_cast<float>(frameCounter - songStartFrame) /
-          static_cast<float>(interval)) / static_cast<float>(song->GetMinNoteValue());
-
-        // Trigger the sound associated with the line
-        instrument->PlayTrack(gameplayLines[gameLineIndex].soundLine);
-      }
-    }
-  }
-
   // 2 channels, 2 bytes/sample = 4 bytes/frame
   length /= 4;
 
   while (length > 0) {
+    if (isPlaying) {
+      beatTime = static_cast<float>(frameCounter - songStartFrame) /
+        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
+
+      // TODO: This should only happen in the game mode audio callback
+      if (isGameplayMode) {
+        std::array<float, GameGlobals::kNumGameplayLines> presses = { 0.0f };
+        std::array<float, GameGlobals::kNumGameplayLines> releases = { 0.0f };
+
+        gameInput.TakeSnapshot(beatTime, presses, releases);
+
+        for (size_t gameLineIndex = 0; gameLineIndex < GameGlobals::kNumGameplayLines; ++gameLineIndex) {
+          if (presses[gameLineIndex]) {
+            // Trigger the sound associated with the line
+            instrument->PlayTrack(gameLineIndex);
+          }
+        }
+      }
+    }
+
+    if (ticksRemaining <= 0) {
+      ticksRemaining = NextFrame();
+    }
+
     int32 frames = std::min(std::min(ticksRemaining,
       static_cast<int32>(kMaxCallbackSampleFrames)), length);
 
+    ticksRemaining -= frames;
     frameCounter += frames;
 
     // Mix and write audio
@@ -516,43 +506,16 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
 
     stream += frames * sizeof(int16) * 2;
     length -= frames;
-
-    ticksRemaining -= frames;
-    if (ticksRemaining <= 0) {
-      ticksPerFrame = ticksRemaining = NextFrame();
-    }
   }
 }
 
-uint32 Sequencer::AddBeatPlayedCallback(Sequencer::BeatPlayedCallback beatPlayedCallback, void* beatPlayedPayload) {
-  beatPlayedCallbacks.push_back({ beatPlayedCallback, beatPlayedPayload });
-  return beatPlayedCallbacks.size() - 1;
+void Sequencer::SetIntroBeats(uint32 introBeatCount) {
+  assert(!isPlaying);
+  this->introBeatCount = introBeatCount;
 }
 
-void Sequencer::RemoveBeatPlayedCallback(uint32 callbackId) {
-  beatPlayedCallbacks.erase(beatPlayedCallbacks.begin() + callbackId);
-}
-
-uint32 Sequencer::AddNotePlayedCallback(Sequencer::NotePlayedCallback notePlayedCallback, void* notePlayedPayload) {
-  notePlayedCallbacks.push_back({ notePlayedCallback, notePlayedPayload });
-  return notePlayedCallbacks.size() - 1;
-}
-
-void Sequencer::RemoveNotePlayedCallback(uint32 callbackId) {
-  notePlayedCallbacks.erase(notePlayedCallbacks.begin() + callbackId);
-}
-
-uint32 Sequencer::AddFrameCallback(FrameCallback frameCallback, void* framePayload) {
-  frameCallbacks.push_back({ frameCallback, framePayload });
-  return frameCallbacks.size() - 1;
-}
-
-void Sequencer::RemoveFrameCallback(uint32 callbackId) {
-  frameCallbacks.erase(frameCallbacks.begin() + callbackId);
-}
-
-uint32 Sequencer::AddBeatCallback(BeatCallback beatCallback, void* beatPayload) {
-  beatCallbacks.push_back({ beatCallback, beatPayload });
+uint32 Sequencer::AddBeatCallback(Sequencer::BeatCallback rootBeatCallback, void* beatPlayedPayload) {
+  beatCallbacks.push_back({ rootBeatCallback, beatPlayedPayload });
   return beatCallbacks.size() - 1;
 }
 
@@ -560,12 +523,18 @@ void Sequencer::RemoveBeatCallback(uint32 callbackId) {
   beatCallbacks.erase(beatCallbacks.begin() + callbackId);
 }
 
+uint32 Sequencer::AddNoteCallback(Sequencer::NoteCallback noteCallback, void* notePlayedPayload) {
+  noteCallbacks.push_back({ noteCallback, notePlayedPayload });
+  return noteCallbacks.size() - 1;
+}
+
+void Sequencer::RemoveNoteCallback(uint32 callbackId) {
+  noteCallbacks.erase(noteCallbacks.begin() + callbackId);
+}
+
 void Sequencer::PrepareGameplay(uint32 lineCount) {
-  gameplayLines.clear();
-
+#if 0
   if (song != nullptr) {
-    gameplayLines.resize(lineCount);
-
     auto& beatLines = song->GetBarLines();
 
     // Sort into gameplay line buckets
@@ -592,6 +561,7 @@ void Sequencer::PrepareGameplay(uint32 lineCount) {
       }
     }
   }
+#endif
 }
 
 

@@ -894,11 +894,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             }
 
             // Draw the play line
-            // TODO: This jumps from sub-beat to sub-beat, would be nice to have it
-            // continuously update
-            // https://trello.com/c/VCzl1tUh
-            cursorPosX = beatWidth * (sequencer.GetPosition() /
-              (song->GetMinNoteValue() / sequencer.GetSubdivision()));
+            cursorPosX = kFullBeatWidth * sequencer.GetBeatTime();
             ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
             ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
               ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
@@ -926,8 +922,12 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 }
 
                 songWindowClicked = true;
+
                 mouseDragBeg = ImGui::GetMousePos();
                 mouseDragBeg -= ImGui::GetWindowPos();
+
+                mouseDragBeg.x += ImGui::GetScrollX();
+                mouseDragBeg.y += ImGui::GetScrollY();
               }
 
               // On mouse release, clear drag box
@@ -942,6 +942,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                 if (mouseDragCur.x != -FLT_MAX && mouseDragCur.y != -FLT_MAX) {
                   mouseDragCur -= ImGui::GetWindowPos();
+                  mouseDragCur.x += ImGui::GetScrollX();
+                  mouseDragCur.y += ImGui::GetScrollY();
 
                   dragBox.x = std::min(mouseDragBeg.x, mouseDragCur.x);
                   dragBox.y = std::min(mouseDragBeg.y, mouseDragCur.y);
@@ -1195,16 +1197,16 @@ void ComposerView::Show() {
       return LoadInstrument(reinterpret_cast<HWND>(_mainWindowHandle), instrumentName);
     });
 
-  notePlayedCallbackId = Sequencer::Get().AddNotePlayedCallback(
+  noteCallbackId = Sequencer::Get().AddNoteCallback(
     [](uint32 trackIndex, uint32 noteIndex, void* payload) {
       reinterpret_cast<ComposerView*>(payload)->NotePlayedCallback(trackIndex, noteIndex);
     }, this);
 }
 
 void ComposerView::Hide() {
-  if (notePlayedCallbackId != UINT32_MAX) {
-    Sequencer::Get().RemoveNotePlayedCallback(notePlayedCallbackId);
-    notePlayedCallbackId = UINT32_MAX;
+  if (noteCallbackId != UINT32_MAX) {
+    Sequencer::Get().RemoveNoteCallback(noteCallbackId);
+    noteCallbackId = UINT32_MAX;
   }
 }
 

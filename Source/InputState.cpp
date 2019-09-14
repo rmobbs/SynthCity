@@ -13,6 +13,7 @@ void InputState::BeginFrame() {
 
 void InputState::SetFromKeyboardState() {
   std::fill(pressed.begin(), pressed.end(), false);
+  std::fill(released.begin(), released.end(), false);
 
   int32 sdlKeyboardCount = 0;
   auto sdlKeyboardState = SDL_GetKeyboardState(&sdlKeyboardCount);
@@ -33,7 +34,12 @@ void InputState::SetFromKeyboardState() {
         }
         else {
           keyDown[keyCode] = false;
+
+          if (lastKeyboardState[k]) {
+            released[keyCode] = true;
+          }
         }
+
         lastKeyboardState[k] = sdlKeyboardState[k];
       }
     }
