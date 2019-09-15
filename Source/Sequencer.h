@@ -1,18 +1,26 @@
 #pragma once
 
 #include "BaseTypes.h"
-#include "Mixer.h"
 #include "SerializeFwd.h"
+
+// NO NO NO
+#include "GameInput.h"
 
 #include <vector>
 #include <string>
 #include <functional>
+#include <map>
+#include <array>
+#include <atomic>
+#include <queue>
 
 class Instrument;
 class Patch;
 class Song;
+class Voice;
+class InputState;
 
-class Sequencer : public Mixer::Controller {
+class Sequencer {
 public:
   static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kDfeaultBeatSubdivision = 4;
@@ -20,6 +28,7 @@ public:
   static constexpr uint32 kMaxTempo = 220;
   static constexpr uint32 kDefaultTempo = 120;
   static constexpr uint32 kDefaultInterval = 1000;
+  static constexpr float kDefaultMasterVolume = 0.7f;
 
   // Loaded MIDI is passed to the host; they interact with the user to determine what
   // parameters will be used to convert that MIDI to our song format
@@ -30,49 +39,57 @@ public:
   };
 
   // Called when a song note is played
-  typedef void(*NotePlayedCallback)(uint32 trackIndex, uint32 noteIndex, void* payload);
-  // Called when a song beat is played (differentiated from the previous by the fact
-  // that there may not be an active note on this beat)
-  typedef void(*BeatPlayedCallback)(bool isMeasure, void* payload);
-  // Called whenever the sequencer steps a frame (while a song is loaded) regardless of
-  // whether the song is playing or this beat has a note
-  typedef void(*FrameCallback)(void* payload);
-  // Called whenever the sequencer steps a beat (while a song is loaded) regardless of
-  // whether the song is playing or this beat has a note
-  typedef void(*BeatCallback)(void* payload);
+  typedef void(*NoteCallback)(uint32 trackIndex, uint32 noteIndex, void* payload);
+
+  // Called for every beat of a playing song (including intro). Note that, for
+  // ease of use, the beat is 1-based
+  typedef void(*BeatCallback)(uint32 beat, bool isDownBeat, void* payload);
 
 private:
   static Sequencer* singleton;
 
+  GameInput gameInput;
+
   uint32 loopIndex = 0;
   uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
-  std::atomic<bool> isPlaying = false;
-  std::atomic<bool> isMetrononeOn = false;
-  std::atomic<bool> isLooping = true;
-  std::vector<std::pair<BeatPlayedCallback, void*>> beatPlayedCallbacks;
-  std::vector<std::pair<NotePlayedCallback, void*>> notePlayedCallbacks;
-  std::vector<std::pair<FrameCallback, void*>> frameCallbacks;
   std::vector<std::pair<BeatCallback, void*>> beatCallbacks;
+  std::vector<std::pair<NoteCallback, void*>> noteCallbacks;
   void* notePlayedPayload = nullptr;
   uint32 currFrame = 0;
-  uint32 songFrame = 0;
-  uint32 currSongPosition = 0;
-  uint32 nextSongPosition = 0;
+  uint32 nextFrame = 0;
+  uint32 currBeat = 0;
+  uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
   Instrument* instrument = nullptr;
   Song* song = nullptr;
   std::vector<Patch*> reservedPatches;
   std::function<bool(std::string)> loadInstrumentCallback;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
+  int32 ticksPerFrame = 0;
+  int32 ticksRemaining = 0;
+  uint32 songStartFrame = 0;
+  uint32 introBeatCount = 0;
+  std::vector<float> mixbuf;
+  std::list<Voice*> voices;
+  std::map<int32, Voice*> voiceMap;
 
-  void OnFrame();
-  void OnBeat();
-  void OnNote(bool isMeasure);
+  std::atomic<bool> isGameplayMode = false;
+  std::atomic<bool> isPlaying = false;
+  std::atomic<bool> isMetrononeOn = false;
+  std::atomic<bool> isLooping = true;
+  std::atomic<float> masterVolume = kDefaultMasterVolume;
+  std::atomic<uint32> frameCounter = 0;
+  std::atomic<uint32> numActiveVoices = 0;
+  std::atomic<float> beatTime = 0.0f;
+
+  void OnBeat(uint32 beat, bool isDownBeat);
   uint32 UpdateInterval();
-
-
-  // Mixer
-  uint32 NextFrame() override;
+  void WriteOutput(float *input, int16 *output, int32 frames);
+  void DrainExpiredPool();
+  uint32 NextFrame();
+  void AudioCallback(void *userData, uint8 *stream, int32 length);
+  void MixVoices(float* mixBuffer, uint32 numFrames);
+  void StopAllVoices();
 
 public:
   inline bool IsMetronomeOn() const {
@@ -85,6 +102,16 @@ public:
 
   inline Song* GetSong() const {
     return song;
+  }
+
+  inline GameInput& GetGameInput() {
+    return gameInput;
+  }
+
+  // Expects full beats
+  void SetIntroBeats(uint32 introBeatCount);
+  inline uint32 GetIntroBeats() const {
+    return introBeatCount;
   }
 
   inline void EnableMetronome(bool enabled) {
@@ -116,6 +143,33 @@ public:
     return isLooping;
   }
 
+  inline uint32 GetNumActiveVoices() const {
+    return numActiveVoices;
+  }
+
+  inline float GetMasterVolume() const {
+    return masterVolume;
+  }
+  void SetMasterVolume(float masterVolume) {
+    this->masterVolume = masterVolume;
+  }
+
+  inline uint32 GetAudioFrame() const {
+    return frameCounter;
+  }
+
+  void PrepareGameplay(uint32 lineCount);
+
+  inline void SetGameplayMode(bool gameplayMode) {
+    isGameplayMode = gameplayMode;
+  }
+
+  inline float GetBeatTime() const {
+    return beatTime;
+  }
+
+  uint32 GetFrequency() const;
+
   void SetLooping(bool looping);
 
   void Play();
@@ -124,6 +178,8 @@ public:
   void Stop();
   void ResetFrameCounter();
   bool LoadInstrument(std::string fileName, std::string mustMatch);
+  void StopVoice(int32 voiceId);
+  int32 PlayPatch(const Patch* patch, float volume);
 
   void NewSong();
   bool SaveSong(std::string fileName);
@@ -146,22 +202,17 @@ public:
   bool Init();
 
   void SetPosition(uint32 newPosition);
-  uint32 AddBeatPlayedCallback(BeatPlayedCallback beatPlayedCallback, void* beatPlayedPayload);
-  void RemoveBeatPlayedCallback(uint32 callbackId);
-  uint32 AddNotePlayedCallback(NotePlayedCallback notePlayedCallback, void* notePlayedPayload);
-  void RemoveNotePlayedCallback(uint32 callbackId);
-  uint32 AddFrameCallback(FrameCallback frameCallback, void* framePayload);
-  void RemoveFrameCallback(uint32 callbackId);
-  uint32 AddBeatCallback(BeatCallback beatCallback, void* beatPayload);
+  uint32 AddBeatCallback(BeatCallback rootBeatCallback, void* beatPlayedPayload);
   void RemoveBeatCallback(uint32 callbackId);
+  uint32 AddNoteCallback(NoteCallback notePlayedCallback, void* notePlayedPayload);
+  void RemoveNoteCallback(uint32 callbackId);
   bool NewInstrument();
 
-   Sequencer() {}
+   Sequencer();
   ~Sequencer();
 
   static bool InitSingleton();
   static bool TermSingleton();
-
 
   static inline Sequencer& Get() {
     return *singleton;

@@ -10,12 +10,16 @@ class GamePreviewView : public View {
 protected:
   enum class Mode {
     Ready,
-    Countdown,
+    Countdown_12,
+    Countdown_34,
+    Countdown_1,
+    Countdown_2,
+    Countdown_3,
+    Countdown_4,
     Playing,
     Done,
   };
   Mode mode = Mode::Ready;
-  uint32 beatsLeftInState = 0;
   ImGuiRenderable renderable;
   uint32 mainWindowHandle = UINT32_MAX;
   std::vector<SpriteRenderable*> staticSprites;
@@ -23,18 +27,20 @@ protected:
   std::list<SpriteRenderable*> fallingNotes;
   std::vector<SpriteRenderable*> countdownPlacards;
   SpriteRenderable* readyPlacard = nullptr;
-  float beatTickLength = 0;
+  SpriteRenderable* targetZone = nullptr;
   uint32 beatCallbackId = UINT32_MAX;
   std::vector<uint32> loadedTextures;
   uint32 fallingNoteTextureId;
-  glm::vec2 fallingNoteTextureSize;
   uint32 whiteTextureId;
   glm::vec2 whiteTextureSize;
+  float targetWindowRush = 0.0f;
+  float targetWindowDrag = 0.0f;
+  bool leaveRefuse = false;
 
   void InitResources();
   void TermResources();
   void HandleInput();
-  void OnBeat();
+  void OnBeat(uint32 beat);
   uint32 LoadTexture(const std::string& textureName, uint32* outWidth = nullptr, uint32* outHeight = nullptr);
 public:
   GamePreviewView(uint32 mainWindowHandle);

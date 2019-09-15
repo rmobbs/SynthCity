@@ -2,6 +2,7 @@
 
 #include "BaseTypes.h"
 #include <array>
+#include <vector>
 
 // Global input state (consumable)
 class InputState {
@@ -26,6 +27,10 @@ public:
   std::string inputText;
   std::array<uint8, kMaxKey> keyDown;
   std::array<uint8, kMaxKey> pressed;
+  std::array<uint8, kMaxKey> released;
+
+  // Hardware key state tracker
+  std::vector<bool> lastKeyboardState;
 
   static InputState& Get() {
     static InputState inputState;
@@ -33,4 +38,5 @@ public:
   }
 
   void BeginFrame();
+  void SetFromKeyboardState();
 };

@@ -129,7 +129,7 @@ void Instrument::SetSoloTrack(int32 trackIndex) {
 }
 
 void Instrument::PlayTrack(uint32 trackIndex) {
-  Mixer::Get().PlayPatch(tracks[trackIndex]->GetPatch(), tracks[trackIndex]->GetVolume());
+  Sequencer::Get().PlayPatch(tracks[trackIndex]->GetPatch(), tracks[trackIndex]->GetVolume());
 }
 
 Track* Instrument::GetTrack(uint32 trackIndex) {

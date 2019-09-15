@@ -197,6 +197,8 @@
     <ClInclude Include="DialogTrack.h" />
     <ClInclude Include="Factory.h" />
     <ClInclude Include="FreeList.h" />
+    <ClInclude Include="GameGlobals.h" />
+    <ClInclude Include="GameInput.h" />
     <ClInclude Include="GamePreviewView.h" />
     <ClInclude Include="ImGuiExtensions.h" />
     <ClInclude Include="Patch.h" />
@@ -220,7 +222,6 @@
     <ClInclude Include="Renderable.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sequencer.h" />
-    <ClInclude Include="Mixer.h" />
     <ClInclude Include="SerializeFwd.h" />
     <ClInclude Include="SerializeImpl.h" />
     <ClInclude Include="ShaderProgram.h" />
@@ -241,6 +242,7 @@
     <ClCompile Include="AudioGlobals.cpp" />
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="DialogTrack.cpp" />
+    <ClCompile Include="GameInput.cpp" />
     <ClCompile Include="GamePreviewView.cpp" />
     <ClCompile Include="Globals.cpp" />
     <ClCompile Include="ImGuiExtensions.cpp" />
@@ -262,7 +264,6 @@
     <ClCompile Include="OddsAndEnds.cpp" />
     <ClCompile Include="Renderable.cpp" />
     <ClCompile Include="Sequencer.cpp" />
-    <ClCompile Include="Mixer.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="SoundFactory.cpp" />

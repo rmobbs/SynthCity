@@ -34,7 +34,6 @@ protected:
   int32 pendingSubdivision = -1;
   int32 pendingTempo = -1;
   int32 pendingAddMeasures = -1;
-  float pendingMasterVolume = -1.0f;
   bool pendingNewInstrument = false;
   bool pendingLoadInstrument = false;
   bool pendingSaveInstrument = false;
@@ -42,7 +41,7 @@ protected:
   bool pendingLoadSong = false;
   bool pendingSaveSong = false;
 
-  uint32 notePlayedCallbackId = UINT32_MAX;
+  uint32 noteCallbackId = UINT32_MAX;
   std::vector<std::set<uint32>> noteClipboard;
   std::vector<std::set<uint32>> noteSelectedStatus;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };

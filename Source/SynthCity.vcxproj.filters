@@ -111,9 +111,6 @@
     <ClInclude Include="MidiSource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mixer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="OddsAndEnds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -171,15 +168,18 @@
     <ClInclude Include="Song.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GameInput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameGlobals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SynthCity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Sequencer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Mixer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MidiSource.cpp">
@@ -288,6 +288,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Song.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameInput.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
