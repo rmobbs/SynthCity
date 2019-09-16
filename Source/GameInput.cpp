@@ -46,3 +46,7 @@ bool GameInput::ConsumeReleases(std::array<float, GameGlobals::kNumGameplayLines
   }
   return anyReleased;
 }
+
+void GameInput::SetLineKey(uint32 line, uint32 key) {
+  buttonKeys[line] = key;
+}

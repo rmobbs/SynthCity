@@ -35,7 +35,8 @@ protected:
   glm::vec2 whiteTextureSize;
   float targetWindowRush = 0.0f;
   float targetWindowDrag = 0.0f;
-  bool leaveRefuse = false;
+  bool drawZone = false;
+  int32 mappingKey = -1;
 
   void InitResources();
   void TermResources();

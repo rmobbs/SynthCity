@@ -39,4 +39,6 @@ public:
 
   void BeginFrame();
   void SetFromKeyboardState();
+
+  static int32 GetFirstPressedKey();
 };

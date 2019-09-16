@@ -11,6 +11,20 @@ void InputState::BeginFrame() {
   mouseScrollSign = 0;
 }
 
+int32 InputState::GetFirstPressedKey() {
+  int32 sdlKeyboardCount = 0;
+  auto sdlKeyboardState = SDL_GetKeyboardState(&sdlKeyboardCount);
+  for (int32 keyIndex = 0; keyIndex < sdlKeyboardCount; ++keyIndex) {
+    if (sdlKeyboardState[keyIndex]) {
+      auto keyCode = SDL_GetKeyFromScancode(static_cast<SDL_Scancode>(keyIndex));
+      if (keyCode < InputState::kMaxKey) {
+        return keyCode;
+      }
+    }
+  }
+  return -1;
+}
+
 void InputState::SetFromKeyboardState() {
   std::fill(pressed.begin(), pressed.end(), false);
   std::fill(released.begin(), released.end(), false);

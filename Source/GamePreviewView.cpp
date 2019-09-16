@@ -7,6 +7,7 @@
 #include "Sequencer.h"
 #include "Logging.h"
 #include "Song.h"
+#include "AudioGlobals.h"
 #include "soil.h"
 
 static glm::vec2 noteLaneExtents(10, 800);
@@ -59,6 +60,7 @@ protected:
   bool triggered = false;
   float fadeEnd = 0.0f;
   bool doFade = false;
+  bool canTrigger = true;
   glm::vec2 originalExtents;
   glm::vec2 triggerPosition;
 public:
@@ -107,6 +109,14 @@ public:
     this->doFade = doFade;
     fadeEnd = beatTime + kNoteEffectTimeInBeats;
     triggerPosition = position;
+  }
+
+  void Disqualify() {
+    canTrigger = false;
+  }
+
+  bool Triggerable() {
+    return canTrigger && !triggered;
   }
 };
 
@@ -355,7 +365,9 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   glClearColor(0.2f, 0.2f, 0.7f, 0);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  targetZone->Render();
+  if (drawZone) {
+    targetZone->Render();
+  }
 
   for (const auto& renderable : staticSprites) {
     renderable->Render();
@@ -420,17 +432,11 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
         auto fallingNoteIter = fallingNotes.begin();
         while (fallingNoteIter != fallingNotes.end()) {
           auto fallingNote = static_cast<NoteSprite*>(*fallingNoteIter);
-          if (!fallingNote->Triggered()) {
+          if (fallingNote->Triggerable()) {
             auto visualDelta = (fallingNote->GetBeatTime() - presses[lineIndex]) * kDistanceBetweenQuarterNotes;
 
+            // Tapping before it enters the window is not penalized
             if (visualDelta > targetWindowRush) {
-              if (leaveRefuse && fallingNote->GetGameLineIndex() == lineIndex) {
-                // Trigger it
-                fallingNote->Trigger(beatTime, false);
-
-                // Position (UL-relative)
-                fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
-              }
               break;
             }
 
@@ -447,12 +453,9 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
                 // Check other key presses
                 break;
               }
-              else if (leaveRefuse) {
+              else {
                 // Trigger it
-                fallingNote->Trigger(beatTime, false);
-
-                // Position (UL-relative)
-                fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
+                fallingNote->Disqualify();
               }
             }
           }
@@ -502,10 +505,33 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
   ImGui::SetNextWindowPos(ImVec2(canvasSize.x - 150.0f, 10.0f));
-  ImGui::Begin("Instructions");
+  ImGui::Begin("Instructions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
   {
     ImGui::Text("Press ESC to exit");
-    ImGui::Checkbox("Leave misses", &leaveRefuse);
+    ImGui::Checkbox("Draw zone", &drawZone);
+
+    for (uint32 lineIndex = 0; lineIndex < GameGlobals::kNumGameplayLines; ++lineIndex) {
+      std::string label("Key " + std::to_string(lineIndex + 1));
+      if (ImGui::Button(label.c_str())) {
+        mappingKey = lineIndex;
+      }
+      ImGui::SameLine();
+      ImGui::Text(SDL_GetKeyName(static_cast<SDL_Keycode>(Sequencer::Get().GetGameInput().GetLineKey(lineIndex))));
+    }
+
+    if (mappingKey != -1) {
+
+      ImGui::Text("Press any key ...");
+
+      auto keyCode = InputState::GetFirstPressedKey();
+      if (keyCode != -1) {
+        AudioGlobals::LockAudio();
+        Sequencer::Get().GetGameInput().SetLineKey(mappingKey, keyCode);
+        AudioGlobals::UnlockAudio();
+        mappingKey = -1;
+      }
+    }
+
     ImGui::End();
   }
 
