@@ -335,6 +335,10 @@ void GamePreviewView::Show() {
   sequencer.SetIntroBeats(kReadyBeats + kCountdownBeats);
   sequencer.SetLooping(false);
   sequencer.Play();
+
+  perfectScore = fallingNotes.size() * 1.0f;
+  currentScore = 0.0f;
+  noteStreak = 0;
 }
 
 void GamePreviewView::Hide() {
@@ -442,13 +446,26 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
             // If it's on our line
             if (fallingNote->GetGameLineIndex() == lineIndex) {
+              auto negativeLimit = -(targetWindowDrag + targetLineExtents.y + fallingNoteExtent.y);
 
-              if (visualDelta > -(targetWindowDrag + targetLineExtents.y + fallingNoteExtent.y)) {
+              if (visualDelta > negativeLimit) {
                 // Trigger it
                 fallingNote->Trigger(beatTime, true);
 
                 // Position (UL-relative)
                 fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
+
+                if (std::fabsf(visualDelta) < std::numeric_limits<float>::epsilon()) {
+                  currentScore += 1.0f;
+                }
+                else if (visualDelta > 0.0f) {
+                  currentScore += 1.0f - (visualDelta / targetWindowRush);
+                }
+                else {
+                  currentScore += 1.0f - (visualDelta / negativeLimit);
+                }
+
+                ++noteStreak;
 
                 // Check other key presses
                 break;
@@ -456,6 +473,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
               else {
                 // Trigger it
                 fallingNote->Disqualify();
+                noteStreak = 0;
               }
             }
           }
@@ -531,6 +549,13 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
         mappingKey = -1;
       }
     }
+
+    ImGui::Separator();
+    char scoreBuf[256];
+    sprintf(scoreBuf, "Score: %03.2f/%03.2f", currentScore, perfectScore);
+    ImGui::Text(scoreBuf);
+    std::string streakString("Streak: " + std::to_string(noteStreak));
+    ImGui::Text(streakString.c_str());
 
     ImGui::End();
   }
