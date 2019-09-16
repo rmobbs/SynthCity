@@ -6,6 +6,7 @@
 #include "glm//vec2.hpp"
 
 class SpriteRenderable;
+class NoteSprite;
 class GamePreviewView : public View {
 protected:
   enum class Mode {
@@ -24,7 +25,7 @@ protected:
   uint32 mainWindowHandle = UINT32_MAX;
   std::vector<SpriteRenderable*> staticSprites;
   std::vector<SpriteRenderable*> fretSprites;
-  std::list<SpriteRenderable*> fallingNotes;
+  std::list<NoteSprite*> fallingNotes;
   std::vector<SpriteRenderable*> countdownPlacards;
   SpriteRenderable* readyPlacard = nullptr;
   SpriteRenderable* targetZone = nullptr;
@@ -33,10 +34,12 @@ protected:
   uint32 fallingNoteTextureId;
   uint32 whiteTextureId;
   glm::vec2 whiteTextureSize;
-  float targetWindowRush = 0.0f;
-  float targetWindowDrag = 0.0f;
+  float targetWindowScale = 0.0f;
+  float targetWindowDeltaPos = 0.0f;
+  float targetWindowDeltaNeg = 0.0f;
   float currentScore = 0.0f;
   float perfectScore = 0.0f;
+  float streakScore = 0.0f;
   bool drawZone = false;
   int32 mappingKey = -1;
   uint32 noteStreak;

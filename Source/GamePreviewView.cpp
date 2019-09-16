@@ -163,8 +163,10 @@ uint32 GamePreviewView::LoadTexture(const std::string& textureName, uint32* outW
 }
 
 void GamePreviewView::InitResources() {
-  targetWindowRush = fallingNoteExtent.y * 0.5f;
-  targetWindowDrag = fallingNoteExtent.y * 0.5f;
+  targetWindowScale = fallingNoteExtent.y * 0.5f;
+
+  targetWindowDeltaPos = targetWindowScale;
+  targetWindowDeltaNeg = -(targetWindowScale + targetLineExtents.y + fallingNoteExtent.y);
 
   // TODO: Need texture management https://trello.com/c/BRVZcDuP
   uint32 w, h;
@@ -176,9 +178,9 @@ void GamePreviewView::InitResources() {
 
   // Zone renderer
   targetZone = new SpriteRenderable(glm::vec2(targetLineExtents.x, 
-    targetWindowRush + targetWindowDrag + targetLineExtents.y), kColorTargetZone);
+    targetWindowScale * 2.0f + targetLineExtents.y), kColorTargetZone);
   targetZone->AddTexture(whiteTextureId);
-  targetZone->SetPosition(glm::vec2(targetLinePosition.x, targetLinePosition.y - targetWindowRush));
+  targetZone->SetPosition(glm::vec2(targetLinePosition.x, targetLinePosition.y - targetWindowScale));
 
   // Placards
   auto readyTexture = LoadTexture("Assets\\ReadyPlacard.png", &w, &h);
@@ -428,67 +430,57 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
   // Check for button presses
   std::array<float, GameGlobals::kNumGameplayLines> presses;
-  if (Sequencer::Get().GetGameInput().ConsumePresses(presses)) {
-    for (uint32 lineIndex = 0; lineIndex < GameGlobals::kNumGameplayLines; ++lineIndex) {
-      if (presses[lineIndex] > 0.0f) {
-        // Trigger the 'line pressed' effect
-
-        auto fallingNoteIter = fallingNotes.begin();
-        while (fallingNoteIter != fallingNotes.end()) {
-          auto fallingNote = static_cast<NoteSprite*>(*fallingNoteIter);
-          if (fallingNote->Triggerable()) {
-            auto visualDelta = (fallingNote->GetBeatTime() - presses[lineIndex]) * kDistanceBetweenQuarterNotes;
-
-            // Tapping before it enters the window is not penalized
-            if (visualDelta > targetWindowRush) {
-              break;
-            }
-
-            // If it's on our line
-            if (fallingNote->GetGameLineIndex() == lineIndex) {
-              auto negativeLimit = -(targetWindowDrag + targetLineExtents.y + fallingNoteExtent.y);
-
-              if (visualDelta > negativeLimit) {
-                // Trigger it
-                fallingNote->Trigger(beatTime, true);
-
-                // Position (UL-relative)
-                fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
-
-                if (std::fabsf(visualDelta) < std::numeric_limits<float>::epsilon()) {
-                  currentScore += 1.0f;
-                }
-                else if (visualDelta > 0.0f) {
-                  currentScore += 1.0f - (visualDelta / targetWindowRush);
-                }
-                else {
-                  currentScore += 1.0f - (visualDelta / negativeLimit);
-                }
-
-                ++noteStreak;
-
-                // Check other key presses
-                break;
-              }
-              else {
-                // Trigger it
-                fallingNote->Disqualify();
-                noteStreak = 0;
-              }
-            }
-          }
-
-          ++fallingNoteIter;
-        }
-      }
-    }
-  }
+  Sequencer::Get().GetGameInput().ConsumePresses(presses);
 
   // Update falling notes
   auto fallingNoteIter = fallingNotes.begin();
   while (fallingNoteIter != fallingNotes.end()) {
-    auto fallingNote = reinterpret_cast<NoteSprite*>(*fallingNoteIter);
+    auto fallingNote = *fallingNoteIter;
 
+    if (fallingNote->Triggerable()) {
+      auto lineIndex = fallingNote->GetGameLineIndex();
+      if (presses[lineIndex] > 0.0f) {
+        auto visualDelta = (fallingNote->GetBeatTime() - presses[lineIndex]) * kDistanceBetweenQuarterNotes;
+
+        if (visualDelta < targetWindowScale) {
+          if (visualDelta > targetWindowDeltaNeg) {
+            // Trigger it
+            fallingNote->Trigger(beatTime, true);
+
+            // Position (UL-relative)
+            fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
+
+            // Update score
+            float score = 0.0f;
+            if (std::fabsf(visualDelta) < std::numeric_limits<float>::epsilon()) {
+              score += 1.0f;
+            }
+            else if (visualDelta > 0.0f) {
+              score += 1.0f - (visualDelta / targetWindowScale);
+            }
+            else {
+              score += 1.0f - (visualDelta / targetWindowDeltaNeg);
+            }
+
+            currentScore += score;
+            streakScore += score;
+
+            // Update note streak
+            ++noteStreak;
+          }
+          else {
+            // Disqualify it
+            fallingNote->Disqualify();
+
+            // Reset note streak
+            noteStreak = 0;
+            streakScore = 0.0f;
+          }
+        }
+      }
+    }
+
+    // If it's already triggered, update its fade out effects until it expires
     if (fallingNote->Triggered()) {
       if (!fallingNote->UpdateEffects(beatTime)) {
         fallingNoteIter = fallingNotes.erase(fallingNoteIter);
@@ -496,24 +488,30 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
         continue;
       }
     }
+    // Otherwise keep dropping it
     else {
       float notePosY = targetLinePosition.y - fallingNoteExtent.y -
         (fallingNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
+
+      // Bottom of screen
       if (notePosY >= canvasSize.y) {
+        noteStreak = 0;
+        streakScore = 0.0f;
         fallingNoteIter = fallingNotes.erase(fallingNoteIter);
         fallingNoteFreeList.Return(fallingNote);
         continue;
       }
-      // No need to update the ones that are offscreen
-      // TODO: Need to be paging the notes in, not spawning them all at once
-      else if (notePosY < -100.0f) {
+      // Top of screen
+      else if (notePosY < -fretExtents.y) {
         break;
       }
+      // The rest
       else {
         fallingNote->position = glm::vec2(noteLanePosition[fallingNote->
           GetGameLineIndex()].x + (noteLaneExtents.x * 0.5f) - fallingNoteExtent.x * 0.5f, notePosY);
       }
     }
+
     fallingNote->Render();
     ++fallingNoteIter;
   }
@@ -522,7 +520,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
-  ImGui::SetNextWindowPos(ImVec2(canvasSize.x - 150.0f, 10.0f));
+  ImGui::SetNextWindowPos(ImVec2(canvasSize.x - 180.0f, 10.0f));
   ImGui::Begin("Instructions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
   {
     ImGui::Text("Press ESC to exit");
@@ -556,6 +554,8 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     ImGui::Text(scoreBuf);
     std::string streakString("Streak: " + std::to_string(noteStreak));
     ImGui::Text(streakString.c_str());
+    sprintf(scoreBuf, "Streak score: %03.2f/%03.2f", streakScore, static_cast<float>(noteStreak));
+    ImGui::Text(scoreBuf);
 
     ImGui::End();
   }
