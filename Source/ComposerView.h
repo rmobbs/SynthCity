@@ -61,7 +61,11 @@ protected:
   ImGuiRenderable renderable;
   bool songWindowClicked = false;
   uint32 addMeasureCount = 1;
+  bool localGuiDisabled = false;
 
+  void ConditionalEnableBegin(bool condition);
+  void ConditionalEnableEnd();
+  
   std::map<int, double> playingTrackFlashTimes[2];
 
   std::atomic<bool> isMetronomeOn = false;

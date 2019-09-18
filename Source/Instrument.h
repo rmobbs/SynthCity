@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-class Sound;
-
 class Instrument {
 public:
+  static constexpr const char* kDefaultName = "My Instrument";
+
   std::vector<Track*> tracks;
   std::string name;
   int32 soloTrack = -1;

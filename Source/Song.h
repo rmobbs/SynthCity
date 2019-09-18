@@ -13,7 +13,7 @@ class Song {
 public:
   static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
-  static constexpr const char* kDefaultSongName = "My Song";
+  static constexpr const char* kDefaultName = "Untitled";
 
   class Note {
   protected:
@@ -67,8 +67,9 @@ protected:
   static Song* LoadSongJson(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 
 public:
-  Song(std::string name, uint32 numLines, uint32 numMeasures, uint32 tempo, uint32 beatsPerMeasure, uint32 minNoteValue);
+  Song(std::string name, uint32 tempo, uint32 numLines, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
   Song(const ReadSerializer& serializer, std::function<Instrument*(std::string)> instrumentLoader);
+  ~Song();
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
@@ -85,6 +86,10 @@ public:
 
   inline std::string GetName() const {
     return name;
+  }
+
+  inline void SetName(std::string name) {
+    this->name = name;
   }
 
   uint32 GetNoteCount() const {

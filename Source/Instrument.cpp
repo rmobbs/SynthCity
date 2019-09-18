@@ -105,23 +105,6 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
   return true;
 }
 
-void Instrument::AddTrack(Track* track) {
-  tracks.push_back(track);
-}
-
-void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
-  delete tracks[index];
-  tracks[index] = newTrack;
-}
-
-void Instrument::RemoveTrack(uint32 index) {
-  if (soloTrack == index) {
-    soloTrack = -1;
-  }
-  delete tracks[index];
-  tracks.erase(tracks.begin() + index);
-}
-
 void Instrument::SetSoloTrack(int32 trackIndex) {
   soloTrack = trackIndex;
   if (trackIndex != -1) {
@@ -200,5 +183,22 @@ Instrument* Instrument::LoadInstrument(std::string fileName) {
 
 void Instrument::SetName(const std::string& name) {
   this->name = name;
+}
+
+void Instrument::AddTrack(Track* track) {
+  tracks.push_back(track);
+}
+
+void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
+  delete tracks[index];
+  tracks[index] = newTrack;
+}
+
+void Instrument::RemoveTrack(uint32 index) {
+  if (soloTrack == index) {
+    soloTrack = -1;
+  }
+  delete tracks[index];
+  tracks.erase(tracks.begin() + index);
 }
 

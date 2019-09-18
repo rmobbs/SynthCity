@@ -19,7 +19,7 @@ static constexpr const char* kFretTag = "Fret";
 static constexpr uint32 kSongFileVersion = 1;
 static constexpr uint32 kDefaultNoteValue = 4;
 
-Song::Song(std::string name, uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
+Song::Song(std::string name, uint32 tempo, uint32 numLines, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
   : name(name)
   , tempo(tempo)
   , numMeasures(numMeasures)
@@ -34,6 +34,11 @@ Song::Song(const ReadSerializer& serializer, std::function<Instrument*(std::stri
   if (!result.first) {
     throw std::runtime_error("Failed to serialize (read): " + result.second);
   }
+}
+
+Song::~Song() {
+  delete instrument;
+  instrument = nullptr;
 }
 
 std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serializer) {
