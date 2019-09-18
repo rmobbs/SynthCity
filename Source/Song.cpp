@@ -17,12 +17,10 @@ static constexpr uint32 kDefaultNoteValue = 4;
 
 Song::Song(uint32 numLines, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
   : tempo(tempo)
+  , numMeasures(numMeasures)
   , beatsPerMeasure(beatsPerMeasure)
   , minNoteValue(minNoteValue) {
   barLines.resize(numLines);
-  for (auto& barLine : barLines) {
-    barLine.resize(numMeasures * beatsPerMeasure * minNoteValue);
-  }
 }
 
 Song::Song(const ReadSerializer& serializer) {
@@ -75,12 +73,14 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
   auto div = timeSignature.find('/');
   if (div != std::string::npos) {
-    beatsPerMeasure = std::stoi(timeSignature.substr(0, div));
+    int32 signedBeatsPerMeasure = std::stoi(timeSignature.substr(0, div));
+
+    if (beatsPerMeasure <= 0) {
+      return std::make_pair(false, "Beats per measure cannot be <= 0");
+    }
 
     // We currently assume a quarter-note base note value
     // https://trello.com/c/WY2eBMDh
-
-    // TODO: Validation of time signature
   }
   else {
     return std::make_pair(false, "Invalid time signature");
@@ -92,13 +92,18 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
   minNoteValue = d[kMinimumNoteDurationTag].GetUint();
 
+  if (minNoteValue == 0 || (minNoteValue & (minNoteValue - 1)) != 0) {
+    return std::make_pair(false, "Min note value must be non-zero power of two");
+  }
+
   // Read tracks (can have none)
+  numMeasures = 0;
   if (d.HasMember(kTracksTag) && d[kTracksTag].IsArray()) {
     const auto& tracksArray = d[kTracksTag];
 
     barLines.resize(tracksArray.Size());
 
-    uint32 maxNote = 0;
+    uint32 lastBeat = 0;
     for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
       const auto& trackEntry = tracksArray[trackArrayIndex];
 
@@ -126,25 +131,16 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
           fretIndex = noteEntry[kFretTag].GetInt();
         }
 
-        if (barLines[trackArrayIndex].size() <= beatIndex) {
-          barLines[trackArrayIndex].resize(beatIndex + 1);
+        barLines[trackArrayIndex].push_back(Note(beatIndex, fretIndex));
+
+        if (lastBeat < beatIndex) {
+          lastBeat = beatIndex;
         }
-
-        barLines[trackArrayIndex][beatIndex] = Note(true, fretIndex);
       }
 
-      if (maxNote < barLines[trackArrayIndex].size()) {
-        maxNote = barLines[trackArrayIndex].size();
-      }
-    }
-
-    // Make sure we have full measures and pad out all the lines
-    uint32 minNotesPerMeasure = minNoteValue * beatsPerMeasure;
-    if ((maxNote % minNotesPerMeasure) != 0) {
-      auto noteCount = ((maxNote / minNotesPerMeasure) + 1) * minNotesPerMeasure;
-      for (auto& barLine : barLines) {
-        barLine.resize(noteCount);
-      }
+      // Match measure count up with time signature
+      numMeasures = (lastBeat + (minNoteValue *
+        beatsPerMeasure) - 1) / (minNoteValue * beatsPerMeasure);
     }
   }
 
@@ -185,18 +181,15 @@ std::pair<bool, std::string> Song::SerializeWrite(const WriteSerializer& seriali
       w.Key(kNotesTag);
       w.StartArray();
 
-      for (size_t n = 0; n < line.size(); ++n) {
-        auto& note = line[n];
-        if (note.GetEnabled()) {
-          w.StartObject();
+      for (const auto& note : line) {
+        w.StartObject();
 
-          w.Key(kBeatTag);
-          w.Uint(n);
-          w.Key(kFretTag);
-          w.Int(note.GetGameIndex());
+        w.Key(kBeatTag);
+        w.Uint(note.GetBeatIndex());
+        w.Key(kFretTag);
+        w.Int(note.GetGameIndex());
 
-          w.EndObject();
-        }
+        w.EndObject();
       }
 
       w.EndArray();
@@ -211,27 +204,46 @@ std::pair<bool, std::string> Song::SerializeWrite(const WriteSerializer& seriali
 }
 
 void Song::AddMeasures(uint32 numMeasures) {
-  for (auto& line : barLines) {
-    line.resize(line.size() + numMeasures * minNoteValue * beatsPerMeasure);
-  }
+  this->numMeasures += numMeasures;
 }
 
 void Song::AddLine() {
-  barLines.push_back(std::vector<Note>(GetNoteCount()));
+  barLines.resize(barLines.size() + 1);
 }
 
 void Song::RemoveLine(uint32 lineIndex) {
   barLines.erase(barLines.begin() + lineIndex);
 }
 
-void Song::ToggleNoteEnabled(uint32 gameIndex, uint32 noteIndex) {
-  auto& note = barLines[gameIndex][noteIndex];
-  note.SetEnabled(!note.GetEnabled());
+Song::Note* Song::AddNote(uint32 lineIndex, uint32 beatIndex) {
+  auto& line = barLines[lineIndex];
+
+  auto lineIter = line.begin();
+  while (lineIter != line.end()) {
+    if (lineIter->GetBeatIndex() > beatIndex) {
+      return &(*line.insert(lineIter, Song::Note(beatIndex, -1)));
+      break;
+    }
+    ++lineIter;
+  }
+
+  if (lineIter == line.end()) {
+    return &(*line.insert(lineIter, Song::Note(beatIndex, -1)));
+  }
+
+  return nullptr;
 }
 
-void Song::SetNoteGameIndex(uint32 lineIndex, uint32 noteIndex, int32 gameIndex) {
-  auto& note = barLines[lineIndex][noteIndex];
-  note.SetGameIndex(gameIndex);
+void Song::RemoveNote(uint32 lineIndex, uint32 beatIndex) {
+  auto& line = barLines[lineIndex];
+
+  for (auto lineIter = line.begin(); lineIter != line.end(); ++lineIter) {
+    if (lineIter->GetBeatIndex() == beatIndex) {
+      line.erase(lineIter);
+      break;
+    }
+  }
 }
+
 
 

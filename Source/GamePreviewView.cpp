@@ -303,6 +303,7 @@ void GamePreviewView::OnBeat(uint32 beat) {
 }
 
 void GamePreviewView::Show() {
+#if 0
   auto& sequencer = Sequencer::Get();
 
   auto song = sequencer.GetSong();
@@ -332,18 +333,18 @@ void GamePreviewView::Show() {
 
   mode = Mode::Ready;
 
-  sequencer.PrepareGameplay(4);
   sequencer.SetGameplayMode(true);
   sequencer.SetIntroBeats(kReadyBeats + kCountdownBeats);
-  sequencer.SetLooping(false);
   sequencer.Play();
 
   perfectScore = fallingNotes.size() * 1.0f;
   currentScore = 0.0f;
   noteStreak = 0;
+#endif
 }
 
 void GamePreviewView::Hide() {
+#if 0
   auto& sequencer = Sequencer::Get();
 
   sequencer.SetGameplayMode(false);
@@ -355,6 +356,7 @@ void GamePreviewView::Hide() {
     beatCallbackId = UINT32_MAX;
   }
   sequencer.Stop();
+#endif
 }
 
 void GamePreviewView::HandleInput() {

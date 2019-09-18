@@ -21,6 +21,20 @@ public:
 
   }
 
+  // Called every frame (even when a song is not playing)
+  virtual void OnFrame(uint32 frameIndex) {
+
+  }
+
+  // Called for every beat of a playing song
+  virtual void OnBeat(uint32 beatIndex) {
+
+  }
+
+  virtual void OnSongUpdated() {
+
+  }
+
   virtual void Render(ImVec2 canvasSize) = 0;
 
 

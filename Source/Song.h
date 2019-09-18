@@ -5,6 +5,7 @@
 #include "Globals.h"
 #include <string>
 #include <vector>
+#include <list>
 
 class Song {
 public:
@@ -12,22 +13,22 @@ public:
 
   class Note {
   protected:
-    bool enabled = false;
+    int32 beatIndex = -1;
     int32 gameIndex = -1;
 
   public:
     Note() = default;
     
-    inline Note(bool enabled, int32 gameIndex)
-      : enabled(enabled)
+    inline Note(uint32 beatIndex, int32 gameIndex)
+      : beatIndex(beatIndex)
       , gameIndex(gameIndex) {
     }
 
-    inline void SetEnabled(bool enabled) {
-      this->enabled = enabled;
+    inline int32 GetBeatIndex() const {
+      return beatIndex;
     }
-    inline bool GetEnabled() const {
-      return enabled;
+    inline void SetBeatIndex(int32 beatIndex) {
+      this->beatIndex = beatIndex;
     }
 
     inline int32 GetGameIndex() const {
@@ -37,14 +38,21 @@ public:
       this->gameIndex = gameIndex;
     }
   };
+  
+  struct LineIterator {
+    std::list<Note>::iterator beg;
+    std::list<Note>::iterator cur;
+    std::list<Note>::iterator end;
+  };
 
 protected:
   uint32 tempo = Globals::kDefaultTempo;
+  uint32 numMeasures = 0;
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
   uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string instrumentName;
 
-  std::vector<std::vector<Note>> barLines;
+  std::vector<std::list<Note>> barLines;
 
 public:
   Song(uint32 numLines, uint32 numMeasures, uint32 tempo, uint32 beatsPerMeasure, uint32 minNoteValue);
@@ -57,20 +65,17 @@ public:
     return instrumentName;
   }
 
-  inline const std::vector<std::vector<Note>>& GetBarLines() const {
+  inline const std::vector<std::list<Note>>& GetBarLines() const {
     return barLines;
   }
 
   uint32 GetNoteCount() const {
-    if (barLines.size()) {
-      return barLines[0].size();
-    }
-    return 0;
+    return numMeasures * beatsPerMeasure * minNoteValue;
   }
   uint32 GetLineCount() const {
     return barLines.size();
   }
-  std::vector<Note>& GetLine(uint32 lineIndex) {
+  std::list<Note>& GetLine(uint32 lineIndex) {
     return barLines[lineIndex];
   }
   uint32 GetBeatsPerMeasure() const {
@@ -86,12 +91,20 @@ public:
     this->tempo = tempo;
   }
   uint32 GetNumMeasures() const {
-    return GetNoteCount() / (minNoteValue * beatsPerMeasure);
+    return numMeasures;
+  }
+
+  std::vector<LineIterator> GetIterator() {
+    std::vector<LineIterator> iters;
+    for (auto& line : barLines) {
+      iters.push_back({ line.begin(), line.begin(), line.end() });
+    }
+    return iters;
   }
 
   void AddMeasures(uint32 numMeasures);
   void AddLine();
   void RemoveLine(uint32 lineIndex);
-  void ToggleNoteEnabled(uint32 lineIndex, uint32 noteIndex);
-  void SetNoteGameIndex(uint32 lineIndex, uint32 noteIndex, int32 gameIndex);
+  Note* AddNote(uint32 lineIndex, uint32 beatIndex);
+  void RemoveNote(uint32 lineIndex, uint32 beatIndex);
 };

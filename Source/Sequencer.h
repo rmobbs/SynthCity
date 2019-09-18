@@ -38,13 +38,6 @@ public:
     std::vector<uint32> trackIndices; // Tracks to flatten into single song
   };
 
-  // Called when a song note is played
-  typedef void(*NoteCallback)(uint32 trackIndex, uint32 noteIndex, void* payload);
-
-  // Called for every beat of a playing song (including intro). Note that, for
-  // ease of use, the beat is 1-based
-  typedef void(*BeatCallback)(uint32 beat, bool isDownBeat, void* payload);
-
 private:
   static Sequencer* singleton;
 
@@ -52,8 +45,6 @@ private:
 
   uint32 loopIndex = 0;
   uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
-  std::vector<std::pair<BeatCallback, void*>> beatCallbacks;
-  std::vector<std::pair<NoteCallback, void*>> noteCallbacks;
   void* notePlayedPayload = nullptr;
   uint32 currFrame = 0;
   uint32 nextFrame = 0;
@@ -75,14 +66,11 @@ private:
 
   std::atomic<bool> isGameplayMode = false;
   std::atomic<bool> isPlaying = false;
-  std::atomic<bool> isMetrononeOn = false;
-  std::atomic<bool> isLooping = true;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
   std::atomic<uint32> frameCounter = 0;
   std::atomic<uint32> numActiveVoices = 0;
   std::atomic<float> beatTime = 0.0f;
 
-  void OnBeat(uint32 beat, bool isDownBeat);
   uint32 UpdateInterval();
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
@@ -92,10 +80,6 @@ private:
   void StopAllVoices();
 
 public:
-  inline bool IsMetronomeOn() const {
-    return isMetrononeOn;
-  }
-
   inline Instrument* GetInstrument() {
     return instrument;
   }
@@ -114,10 +98,6 @@ public:
     return introBeatCount;
   }
 
-  inline void EnableMetronome(bool enabled) {
-    isMetrononeOn = enabled;
-  }
-
   inline uint32 GetSubdivision() const {
     return currBeatSubdivision;
   }
@@ -132,15 +112,8 @@ public:
     return kMaxTempo;
   }
 
-  uint32 GetTempo() const;
-  void SetTempo(uint32 bpm);
-
   inline bool IsPlaying() const {
     return isPlaying;
-  }
-
-  inline bool IsLooping() const {
-    return isLooping;
   }
 
   inline uint32 GetNumActiveVoices() const {
@@ -158,8 +131,6 @@ public:
     return frameCounter;
   }
 
-  void PrepareGameplay(uint32 lineCount);
-
   inline void SetGameplayMode(bool gameplayMode) {
     isGameplayMode = gameplayMode;
   }
@@ -169,8 +140,6 @@ public:
   }
 
   uint32 GetFrequency() const;
-
-  void SetLooping(bool looping);
 
   void Play();
   void Pause();
@@ -202,10 +171,6 @@ public:
   bool Init();
 
   void SetPosition(uint32 newPosition);
-  uint32 AddBeatCallback(BeatCallback rootBeatCallback, void* beatPlayedPayload);
-  void RemoveBeatCallback(uint32 callbackId);
-  uint32 AddNoteCallback(NoteCallback notePlayedCallback, void* notePlayedPayload);
-  void RemoveNoteCallback(uint32 callbackId);
   bool NewInstrument();
 
    Sequencer();

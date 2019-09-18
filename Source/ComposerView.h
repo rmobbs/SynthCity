@@ -5,9 +5,11 @@
 #include <functional>
 
 #include "View.h"
+#include "Song.h"
 #include "GL/glew.h"
 #include "glm/vec4.hpp"
 #include <set>
+#include <atomic>
 
 class Dialog;
 class ComposerView : public View {
@@ -41,9 +43,9 @@ protected:
   bool pendingLoadSong = false;
   bool pendingSaveSong = false;
 
-  uint32 noteCallbackId = UINT32_MAX;
   std::vector<std::set<uint32>> noteClipboard;
   std::vector<std::set<uint32>> noteSelectedStatus;
+  std::vector<Song::LineIterator> songIterator;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   std::pair<int32, int32> toggledNote = { -1, -1 };
   std::pair<int32, int32> hoveredNote = { -1, -1 };
@@ -62,6 +64,9 @@ protected:
 
   std::map<int, double> playingTrackFlashTimes[2];
 
+  std::atomic<bool> isMetronomeOn = false;
+  std::atomic<bool> isLooping = false;
+
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);
   void HandleInput();
@@ -78,4 +83,7 @@ public:
 
   void Show() override;
   void Hide() override;
+
+  void OnSongUpdated() override;
+  void OnBeat(uint32 beatIndex) override;
 };

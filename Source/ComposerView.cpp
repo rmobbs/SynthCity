@@ -248,11 +248,13 @@ void ComposerView::HandleInput() {
 
   if (inputState.pressed[SDLK_DELETE]) {
     SelectedGroupAction([](int32 lineIndex, int32 noteIndex) {
-      auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
-      note.SetEnabled(false);
+      Sequencer::Get().GetSong()->RemoveNote(lineIndex, noteIndex);
     });
 
     ClearSelectedNotes();
+    
+    // Sadly, might have deleted current head
+    OnSongUpdated();
   }
 
   if (inputState.pressed[SDLK_ESCAPE]) {
@@ -333,9 +335,14 @@ void ComposerView::HandleInput() {
   }
 
   if (newGameIndex != -2) {
-    SelectedGroupAction([newGameIndex](int32 lineIndex, int32 noteIndex) {
-      auto& note = Sequencer::Get().GetSong()->GetLine(lineIndex)[noteIndex];
-      note.SetGameIndex(newGameIndex);
+    SelectedGroupAction([newGameIndex](int32 lineIndex, int32 beatIndex) {
+      auto& line = Sequencer::Get().GetSong()->GetLine(lineIndex);
+      for (auto noteIter = line.begin(); noteIter != line.end(); ++noteIter) {
+        if (noteIter->GetBeatIndex() == beatIndex) {
+          noteIter->SetGameIndex(newGameIndex);
+          break;
+        }
+      }
     });
   }
 
@@ -351,11 +358,6 @@ void ComposerView::ProcessPendingActions() {
   // Subdivision changed
   if (pendingSubdivision != -1) {
     sequencer.SetSubdivision(pendingSubdivision);
-  }
-
-  // Beats per minute changed
-  if (pendingTempo != -1) {
-    sequencer.SetTempo(pendingTempo);
   }
 
   auto instrument = sequencer.GetInstrument();
@@ -386,12 +388,6 @@ void ComposerView::ProcessPendingActions() {
       instrument->SetSoloTrack(pendingSoloTrack);
     }
 
-    // Toggle a note on/off
-    if (toggledNote.second != -1) {
-      auto& note = Sequencer::Get().GetSong()->GetLine(toggledNote.first)[toggledNote.second];
-      note.SetEnabled(!note.GetEnabled());
-    }
-
     // Track cloned via dialog previous frame
     if (pendingCloneTrack != -1) {
       auto oldTrack = instrument->GetTrack(pendingCloneTrack);
@@ -414,8 +410,18 @@ void ComposerView::ProcessPendingActions() {
 
   auto song = Sequencer::Get().GetSong();
   if (song != nullptr) {
+    // Toggle a note on
+    if (toggledNote.second != -1) {
+      song->AddNote(toggledNote.first, toggledNote.second);
+    }
+
     if (pendingAddMeasures != -1) {
       song->AddMeasures(pendingAddMeasures);
+    }
+
+    // Beats per minute changed
+    if (pendingTempo != -1) {
+      song->SetTempo(pendingTempo);
     }
   }
 
@@ -457,19 +463,116 @@ void ComposerView::ProcessPendingActions() {
   pendingCloneTrack = -1;
   pendingSoloTrack = -2;
   pendingAddMeasures = -1;
-  toggledNote = { -1, -1 };
   pendingNewInstrument = false;
   pendingLoadInstrument = false;
   pendingSaveInstrument = false;
   pendingNewSong = false;
   pendingLoadSong = false;
   pendingSaveSong = false;
+  toggledNote = { -1, -1 };
 }
 
 void ComposerView::ClearSelectedNotes() {
   for (auto& nss : noteSelectedStatus) {
     nss.clear();
   }
+}
+
+void ComposerView::OnSongUpdated() {
+  songIterator.clear();
+
+  auto song = Sequencer::Get().GetSong();
+  if (song != nullptr) {
+    songIterator = song->GetIterator();
+  }
+}
+
+void ComposerView::OnBeat(uint32 beatIndex) {
+  auto& sequencer = Sequencer::Get();
+  auto song = sequencer.GetSong();
+
+  if (isMetronomeOn) {
+    sequencer.PlayMetronome((beatIndex %
+      (song->GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
+  }
+
+  if (beatIndex >= song->GetNoteCount()) {
+    sequencer.Stop();
+
+    if (isLooping) {
+      sequencer.Play();
+    }
+  }
+
+  if (sequencer.IsPlaying()) {
+
+  }
+
+}
+
+void ComposerView::InitResources() {
+  // Backup GL state
+  GLint lastTexture;
+  glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
+
+  // Load UI textures
+  int width, height;
+  uint8* iconData = nullptr;
+  glGenTextures(1, &pauseButtonIconTexture);
+  glBindTexture(GL_TEXTURE_2D, pauseButtonIconTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  iconData = SOIL_load_image("Assets\\pause_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
+  SOIL_free_image_data(iconData);
+
+  // Set font texture ID
+  glGenTextures(1, &stopButtonIconTexture);
+  glBindTexture(GL_TEXTURE_2D, stopButtonIconTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  iconData = SOIL_load_image("Assets\\stop_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
+  SOIL_free_image_data(iconData);
+
+  // Restore original state
+  glBindTexture(GL_TEXTURE_2D, lastTexture);
+}
+
+ComposerView::ComposerView(uint32 mainWindowHandle)
+  : mainWindowHandle(mainWindowHandle) {
+
+  logResponderId = Logging::AddResponder([=](const std::string_view& logLine) {
+    outputWindowState.AddLog(logLine);
+    });
+
+  InitResources();
+}
+
+void ComposerView::Show() {
+  // Songs refer to instruments; if you load a song and it does not match the current
+  // instrument it needs a way to 'talk back' to us and ask us to load the correct
+  // instrument.
+  auto _mainWindowHandle = mainWindowHandle;
+  Sequencer::Get().SetLoadInstrumentCallback(
+    [_mainWindowHandle](std::string instrumentName) {
+      return LoadInstrument(reinterpret_cast<HWND>(_mainWindowHandle), instrumentName);
+    });
+}
+
+void ComposerView::Hide() {
+
+}
+
+ComposerView::~ComposerView() {
+  if (logResponderId != UINT32_MAX) {
+    Logging::PopResponder(logResponderId);
+    logResponderId = UINT32_MAX;
+  }
+  delete activeDialog;
+  activeDialog = nullptr;
+  delete pendingDialog;
+  pendingDialog = nullptr;
 }
 
 void ComposerView::Render(ImVec2 canvasSize) {
@@ -799,15 +902,17 @@ void ComposerView::Render(ImVec2 canvasSize) {
             imGuiStyle.ItemSpacing.x = 0.0f;
             imGuiStyle.ItemSpacing.y = 0.0f;
 
+            auto localSongIterator = song->GetIterator();
+
             auto beatWidth = kFullBeatWidth / sequencer.GetSubdivision();
             for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
-              auto& line = song->GetLine(lineIndex);
+              auto& lineIter = localSongIterator[lineIndex];
 
               ImGui::NewLine();
 
               // Notes (displayed at current beat zoom level)
               uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
-              for (size_t beatIndex = 0; beatIndex < line.size(); beatIndex += beatStep) {
+              for (size_t beatIndex = 0; beatIndex < song->GetNoteCount(); beatIndex += beatStep) {
                 ImGui::SameLine();
 
                 // Bump the first square by 1 to the right so we can draw a 2-pixel beat line
@@ -817,14 +922,17 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                 auto uniqueLabel("sl#" + std::to_string(lineIndex) + ":" + std::to_string(beatIndex));
 
-                auto& note = line[beatIndex];
+                Song::Note* note = nullptr;
+                if (lineIter.cur != lineIter.end && lineIter.cur->GetBeatIndex() == beatIndex) {
+                  note = &(*lineIter.cur++);
+                }
 
                 // Draw empty or filled square radio button depending on whether or not it's enabled
                 auto buttonBegPos = ImGui::GetCursorPos();
                 auto buttonExtent = ImVec2(beatWidth, kKeyboardKeyHeight);
-                if (ImGui::SquareRadioButton(uniqueLabel.c_str(), note.GetEnabled(), buttonExtent.x, buttonExtent.y)) {
+                if (ImGui::SquareRadioButton(uniqueLabel.c_str(), note != nullptr, buttonExtent.x, buttonExtent.y)) {
                   // Clicking a disabled note enables it; clicking an enabled note selects it
-                  if (note.GetEnabled()) {
+                  if (note != nullptr) {
                     if (!(InputState::Get().modState & KMOD_SHIFT)) {
                       ClearSelectedNotes();
                     }
@@ -839,13 +947,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   hoveredNote = { lineIndex, beatIndex };
                 }
 
-                if (note.GetEnabled()) {
+                if (note != nullptr) {
                   // Draw filled note: TODO: Remove this, should draw it once above
                   // https://trello.com/c/Ll8dgleN
                   {
                     ImVec4 noteColor = kDefaultNoteColor;
-                    if (note.GetGameIndex() >= 0 && note.GetGameIndex() < _countof(kFretColors)) {
-                      noteColor = kFretColors[note.GetGameIndex()];
+                    if (note->GetGameIndex() >= 0 && note->GetGameIndex() < _countof(kFretColors)) {
+                      noteColor = kFretColors[note->GetGameIndex()];
                     }
                     ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
                     ImGui::FillRect(ImVec2(buttonExtent.x - 2.0f,
@@ -1038,20 +1146,20 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // Loop
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        bool isLooping = sequencer.IsLooping();
-        if (ImGui::Checkbox("Loop", &isLooping)) {
+        bool localIsLooping = isLooping;
+        if (ImGui::Checkbox("Loop", &localIsLooping)) {
           // @Atomic
-          sequencer.SetLooping(isLooping);
+          isLooping = localIsLooping;
         }
         ImGui::PopItemWidth();
 
         // Metronome
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        bool isMetronomeOn = sequencer.IsMetronomeOn();
-        if (ImGui::Checkbox("Metronome", &isMetronomeOn)) {
+        bool localIsMetronomeOn = isMetronomeOn;
+        if (ImGui::Checkbox("Metronome", &localIsMetronomeOn)) {
           // @Atomic
-          sequencer.EnableMetronome(isMetronomeOn);
+          isMetronomeOn = localIsMetronomeOn;
         }
         ImGui::PopItemWidth();
 
@@ -1142,81 +1250,4 @@ void ComposerView::Render(ImVec2 canvasSize) {
   ImGui::End();
 
   renderable.Render();
-}
-
-void ComposerView::NotePlayedCallback(uint32 trackIndex, uint32 noteIndex) {
-  playingTrackFlashTimes[1].insert({ trackIndex, Globals::currentTime });
-}
-
-void ComposerView::InitResources() {
-  // Backup GL state
-  GLint lastTexture;
-  glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
-
-  // Load UI textures
-  int width, height;
-  uint8* iconData = nullptr;
-  glGenTextures(1, &pauseButtonIconTexture);
-  glBindTexture(GL_TEXTURE_2D, pauseButtonIconTexture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  iconData = SOIL_load_image("Assets\\pause_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
-  SOIL_free_image_data(iconData);
-
-  // Set font texture ID
-  glGenTextures(1, &stopButtonIconTexture);
-  glBindTexture(GL_TEXTURE_2D, stopButtonIconTexture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  iconData = SOIL_load_image("Assets\\stop_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
-  SOIL_free_image_data(iconData);
-
-  // Restore original state
-  glBindTexture(GL_TEXTURE_2D, lastTexture);
-}
-
-ComposerView::ComposerView(uint32 mainWindowHandle)
-: mainWindowHandle(mainWindowHandle) {
-
-  logResponderId = Logging::AddResponder([=](const std::string_view& logLine) {
-    outputWindowState.AddLog(logLine);
-  });
-
-  InitResources();
-}
-
-void ComposerView::Show() {
-  // Songs refer to instruments; if you load a song and it does not match the current
-  // instrument it needs a way to 'talk back' to us and ask us to load the correct
-  // instrument.
-  auto _mainWindowHandle = mainWindowHandle;
-  Sequencer::Get().SetLoadInstrumentCallback(
-    [_mainWindowHandle](std::string instrumentName) {
-      return LoadInstrument(reinterpret_cast<HWND>(_mainWindowHandle), instrumentName);
-    });
-
-  noteCallbackId = Sequencer::Get().AddNoteCallback(
-    [](uint32 trackIndex, uint32 noteIndex, void* payload) {
-      reinterpret_cast<ComposerView*>(payload)->NotePlayedCallback(trackIndex, noteIndex);
-    }, this);
-}
-
-void ComposerView::Hide() {
-  if (noteCallbackId != UINT32_MAX) {
-    Sequencer::Get().RemoveNoteCallback(noteCallbackId);
-    noteCallbackId = UINT32_MAX;
-  }
-}
-
-ComposerView::~ComposerView() {
-  if (logResponderId != UINT32_MAX) {
-    Logging::PopResponder(logResponderId);
-    logResponderId = UINT32_MAX;
-  }
-  delete activeDialog;
-  activeDialog = nullptr;
-  delete pendingDialog;
-  pendingDialog = nullptr;
 }
