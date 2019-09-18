@@ -74,6 +74,14 @@ protected:
   void ProcessPendingActions();
   void ClearSelectedNotes();
   void SelectedGroupAction(std::function<void(int32, int32)> action);
+  void NewInstrument();
+  Instrument* LoadInstrument(std::string requiredInstrument);
+  void SaveInstrument();
+  void NewSong();
+  void LoadSong();
+  void SaveSong();
+  std::string GetNewInstrumentName(std::string instrumentNameBase);
+  std::string GetNewTrackName(std::string trackNameBase);
 
 public:
   ComposerView(uint32 mainWindowHandle);

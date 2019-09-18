@@ -14,7 +14,6 @@
 #include <atomic>
 #include <queue>
 
-class Instrument;
 class Patch;
 class Song;
 class Voice;
@@ -22,7 +21,6 @@ class InputState;
 
 class Sequencer {
 public:
-  static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kDfeaultBeatSubdivision = 4;
   static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kMaxTempo = 220;
@@ -51,10 +49,8 @@ private:
   uint32 currBeat = 0;
   uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
-  Instrument* instrument = nullptr;
   Song* song = nullptr;
   std::vector<Patch*> reservedPatches;
-  std::function<bool(std::string)> loadInstrumentCallback;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
@@ -80,10 +76,6 @@ private:
   void StopAllVoices();
 
 public:
-  inline Instrument* GetInstrument() {
-    return instrument;
-  }
-
   inline Song* GetSong() const {
     return song;
   }
@@ -146,20 +138,10 @@ public:
   void PauseKill();
   void Stop();
   void ResetFrameCounter();
-  bool LoadInstrument(std::string fileName, std::string mustMatch);
   void StopVoice(int32 voiceId);
   int32 PlayPatch(const Patch* patch, float volume);
 
-  void NewSong();
-  bool SaveSong(std::string fileName);
-  void LoadSongJson(std::string fileName);
-  void LoadSongMidi(std::string fileName);
-  void LoadSong(std::string fileName);
   void PlayMetronome(bool downBeat);
-
-  inline void SetLoadInstrumentCallback(std::function<bool(std::string)> loadInstrumentCallback) {
-    this->loadInstrumentCallback = loadInstrumentCallback;
-  }
 
   inline void SetMidiConversionParamsCallback(std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback) {
     this->midiConversionParamsCallback = midiConversionParamsCallback;
@@ -171,7 +153,7 @@ public:
   bool Init();
 
   void SetPosition(uint32 newPosition);
-  bool NewInstrument();
+  void SetSong(Song* newSong);
 
    Sequencer();
   ~Sequencer();

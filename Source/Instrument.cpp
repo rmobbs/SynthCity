@@ -6,6 +6,7 @@
 #include "WavSound.h"
 #include "Globals.h"
 #include "AudioGlobals.h"
+#include "OddsAndEnds.h"
 
 #include <stdexcept>
 #include <fstream>
@@ -140,6 +141,8 @@ Track* Instrument::GetTrack(uint32 trackIndex) {
 }
 
 bool Instrument::SaveInstrument(std::string fileName) {
+  ensure_fileext(fileName, Globals::kJsonTag);
+
   std::ofstream ofs(fileName);
   if (ofs.bad()) {
     MCLOG(Warn, "Unable to save instrument to file %s ", fileName.c_str());

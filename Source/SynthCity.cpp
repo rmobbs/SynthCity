@@ -190,6 +190,7 @@ void MainLoop() {
 }
 
 bool InitImGui() {
+
   ImGui::CreateContext();
 
   auto& imGuiIo = ImGui::GetIO();

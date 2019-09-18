@@ -26,6 +26,7 @@
 #include "GamePreviewView.h"
 #include "Song.h"
 #include "OddsAndEnds.h"
+#include "SerializeImpl.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -34,6 +35,7 @@
 #include <commdlg.h>
 #include <atlbase.h>
 #include <commctrl.h>
+#include <fstream>
 
 static constexpr float kFullBeatWidth = 80.0f;
 static constexpr float kKeyboardKeyHeight = 20.0f;
@@ -42,7 +44,7 @@ static constexpr float kPlayTrackFlashDuration = 0.5f;
 static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
 static constexpr float kSequencerWindowToolbarHeight = 74.0f;
 static constexpr float kHamburgerMenuWidth(20.0f);
-static constexpr std::string_view kJsonTag(".json");
+static constexpr const char* kDefaultNewInstrumentName("NewInstrument");
 static constexpr const char* kDefaultNewTrackName("NewTrack");
 static constexpr const char* kTrackNameFormat("XXXXXXXXXXXXXXXX");
 static constexpr const char* kModeStrings[] = {
@@ -92,34 +94,76 @@ void ComposerView::OutputWindowState::AddLog(const std::string_view& logString) 
   }
 }
 
-bool LoadInstrument(HWND mainWindowHandle, std::string instrumentName = {}) {
+std::string ComposerView:: GetNewInstrumentName(std::string instrumentNameBase) {
+  // TODO: When we allow multiple instruments, this will need to loop through them!
+  return instrumentNameBase;
+}
+
+void ComposerView::NewInstrument() {
+  Sequencer::Get().GetSong()->SetInstrument(new
+    Instrument(GetNewInstrumentName(kDefaultNewInstrumentName)));
+}
+
+Instrument* ComposerView::LoadInstrument(std::string requiredInstrument) {
   WCHAR szFile[FILENAME_MAX] = { 0 };
   OPENFILENAME ofn = { 0 };
 
   USES_CONVERSION;
   ofn.lStructSize = sizeof(ofn);
 
-  std::string windowTitle("Open instrument");
-  if (instrumentName.length() != 0) {
-    windowTitle += " \'" + instrumentName + "\'";
+  std::string windowTitle("Load Instrument");
+  if (!requiredInstrument.empty()) {
+    windowTitle += " " + requiredInstrument;
   }
   ofn.lpstrTitle = A2W(windowTitle.c_str());
-  ofn.hwndOwner = mainWindowHandle;
+  ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
   ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
   ofn.nFilterIndex = 0;
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-  if (GetOpenFileName(&ofn)) {
-    if (Sequencer::Get().LoadInstrument(std::string(W2A(szFile)), instrumentName)) {
-      return true;
+  Instrument* instrument = nullptr;
+
+  while (instrument == nullptr) {
+    if (GetOpenFileName(&ofn)) {
+      instrument = Instrument::LoadInstrument(std::string(W2A(szFile)));
+      if (instrument) {
+        if (!requiredInstrument.empty() && instrument->GetName() != requiredInstrument) {
+          delete instrument;
+          instrument = nullptr;
+
+          // Hit cancel on error message
+          if (IDCANCEL == MessageBox(reinterpret_cast<HWND>(mainWindowHandle),
+            _TEXT("Song requires a different instrument"),
+            _TEXT("Error"), MB_OKCANCEL)) {
+            break;
+          }
+          // Try again
+        }
+        // Correct instrument successfully loaded
+      }
+      // Instrument failed to load
+      else {
+        // Hit cancel on error message
+        if (IDCANCEL == MessageBox(reinterpret_cast<HWND>(mainWindowHandle),
+          _TEXT("Selected instrument failed to load"),
+          _TEXT("Error"), MB_OKCANCEL)) {
+          break;
+        }
+        // Try again
+      }
+    }
+    // Hit cancel on load file dialog
+    else {
+      break;
     }
   }
-  return false;
+
+  return instrument;
 }
 
-bool SaveInstrument() {
+void ComposerView::SaveInstrument() {
   WCHAR szFile[FILENAME_MAX] = { 0 };
   OPENFILENAME ofn = { 0 };
 
@@ -132,17 +176,21 @@ bool SaveInstrument() {
   ofn.Flags = OFN_OVERWRITEPROMPT;
 
   if (GetSaveFileName(&ofn)) {
-    std::string fileName(W2A(szFile));
-
-    if (fileName.compare(fileName.length() - kJsonTag.length(), kJsonTag.length(), kJsonTag)) {
-      fileName += kJsonTag;
-    }
-    Sequencer::Get().GetInstrument()->SaveInstrument(fileName);
+    Sequencer::Get().GetSong()->GetInstrument()->SaveInstrument(W2A(szFile));
   }
-  return false;
 }
 
-bool LoadSong() {
+void ComposerView::NewSong() {
+  auto song = new Song(Song::kDefaultSongName, 0, 0,
+    Globals::kDefaultTempo, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
+
+  // For now we need to create an instrument
+  song->SetInstrument(new Instrument(GetNewInstrumentName(kDefaultNewInstrumentName)));
+
+  Sequencer::Get().SetSong(song);
+}
+
+void ComposerView::LoadSong() {
   WCHAR szFile[FILENAME_MAX] = { 0 };
   OPENFILENAME ofn = { 0 };
 
@@ -157,43 +205,39 @@ bool LoadSong() {
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   if (GetOpenFileName(&ofn)) {
-    Sequencer::Get().LoadSong(std::string(W2A(szFile)));
-  }
-  return true;
-}
+    auto song = Song::LoadSong(W2A(szFile), [=](std::string requiredInstrumentName) {
+      return LoadInstrument(requiredInstrumentName);
+    });
 
-bool SaveSong() {
-  if (Sequencer::Get().GetInstrument() != nullptr) {
-    WCHAR szFile[FILENAME_MAX] = { 0 };
-    OPENFILENAME ofn = { 0 };
-
-    USES_CONVERSION;
-    ofn.lStructSize = sizeof(ofn);
-    ofn.lpstrFile = szFile;
-    ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-    ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
-    ofn.nFilterIndex = 0;
-    ofn.Flags = OFN_OVERWRITEPROMPT;
-
-    if (GetSaveFileName(&ofn)) {
-      std::string fileName(W2A(szFile));
-
-      if (fileName.compare(fileName.length() - kJsonTag.length(), kJsonTag.length(), kJsonTag)) {
-        fileName += kJsonTag;
-      }
-      Sequencer::Get().SaveSong(fileName);
+    if (song != nullptr) {
+      Sequencer::Get().SetSong(song);
     }
   }
-
-  return true;
 }
 
-std::string GetNewTrackName(const std::string& trackNameBase) {
+void ComposerView::SaveSong() {
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
+
+  USES_CONVERSION;
+  ofn.lStructSize = sizeof(ofn);
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_OVERWRITEPROMPT;
+
+  if (GetSaveFileName(&ofn)) {      
+    Sequencer::Get().GetSong()->Save(W2A(szFile));
+  }
+}
+
+std::string ComposerView::GetNewTrackName(std::string trackNameBase) {
   // Pick an available name
   std::string trackName = trackNameBase;
   // Just feels weird and shameful to not have an upper bounds ...
   for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
-    auto& tracks = Sequencer::Get().GetInstrument()->GetTracks();
+    auto& tracks = Sequencer::Get().GetSong()->GetInstrument()->GetTracks();
 
     uint32 index;
     for (index = 0; index < tracks.size(); ++index) {
@@ -360,56 +404,56 @@ void ComposerView::ProcessPendingActions() {
     sequencer.SetSubdivision(pendingSubdivision);
   }
 
-  auto instrument = sequencer.GetInstrument();
-  if (instrument != nullptr) {
-    // Track volume changed
-    if (pendingTrackVolume.first != -1) {
-      auto track = instrument->GetTrack(pendingTrackVolume.first);
-      if (track != nullptr) {
-        track->SetVolume(pendingTrackVolume.second);
-      }
-    }
-
-    // Track mute state changed
-    if (pendingTrackMute.first != -1) {
-      auto track = instrument->GetTrack(pendingTrackMute.first);
-      if (track != nullptr) {
-        track->SetMute(pendingTrackMute.second);
-      }
-    }
-
-    // Track spawns voice
-    if (pendingPlayTrack != -1) {
-      instrument->PlayTrack(pendingPlayTrack);
-    }
-
-    // Mute all voices except the solo track
-    if (pendingSoloTrack != -2) {
-      instrument->SetSoloTrack(pendingSoloTrack);
-    }
-
-    // Track cloned via dialog previous frame
-    if (pendingCloneTrack != -1) {
-      auto oldTrack = instrument->GetTrack(pendingCloneTrack);
-      if (oldTrack != nullptr) {
-        auto newTrack = new Track(*oldTrack);
-        newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
-        instrument->AddTrack(newTrack);
-        Sequencer::Get().GetSong()->AddLine();
-      }
-    }
-
-    // Track removed via dialog previous frame
-    // NOTE: This is the last delayed track operation just in case
-    if (pendingRemoveTrack != -1) {
-      noteSelectedStatus.erase(noteSelectedStatus.begin() + pendingRemoveTrack);
-      instrument->RemoveTrack(pendingRemoveTrack);
-      Sequencer::Get().GetSong()->RemoveLine(pendingRemoveTrack);
-    }
-  }
-
-  auto song = Sequencer::Get().GetSong();
+  auto song = sequencer.GetSong();
   if (song != nullptr) {
+    auto instrument = song->GetInstrument();
+    if (instrument != nullptr) {
+      // Track volume changed
+      if (pendingTrackVolume.first != -1) {
+        auto track = instrument->GetTrack(pendingTrackVolume.first);
+        if (track != nullptr) {
+          track->SetVolume(pendingTrackVolume.second);
+        }
+      }
+
+      // Track mute state changed
+      if (pendingTrackMute.first != -1) {
+        auto track = instrument->GetTrack(pendingTrackMute.first);
+        if (track != nullptr) {
+          track->SetMute(pendingTrackMute.second);
+        }
+      }
+
+      // Track spawns voice
+      if (pendingPlayTrack != -1) {
+        instrument->PlayTrack(pendingPlayTrack);
+      }
+
+      // Mute all voices except the solo track
+      if (pendingSoloTrack != -2) {
+        instrument->SetSoloTrack(pendingSoloTrack);
+      }
+
+      // Track cloned via dialog previous frame
+      if (pendingCloneTrack != -1) {
+        auto oldTrack = instrument->GetTrack(pendingCloneTrack);
+        if (oldTrack != nullptr) {
+          auto newTrack = new Track(*oldTrack);
+          newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
+          instrument->AddTrack(newTrack);
+          Sequencer::Get().GetSong()->AddLine();
+        }
+      }
+
+      // Track removed via dialog previous frame
+      // NOTE: This is the last delayed track operation just in case
+      if (pendingRemoveTrack != -1) {
+        noteSelectedStatus.erase(noteSelectedStatus.begin() + pendingRemoveTrack);
+        instrument->RemoveTrack(pendingRemoveTrack);
+        Sequencer::Get().GetSong()->RemoveLine(pendingRemoveTrack);
+      }
+    }
+
     // Toggle a note on
     if (toggledNote.second != -1) {
       song->AddNote(toggledNote.first, toggledNote.second);
@@ -427,12 +471,12 @@ void ComposerView::ProcessPendingActions() {
 
   if (pendingNewInstrument) {
     ClearSelectedNotes();
-    sequencer.NewInstrument();
+    NewInstrument();
   }
 
   if (pendingLoadInstrument) {
     ClearSelectedNotes();
-    LoadInstrument(reinterpret_cast<HWND>(mainWindowHandle));
+    LoadInstrument({});
   }
 
   if (pendingSaveInstrument) {
@@ -441,7 +485,7 @@ void ComposerView::ProcessPendingActions() {
 
   if (pendingNewSong) {
     ClearSelectedNotes();
-    sequencer.NewSong();
+    NewSong();
   }
 
   if (pendingLoadSong) {
@@ -550,14 +594,7 @@ ComposerView::ComposerView(uint32 mainWindowHandle)
 }
 
 void ComposerView::Show() {
-  // Songs refer to instruments; if you load a song and it does not match the current
-  // instrument it needs a way to 'talk back' to us and ask us to load the correct
-  // instrument.
-  auto _mainWindowHandle = mainWindowHandle;
-  Sequencer::Get().SetLoadInstrumentCallback(
-    [_mainWindowHandle](std::string instrumentName) {
-      return LoadInstrument(reinterpret_cast<HWND>(_mainWindowHandle), instrumentName);
-    });
+
 }
 
 void ComposerView::Hide() {
@@ -598,76 +635,95 @@ void ComposerView::Render(ImVec2 canvasSize) {
     mainMenuBarHeight = ImGui::GetWindowSize().y;
 
     if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("New Instrument")) {
-        pendingNewInstrument = true;
-      }
-      if (ImGui::MenuItem("Load Instrument")) {
-        pendingLoadInstrument = true;
-      }
-      if (ImGui::MenuItem("Save Instrument")) {
-        pendingSaveInstrument = true;
-      }
       if (ImGui::MenuItem("Exit")) {
         SDL_PushEvent(&SDL_Event({ SDL_QUIT }));
       }
       ImGui::EndMenu();
     }
-    if (sequencer.GetInstrument() != nullptr) {
-      if (ImGui::BeginMenu("Instrument")) {
-        if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack("Add Track", -1, new Track(GetNewTrackName(kDefaultNewTrackName)), stopButtonIconTexture);
+
+    auto song = sequencer.GetSong();
+
+    if (ImGui::BeginMenu("Song")) {
+      if (ImGui::MenuItem("New Song")) {
+        pendingNewSong = true;
+      }
+      if (ImGui::MenuItem("Load Song")) {
+        pendingLoadSong = true;
+      }
+
+      bool localDisable = song == nullptr;
+      if (localDisable) {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+      }
+
+      if (ImGui::MenuItem("Save Song")) {
+        pendingSaveSong = true;
+      }
+
+      if (ImGui::BeginMenu("Options")) {
+
+        ImGui::PushItemWidth(75);
+
+        int currentBpm = song->GetTempo();
+        if (ImGui::InputInt("BPM", &currentBpm)) {
+          // @Delay
+          pendingTempo = currentBpm;
         }
+
+        imGuiStyle.ItemSpacing.x = 4;
+
+        int measuresToAdd = addMeasureCount;
+        if (ImGui::InputInt("", &measuresToAdd)) {
+          addMeasureCount = std::min(std::max(kMinMeasuresToAdd,
+            static_cast<uint32>(measuresToAdd)), kMaxMeasuresToAdd);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::MenuItem("Add measure(s)")) {
+          // @Delay
+          pendingAddMeasures = addMeasureCount;
+        }
+
+        imGuiStyle.ItemSpacing.x = defaultItemSpacing.x;
+
+        ImGui::PopItemWidth();
         ImGui::EndMenu();
       }
-      if (ImGui::BeginMenu("Song")) {
-        if (ImGui::MenuItem("New Song")) {
-          pendingNewSong = true;
+
+      if (localDisable) {
+        ImGui::PopStyleVar();
+        ImGui::PopItemFlag();
+      }
+
+      ImGui::EndMenu();
+    }
+
+    if (song != nullptr) {
+      auto instrument = song->GetInstrument();
+
+      if (ImGui::BeginMenu("Instrument")) {
+        if (ImGui::MenuItem("New Instrument")) {
+          pendingNewInstrument = true;
         }
-        if (ImGui::MenuItem("Load Song")) {
-          pendingLoadSong = true;
+        if (ImGui::MenuItem("Load Instrument")) {
+          pendingLoadInstrument = true;
         }
 
-        auto song = Sequencer::Get().GetSong();
-
-        bool localDisable = !(song != nullptr && song->GetLineCount() > 0);
+        bool localDisable = instrument == nullptr;
         if (localDisable) {
           ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
           ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
         }
 
-        if (ImGui::MenuItem("Save Song")) {
-          pendingSaveSong = true;
+        if (ImGui::MenuItem("Save Instrument")) {
+          pendingSaveInstrument = true;
         }
 
-        if (ImGui::BeginMenu("Options")) {
-
-          ImGui::PushItemWidth(75);
-
-          int currentBpm = song->GetTempo();
-          if (ImGui::InputInt("BPM", &currentBpm)) {
-            // @Delay
-            pendingTempo = currentBpm;
-          }
-
-          imGuiStyle.ItemSpacing.x = 4;
-
-          int measuresToAdd = addMeasureCount;
-          if (ImGui::InputInt("", &measuresToAdd)) {
-            addMeasureCount = std::min(std::max(kMinMeasuresToAdd,
-              static_cast<uint32>(measuresToAdd)), kMaxMeasuresToAdd);
-          }
-
-          ImGui::SameLine();
-
-          if (ImGui::MenuItem("Add measure(s)")) {
-            // @Delay
-            pendingAddMeasures = addMeasureCount;
-          }
-
-          imGuiStyle.ItemSpacing.x = defaultItemSpacing.x;
-
-          ImGui::PopItemWidth();
-          ImGui::EndMenu();
+        if (ImGui::MenuItem("Add Track")) {
+          pendingDialog = new DialogTrack("Add Track", instrument, -1,
+            new Track(GetNewTrackName(kDefaultNewTrackName)), stopButtonIconTexture);
         }
 
         if (localDisable) {
@@ -678,11 +734,23 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::EndMenu();
       }
 
+      bool localDisable = instrument == nullptr;
+      if (localDisable) {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+      }
+
       if (ImGui::BeginMenu("Game")) {
         if (ImGui::MenuItem("Preview")) {
           sequencer.Stop();
           View::SetCurrentView<GamePreviewView>();
         }
+
+        if (localDisable) {
+          ImGui::PopStyleVar();
+          ImGui::PopItemFlag();
+        }
+
         ImGui::EndMenu();
       }
     }
@@ -717,8 +785,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
     outputWindowHeight = ImGui::GetFontSize() + ImGui::GetStyle().FramePadding.y * 2.0f;
   }
 
-  auto instrument = sequencer.GetInstrument();
-  if (instrument != nullptr) {
+  auto song = sequencer.GetSong();
+  if (song != nullptr) {
+    auto instrument = song->GetInstrument();
+
     ImVec2 sequencerCanvasSize(canvasSize.x, canvasSize.y - outputWindowHeight - mainMenuBarHeight);
 
     // Main window which contains the tracks on the left and the song lines on the right
@@ -807,8 +877,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
               }
               ImGui::SameLine();
               if (ImGui::Button("Properties...")) {
-                pendingDialog = new DialogTrack("Edit Track", trackIndex,
-                  new Track(*track), stopButtonIconTexture);
+                pendingDialog = new DialogTrack("Edit Track",
+                  instrument, trackIndex, new Track(*track), stopButtonIconTexture);
                 closePopup = true;
               }
 

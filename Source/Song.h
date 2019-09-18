@@ -6,10 +6,14 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <functional>
 
+class Instrument;
 class Song {
 public:
+  static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
+  static constexpr const char* kDefaultSongName = "My Song";
 
   class Note {
   protected:
@@ -50,23 +54,37 @@ protected:
   uint32 numMeasures = 0;
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
   uint32 minNoteValue = Globals::kDefaultMinNote;
-  std::string instrumentName;
+  std::string name;
+
+  // TODO: Permit songs to reference multiple instruments
+  // https://trello.com/c/8iaMDKmY
+  Instrument* instrument = nullptr;
 
   std::vector<std::list<Note>> barLines;
+  std::function<Instrument*(std::string)> instrumentLoader;
+
+  static Song* LoadSongMidi(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
+  static Song* LoadSongJson(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 
 public:
-  Song(uint32 numLines, uint32 numMeasures, uint32 tempo, uint32 beatsPerMeasure, uint32 minNoteValue);
-  Song(const ReadSerializer& serializer);
+  Song(std::string name, uint32 numLines, uint32 numMeasures, uint32 tempo, uint32 beatsPerMeasure, uint32 minNoteValue);
+  Song(const ReadSerializer& serializer, std::function<Instrument*(std::string)> instrumentLoader);
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
 
-  inline const std::string& GetInstrumentName() const {
-    return instrumentName;
+  std::string GetInstrumentName() const;
+
+  inline Instrument* GetInstrument() const {
+    return instrument;
   }
 
   inline const std::vector<std::list<Note>>& GetBarLines() const {
     return barLines;
+  }
+
+  inline std::string GetName() const {
+    return name;
   }
 
   uint32 GetNoteCount() const {
@@ -107,4 +125,8 @@ public:
   void RemoveLine(uint32 lineIndex);
   Note* AddNote(uint32 lineIndex, uint32 beatIndex);
   void RemoveNote(uint32 lineIndex, uint32 beatIndex);
+  void SetInstrument(Instrument* newInstrument);
+  bool Save(std::string fileName);
+
+  static Song* LoadSong(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 };

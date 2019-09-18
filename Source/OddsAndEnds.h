@@ -38,3 +38,14 @@ template<typename T> inline void set_remove(std::set<T>& theSet, const T& theVal
   }
 }
 
+inline void ensure_fileext(std::string& fileName, std::string_view fileTag) {
+  if (fileName.compare(fileName.length() - fileTag.length(), fileTag.length(), fileTag)) {
+    fileName += fileTag;
+  }
+}
+
+inline bool check_fileext(std::string fileName, std::string_view fileTag) {
+  return fileName.compare(fileName.length() -
+    fileTag.length(), fileTag.length(), fileTag) == 0;
+}
+

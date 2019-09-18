@@ -27,8 +27,6 @@
 #include <sstream>
 
 static constexpr float kMetronomeVolume = 0.7f;
-static constexpr std::string_view kMidiTags[] = { ".midi", ".mid" };
-static constexpr std::string_view kJsonTag(".json");
 static constexpr std::string_view kNewInstrumentDefaultName("New Instrument");
 static constexpr uint32	kMaxCallbackSampleFrames = 256;
 static constexpr uint32 kMaxSimultaneousVoices = 64;
@@ -202,9 +200,6 @@ Sequencer::~Sequencer() {
   delete song;
   song = nullptr;
 
-  delete instrument;
-  instrument = nullptr;
-
   for (auto& reservedPatch : reservedPatches) {
     delete reservedPatch;
   }
@@ -249,6 +244,11 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
   // Changing the display subdivision does not affect playback
   // https://trello.com/c/05XYJTLP
   //UpdateInterval();
+}
+
+void Sequencer::SetSong(Song* newSong) {
+  delete song;
+  song = newSong;
 }
 
 void Sequencer::PlayMetronome(bool downBeat) {
@@ -315,7 +315,7 @@ uint32 Sequencer::NextFrame()
     view->OnFrame(currFrame);
   }
 
-  if (!instrument || !song || !isPlaying) {
+  if (!song || !isPlaying) {
     return interval;
   }
 
@@ -416,19 +416,9 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
       beatTime = static_cast<float>(frameCounter - songStartFrame) /
         (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
 
-      // TODO: This should only happen in the game mode audio callback
-      if (isGameplayMode) {
-        std::array<float, GameGlobals::kNumGameplayLines> presses = { 0.0f };
-        std::array<float, GameGlobals::kNumGameplayLines> releases = { 0.0f };
-
-        gameInput.TakeSnapshot(beatTime, presses, releases);
-
-        for (size_t gameLineIndex = 0; gameLineIndex < GameGlobals::kNumGameplayLines; ++gameLineIndex) {
-          if (presses[gameLineIndex]) {
-            // Trigger the sound associated with the line
-            instrument->PlayTrack(gameLineIndex);
-          }
-        }
+      auto view = View::GetCurrentView();
+      if (view != nullptr) {
+        view->OnAudioCallback();
       }
     }
 
@@ -454,227 +444,6 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
 void Sequencer::SetIntroBeats(uint32 introBeatCount) {
   assert(!isPlaying);
   this->introBeatCount = introBeatCount;
-}
-
-bool Sequencer::NewInstrument() {
-  Instrument* newInstrument = new Instrument(std::string(kNewInstrumentDefaultName));
-  if (newInstrument) {
-    Stop();
-    delete instrument;
-    instrument = newInstrument;
-
-    // This is destructive
-    // https://trello.com/c/cSv285Tr
-    NewSong();
-
-    return true;
-  }
-  return false;
-}
-
-bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
-  Instrument *newInstrument = Instrument::LoadInstrument(fileName);
-
-  if (newInstrument) {
-    if (mustMatch.length() != 0 && mustMatch != newInstrument->GetName()) {
-      delete newInstrument;
-    }
-    else {
-      Stop();
-
-      delete instrument;
-      instrument = newInstrument;
-
-      // This is destructive
-      // https://trello.com/c/cSv285Tr
-      NewSong();
-
-      return true;
-    }
-  }
-  return false;
-}
-
-void Sequencer::NewSong() {
-  delete song;
-  song = new Song(instrument->GetTrackCount(), Globals::kDefaultTempo,
-    kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
-  
-  View::GetCurrentView()->OnSongUpdated();
-  
-  UpdateInterval();
-}
-
-bool Sequencer::SaveSong(std::string fileName) {
-  MCLOG(Info, "Saving song to file \'%s\'", fileName.c_str());
-
-  if (!song) {
-    MCLOG(Error, "Somehow there is no song in SaveSong");
-    return false;
-  }
-
-  rapidjson::StringBuffer sb;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
-
-  auto result = song->SerializeWrite({ w });
-  if (!result.first) {
-    MCLOG(Error, "Unable to save song: %s", result.second.c_str());
-    return false;
-  }
-
-  std::ofstream ofs(fileName);
-  if (ofs.bad()) {
-    MCLOG(Error, "Unable to save song to file %s ", fileName.c_str());
-    return false;
-  }
-
-  std::string outputString(sb.GetString());
-  ofs.write(outputString.c_str(), outputString.length());
-  ofs.close();
-
-  return true;
-}
-
-void Sequencer::LoadSongJson(std::string fileName) {
-  MCLOG(Info, "Loading song from file \'%s\'", fileName.c_str());
-
-  std::ifstream ifs(fileName);
-
-  if (ifs.bad()) {
-    MCLOG(Error, "Unable to load song from file %s", fileName.c_str());
-    return;
-  }
-
-  std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-
-  if (!fileData.length()) {
-    MCLOG(Error, "Unable to load song from file %s", fileName.c_str());
-    return;
-  }
-
-  rapidjson::Document document;
-  document.Parse(fileData.c_str());
-
-  if (!document.IsObject()) {
-    MCLOG(Error, "Failure parsing JSON in file %s", fileName.c_str());
-    return;
-  }
-
-  try {
-    auto newSong = new Song({ document });
-
-    if (newSong->GetMinNoteValue() > Globals::kDefaultMinNote) {
-      delete newSong;
-      MCLOG(Error, "Song subdivisions greater than sequencer max");
-      return;
-    }
-
-    if (newSong->GetInstrumentName() != instrument->GetName()) {
-      if (!loadInstrumentCallback) {
-        MCLOG(Error, "Song requires instrument \'%s\' but no load instrument "
-          "callback was provided", newSong->GetInstrumentName().c_str());
-        delete newSong;
-        return;
-      }
-      if (!loadInstrumentCallback(newSong->GetInstrumentName())) {
-        MCLOG(Error, "Incorrect instrument loaded for song");
-        delete newSong;
-        return;
-      }
-    }
-
-    delete song;
-    song = newSong;
-
-    View::GetCurrentView()->OnSongUpdated();
-
-    UpdateInterval();
-  }
-  catch (std::runtime_error& rte) {
-    MCLOG(Error, "Failed to load song: %s", rte.what());
-  }
-}
-
-// TODO: Fix MIDI loading
-// https://trello.com/c/vQCRzrcm
-void Sequencer::LoadSongMidi(std::string fileName) {
-  if (!instrument) {
-    MCLOG(Error, "Cannot load MIDI file without a loaded instrument");
-    return;
-  }
-
-  if (!instrument->tracks.size()) {
-    MCLOG(Error, "Cannot load MIDI file if instrument has no tracks");
-    return;
-  }
-
-  MCLOG(Info, "Importing MIDI from file \'%s\'", fileName.c_str());
-
-  MidiSource midiSource;
-  if (!midiSource.openFile(fileName)) {
-    MCLOG(Warn, "Failed to load MIDI file \'%s\'", fileName.c_str());
-    return;
-  }
-
-  if (!midiSource.getTrackCount()) {
-    MCLOG(Warn, "Loading MIDI file \'%s\' resulted in no tracks", fileName.c_str());
-    return;
-  }
-
-  if (!midiConversionParamsCallback) {
-    MCLOG(Error, "MIDI file \'%s\' loaded but no callback provided", fileName.c_str());
-    return;
-  }
-
-  MidiConversionParams midiConversionParams;
-  if (midiConversionParamsCallback(midiSource, midiConversionParams)) {
-    MidiTrack midiTrack;
-
-    static constexpr uint32 kMinMidiValue = 21;
-
-    // Yikes
-    uint32 numMeasures = 1;
-    if (midiSource.CombineTracks(midiTrack, midiConversionParams.trackIndices)) {
-      // Ok. We now have all the tracks we want in one track; it is only note-ons;
-      // they are globally and locally time stamped
-      // Now we need to iterate these and add them as notes!
-      for (const auto& midiEvent : midiTrack.events) {
-        auto a = static_cast<int32>(midiEvent.dataptr[1]);
-        auto b = static_cast<int32>(kMinMidiValue);
-        auto trackIndex = (std::max(a, b) - b) % instrument->tracks.size();
-        auto beatsIndex = static_cast<uint32>(static_cast<double>(midiEvent.timeStamp) /
-          static_cast<double>(midiSource.getTimeDivision()) * Globals::kDefaultMinNote);
-
-        if (!(beatsIndex % Globals::kDefaultMinNote)) {
-          ++numMeasures;
-        }
-        
-        //instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f);
-      }
-
-      MCLOG(Info, "Successfully loaded MIDI file \'%s\'", fileName.c_str());
-    }
-    else {
-      MCLOG(Error, "Failure while combining MIDI tracks");
-    }
-
-  }
-  else {
-    MCLOG(Error, "Failure while converting MIDI");
-  }
-}
-
-void Sequencer::LoadSong(std::string fileName) {
-  if (fileName.compare(fileName.length() -
-    kJsonTag.length(), kJsonTag.length(), kJsonTag) == 0) {
-    return LoadSongJson(fileName);
-  }
-  for (size_t m = 0; m < _countof(kMidiTags); ++m) {
-    if (fileName.compare(fileName.length() - 
-      kMidiTags[m].length(), kMidiTags[m].length(), kMidiTags[m]) == 0) {
-      return LoadSongMidi(fileName);
-    }
-  }
 }
 
 void Sequencer::StopAllVoices() {

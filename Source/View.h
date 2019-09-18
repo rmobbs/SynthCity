@@ -35,6 +35,10 @@ public:
 
   }
 
+  virtual void OnAudioCallback() {
+
+  }
+
   virtual void Render(ImVec2 canvasSize) = 0;
 
 
