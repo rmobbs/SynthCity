@@ -14,6 +14,8 @@ struct WriteSerializer {
 
 struct ReadSerializer {
   const rapidjson::Value& d;
+
+  std::string fileName;
 };
 
 // Generic serialization tags

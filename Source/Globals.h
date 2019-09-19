@@ -7,6 +7,8 @@ namespace Globals {
   static constexpr const char* kVersionString("0.0.8");
   static constexpr const char* kMidiTags[] = { ".midi", ".mid" };
   static constexpr const char* kJsonTag(".json");
+  static constexpr const char* kNameTag("name");
+  static constexpr const char* kPathTag("path");
   static constexpr float kScrollBarWidth = 15.0f;
   static constexpr float kScrollBarHeight = 15.0f;
   static constexpr uint32 kDefaultMinNote = 8;

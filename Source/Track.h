@@ -14,6 +14,8 @@ protected:
   std::string colorScheme;
   bool mute = false;
   float volume = 1.0f;
+  uint32 loadIndex = kInvalidUint32; // @DEPRECATE For version 1 songs, will be deprecated in version 3
+  uint32 uniqueId = kInvalidUint32;
 
   Patch* patch = nullptr;
 
@@ -52,6 +54,21 @@ public:
   }
   inline float GetVolume() {
     return volume;
+  }
+  void SetUniqueId(uint32 uniqueId) {
+    this->uniqueId = uniqueId;
+  }
+  inline uint32 GetUniqueId() const {
+    return uniqueId;
+  }
+
+  // @DEPRECATE For version 1 songs, will be deprecated in version 3
+  inline void SetLoadIndex(uint32 loadIndex) {
+    this->loadIndex = loadIndex;
+  }
+  // @DEPRECATE For version 1 songs, will be deprecated in version 3
+  inline uint32 GetLoadIndex() const {
+    return loadIndex;
   }
 };
 

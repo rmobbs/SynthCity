@@ -4,7 +4,7 @@
 #include "SerializeFwd.h"
 #include "Globals.h"
 #include <string>
-#include <vector>
+#include <map>
 #include <list>
 #include <functional>
 
@@ -17,38 +17,32 @@ public:
 
   class Note {
   protected:
-    int32 beatIndex = -1;
-    int32 gameIndex = -1;
+    uint32 beatIndex = kInvalidUint32;
+    uint32 gameIndex = kInvalidUint32;
 
   public:
     Note() = default;
     
-    inline Note(uint32 beatIndex, int32 gameIndex)
+    inline Note(uint32 beatIndex, uint32 gameIndex)
       : beatIndex(beatIndex)
       , gameIndex(gameIndex) {
     }
 
-    inline int32 GetBeatIndex() const {
+    inline uint32 GetBeatIndex() const {
       return beatIndex;
     }
-    inline void SetBeatIndex(int32 beatIndex) {
+    inline void SetBeatIndex(uint32 beatIndex) {
       this->beatIndex = beatIndex;
     }
 
-    inline int32 GetGameIndex() const {
+    inline uint32 GetGameIndex() const {
       return gameIndex;
     }
-    inline void SetGameIndex(int32 gameIndex) {
+    inline void SetGameIndex(uint32 gameIndex) {
       this->gameIndex = gameIndex;
     }
   };
   
-  struct LineIterator {
-    std::list<Note>::iterator beg;
-    std::list<Note>::iterator cur;
-    std::list<Note>::iterator end;
-  };
-
 protected:
   uint32 tempo = Globals::kDefaultTempo;
   uint32 numMeasures = 0;
@@ -60,14 +54,14 @@ protected:
   // https://trello.com/c/8iaMDKmY
   Instrument* instrument = nullptr;
 
-  std::vector<std::list<Note>> barLines;
+  std::map<int32, std::list<Note>> lines;
   std::function<Instrument*(std::string)> instrumentLoader;
 
   static Song* LoadSongMidi(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
   static Song* LoadSongJson(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 
 public:
-  Song(std::string name, uint32 tempo, uint32 numLines, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
+  Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
   Song(const ReadSerializer& serializer, std::function<Instrument*(std::string)> instrumentLoader);
   ~Song();
 
@@ -80,8 +74,8 @@ public:
     return instrument;
   }
 
-  inline const std::vector<std::list<Note>>& GetBarLines() const {
-    return barLines;
+  inline const std::map<int32, std::list<Note>>& GetBarLines() const {
+    return lines;
   }
 
   inline std::string GetName() const {
@@ -96,10 +90,7 @@ public:
     return numMeasures * beatsPerMeasure * minNoteValue;
   }
   uint32 GetLineCount() const {
-    return barLines.size();
-  }
-  std::list<Note>& GetLine(uint32 lineIndex) {
-    return barLines[lineIndex];
+    return lines.size();
   }
   uint32 GetBeatsPerMeasure() const {
     return beatsPerMeasure;
@@ -117,21 +108,13 @@ public:
     return numMeasures;
   }
 
-  std::vector<LineIterator> GetIterator() {
-    std::vector<LineIterator> iters;
-    for (auto& line : barLines) {
-      iters.push_back({ line.begin(), line.begin(), line.end() });
-    }
-    return iters;
-  }
-
   void AddMeasures(uint32 numMeasures);
-  void AddLine();
-  void RemoveLine(uint32 lineIndex);
-  Note* AddNote(uint32 lineIndex, uint32 beatIndex);
-  void RemoveNote(uint32 lineIndex, uint32 beatIndex);
+  void RemoveLineByTrackId(uint32 trackId);
+  Note* AddNote(uint32 trackId, uint32 beatIndex);
+  void RemoveNote(uint32 trackId, uint32 beatIndex);
   void SetInstrument(Instrument* newInstrument);
   bool Save(std::string fileName);
+  void UpdateTracks();
 
   static Song* LoadSong(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 };

@@ -13,10 +13,10 @@
 static constexpr float kMinDialogWidth(600.0f);
 static constexpr float kMinDialogHeight(600.0f);
 
-DialogTrack::DialogTrack(std::string title, Instrument* instrument, int32 trackIndex, Track* track, uint32 stopButtonTexture)
+DialogTrack::DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track, uint32 stopButtonTexture)
   : title(title)
   , instrument(instrument)
-  , trackIndex(trackIndex)
+  , replaceTrackId(replaceTrackId)
   , track(track)
   , stopButtonTexture(stopButtonTexture) {
 
@@ -96,8 +96,8 @@ bool DialogTrack::Render() {
     }
 
     if (exitedOk) {
-      if (trackIndex != -1) {
-        instrument->ReplaceTrack(trackIndex, track);
+      if (replaceTrackId != kInvalidUint32) {
+        instrument->ReplaceTrackById(replaceTrackId, track);
       }
       else {
         instrument->AddTrack(track);
