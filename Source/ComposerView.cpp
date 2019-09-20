@@ -309,6 +309,10 @@ void ComposerView::SelectedGroupAction(std::function<void(uint32, uint32)> actio
 }
 
 void ComposerView::HandleInput() {
+  if (activeDialog != nullptr || ImGui::IsEditing()) {
+    return;
+  }
+
   auto& inputState = InputState::Get();
 
   if (inputState.pressed[SDLK_DELETE]) {

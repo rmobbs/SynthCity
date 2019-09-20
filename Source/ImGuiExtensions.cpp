@@ -48,5 +48,9 @@ namespace ImGui {
       LogRenderedText(&check_bb.Min, active ? "(x)" : "( )");
     return pressed;
   }
+
+  bool IsEditing() {
+    return (GImGui->InputTextState.ID != 0 && GImGui->InputTextState.ID == GImGui->ActiveId);
+  }
 };
 

@@ -74,6 +74,7 @@ int32 SdlMouseButtonToInputMouseIndex(uint8 sdlMouseButton) {
 void UpdateInput() {
   SDL_Event sdlEvent;
 
+  ImGuiIO& imGuiIo = ImGui::GetIO();
   auto& inputState = InputState::Get();
 
   inputState.BeginFrame();
@@ -81,12 +82,16 @@ void UpdateInput() {
   while (SDL_PollEvent(&sdlEvent)) {
     switch (sdlEvent.type) {
       case SDL_KEYDOWN:
+        imGuiIo.KeysDown[sdlEvent.key.keysym.scancode] = true;
+
         if (sdlEvent.key.keysym.sym < InputState::kMaxKey) {
           inputState.pressed[sdlEvent.key.keysym.sym] = true;
           inputState.keyDown[sdlEvent.key.keysym.sym] = true;
         }
         break;
       case SDL_KEYUP:
+        imGuiIo.KeysDown[sdlEvent.key.keysym.scancode] = false;
+
         if (sdlEvent.key.keysym.sym < InputState::kMaxKey) {
           inputState.keyDown[sdlEvent.key.keysym.sym] = 0;
         }
@@ -133,8 +138,6 @@ void UpdateInput() {
 
   inputState.modState = SDL_GetModState();
 
-  ImGuiIO& imGuiIo = ImGui::GetIO();
-
   // Update time
   Globals::currentTime = static_cast<double>(SDL_GetTicks()) / 1000.0;
   static double lastUpdateTime = 0.0;
@@ -151,14 +154,10 @@ void UpdateInput() {
     imGuiIo.AddInputCharactersUTF8(inputState.inputText.c_str());
   }
 
-  // Update ImGui keys and record key press events
-  for (auto k = 0; k < InputState::kMaxKey; ++k) {
-    imGuiIo.KeysDown[k] = inputState.keyDown[k] != 0;
-  }
-
   imGuiIo.KeyShift = (SDL_GetModState() & KMOD_SHIFT) != 0;
   imGuiIo.KeyCtrl = (SDL_GetModState() & KMOD_CTRL) != 0;
   imGuiIo.KeyAlt = (SDL_GetModState() & KMOD_ALT) != 0;
+  imGuiIo.KeySuper = (SDL_GetModState() & KMOD_GUI) != 0;
 }
 
 void MainLoop() {
@@ -220,7 +219,7 @@ bool InitImGui() {
   imGuiIo.DeltaTime = 1.0f / 60.0f;
   imGuiIo.IniFilename = nullptr;
   
-  imGuiIo.KeyMap[ImGuiKey_Tab] = SDLK_TAB;
+  imGuiIo.KeyMap[ImGuiKey_Tab] = SDL_SCANCODE_TAB;
   imGuiIo.KeyMap[ImGuiKey_LeftArrow] = SDL_SCANCODE_LEFT;
   imGuiIo.KeyMap[ImGuiKey_RightArrow] = SDL_SCANCODE_RIGHT;
   imGuiIo.KeyMap[ImGuiKey_UpArrow] = SDL_SCANCODE_UP;
@@ -229,11 +228,18 @@ bool InitImGui() {
   imGuiIo.KeyMap[ImGuiKey_PageDown] = SDL_SCANCODE_PAGEDOWN;
   imGuiIo.KeyMap[ImGuiKey_Home] = SDL_SCANCODE_HOME;
   imGuiIo.KeyMap[ImGuiKey_End] = SDL_SCANCODE_END;
-  imGuiIo.KeyMap[ImGuiKey_Delete] = SDLK_DELETE;
-  imGuiIo.KeyMap[ImGuiKey_Backspace] = SDLK_BACKSPACE;
-  imGuiIo.KeyMap[ImGuiKey_Enter] = SDLK_RETURN;
-  imGuiIo.KeyMap[ImGuiKey_Escape] = SDLK_ESCAPE;
-
+  imGuiIo.KeyMap[ImGuiKey_Insert] = SDL_SCANCODE_INSERT;
+  imGuiIo.KeyMap[ImGuiKey_Delete] = SDL_SCANCODE_DELETE;
+  imGuiIo.KeyMap[ImGuiKey_Backspace] = SDL_SCANCODE_BACKSPACE;
+  imGuiIo.KeyMap[ImGuiKey_Space] = SDL_SCANCODE_SPACE;
+  imGuiIo.KeyMap[ImGuiKey_Enter] = SDL_SCANCODE_RETURN;
+  imGuiIo.KeyMap[ImGuiKey_Escape] = SDL_SCANCODE_ESCAPE;
+  imGuiIo.KeyMap[ImGuiKey_A] = SDL_SCANCODE_A;
+  imGuiIo.KeyMap[ImGuiKey_C] = SDL_SCANCODE_C;
+  imGuiIo.KeyMap[ImGuiKey_V] = SDL_SCANCODE_V;
+  imGuiIo.KeyMap[ImGuiKey_X] = SDL_SCANCODE_X;
+  imGuiIo.KeyMap[ImGuiKey_Y] = SDL_SCANCODE_Y;
+  imGuiIo.KeyMap[ImGuiKey_Z] = SDL_SCANCODE_Z;
   return true;
 }
 
