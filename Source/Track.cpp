@@ -14,11 +14,11 @@
 static constexpr const char* kNameTag("name");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
+static constexpr const char* kTrackIdTag("id");
 
 Track::Track(const Track& that)
 : name(that.name)
 , colorScheme(that.colorScheme)
-, mute(that.mute)
 , volume(that.volume) {
   patch = new Patch(*that.patch);
 }
@@ -53,6 +53,11 @@ bool Track::SerializeWrite(const WriteSerializer& serializer) {
   w.Key(kNameTag);
   w.String(name.c_str());
 
+  // Track ID
+  assert(uniqueId != kInvalidUint32);
+  w.Key(kTrackIdTag);
+  w.Uint(uniqueId);
+
   // Color scheme tag:string
   if (colorScheme.length()) {
     w.Key(kColorSchemeTag);
@@ -74,6 +79,15 @@ bool Track::SerializeRead(const ReadSerializer& serializer) {
     return false;
   }
   name = d[kNameTag].GetString();
+
+  if (d.HasMember(kTrackIdTag)) {
+    if (!d[kTrackIdTag].IsUint()) {
+      MCLOG(Error, "Invalid track ID in tracks array");
+      return false;
+    }
+    uniqueId = d[kTrackIdTag].GetUint();
+    assert(uniqueId != kInvalidUint32);
+  }
 
   if (d.HasMember(kColorSchemeTag) && d[kColorSchemeTag].IsString()) {
     colorScheme = d[kColorSchemeTag].GetString();

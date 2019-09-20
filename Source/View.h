@@ -21,6 +21,18 @@ public:
 
   }
 
+  // Called from the high-precision audio callback
+  virtual void OnAudioCallback(float beatTime) {
+
+  }
+
+  // Called for every beat when a song is loaded and the sequencer is playing. Note that the
+  // beat index can go past the end of the song; this allows clients to determine their own
+  // intro and looping behavior
+  virtual void OnBeat(uint32 beatIndex) {
+
+  }
+
   virtual void Render(ImVec2 canvasSize) = 0;
 
 

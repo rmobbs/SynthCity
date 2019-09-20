@@ -4,22 +4,17 @@
 #include "SerializeFwd.h"
 #include "Track.h"
 #include <string>
-#include <vector>
-
-class Sound;
+#include <map>
 
 class Instrument {
 public:
-  std::vector<Track*> tracks;
+  static constexpr const char* kDefaultName = "My Instrument";
+private:
+  std::map<uint32, Track*> tracksById;
   std::string name;
-  int32 soloTrack = -1;
-
-  void AddTrack(Track* track);
-  void ReplaceTrack(uint32 index, Track* track);
-  void RemoveTrack(uint32 index);
-  void PlayTrack(uint32 trackIndex);
-  bool SaveInstrument(std::string fileName);
-
+  std::string fileName;
+  uint32 nextTrackId = 0;
+public:
   Instrument(const ReadSerializer& r);
   Instrument(std::string instrumentName);
   ~Instrument();
@@ -29,24 +24,23 @@ public:
   }
   void SetName(const std::string& name);
 
-  inline const std::vector<Track*>& GetTracks(void) const {
-    return tracks;
+  inline std::string GetFileName() const {
+    return fileName;
   }
 
-  inline uint32 GetTrackCount() const {
-    return tracks.size();
+  inline const std::map<uint32, Track*>& GetTracks() const {
+    return tracksById;
   }
-
-  inline int32 GetSoloTrack() const {
-    return soloTrack;
-  }
-  Track* GetTrack(uint32 trackIndex);
-
-  void SetSoloTrack(int32 trackIndex);
 
   static Instrument* LoadInstrument(std::string fileName);
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
-  bool SerializeWrite(const WriteSerializer& serializer);
+  std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
+
+  void AddTrack(Track* track);
+  bool SaveInstrument(std::string fileName);
+  void ReplaceTrackById(uint32 trackId, Track* track);
+  void RemoveTrackById(uint32 trackId);
+  Track* GetTrackById(uint32 trackId);
 };
 

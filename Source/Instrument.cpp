@@ -1,20 +1,20 @@
 #include "Instrument.h"
 #include "Logging.h"
-#include "Sequencer.h" // TODO: Remove this dependency!
 #include "SerializeImpl.h"
 #include "SoundFactory.h"
 #include "WavSound.h"
 #include "Globals.h"
 #include "AudioGlobals.h"
+#include "OddsAndEnds.h"
 
 #include <stdexcept>
 #include <fstream>
 
-static constexpr const char* kNameTag("name");
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
-static constexpr uint32 kInstrumentFileVersion = 1;
+static constexpr uint32 kInstrumentFileVersion = 2;
+static constexpr const char* kNextUniqueIdTag("nextid");
 
 Instrument::Instrument(std::string instrumentName)
   : name(instrumentName) {
@@ -29,14 +29,16 @@ Instrument::Instrument(const ReadSerializer& r) {
 }
 
 Instrument::~Instrument() {
-  for (auto& track : tracks) {
-    delete track;
+  for (const auto& track : tracksById) {
+    delete track.second;
   }
-  tracks.clear();
+  tracksById.clear();
 }
 
 std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& serializer) {
   auto& d = serializer.d;
+
+  fileName = serializer.fileName;
 
   // Version
   if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsUint()) {
@@ -45,38 +47,53 @@ std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& ser
 
   auto version = d[Globals::kVersionTag].GetUint();
 
-  if (version != kInstrumentFileVersion) {
-    // Allow conversion of previous formats
-    // https://trello.com/c/O0SzcHfG
+  if (version != 1 && version != 2) {
     return std::make_pair(false, "Invalid instrument file version");
   }
 
-
   // Name
-  if (!d.HasMember(kNameTag) || !d[kNameTag].IsString()) {
+  if (!d.HasMember(Globals::kNameTag) || !d[Globals::kNameTag].IsString()) {
     return std::make_pair(false, "Missing/invalid name tag in instrument file");
   }
-  SetName(d[kNameTag].GetString());
+  SetName(d[Globals::kNameTag].GetString());
+
+  if (version > 1) {
+    // Next unique ID
+    if (!d.HasMember(kNextUniqueIdTag) || !d[kNextUniqueIdTag].IsUint()) {
+      return std::make_pair(false, "Missing/invalid next unique ID tag in instrument file");
+    }
+    nextTrackId = d[kNextUniqueIdTag].GetUint();
+  }
 
   // Tracks
   if (!d.HasMember(kTracksTag) || !d[kTracksTag].IsArray()) {
     return std::make_pair(false, "Invalid tracks array in instrument file");
   }
 
+  // @DEPRECATE For version 1 songs, will be deprecated in version 3
+  uint32 loadIndex = 0;
+
   const auto& tracksArray = d[kTracksTag];
   for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
     try {
-      AddTrack(new Track({ tracksArray[trackArrayIndex] }));
+      auto track = new Track({ tracksArray[trackArrayIndex] });
+      track->SetLoadIndex(loadIndex++);
+      AddTrack(track);
     }
     catch (...) {
 
     }
   }
 
-  return std::make_pair(true, "");
+  if (version < 2) {
+    MCLOG(Warn, "Instrument is version 1 and this will be deprecated. Please re-save.")
+    nextTrackId = tracksById.size();
+  }
+
+  return std::make_pair<bool, std::string>(true, {});
 }
 
-bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
+std::pair<bool, std::string> Instrument::SerializeWrite(const WriteSerializer& serializer) {
   auto& w = serializer.w;
 
   w.StartObject();
@@ -86,75 +103,48 @@ bool Instrument::SerializeWrite(const WriteSerializer& serializer) {
   w.Uint(kInstrumentFileVersion);
 
   // Name tag:string
-  w.Key(kNameTag);
+  w.Key(Globals::kNameTag);
   w.String(name.c_str());
+
+  // Next unique ID
+  w.Key(kNextUniqueIdTag);
+  w.Uint(nextTrackId);
 
   // Tracks tag:array_start
   w.Key(kTracksTag);
   w.StartArray();
 
   // Tracks
-  for (uint32 trackIndex = 0; trackIndex < tracks.size(); ++trackIndex) {
-    tracks[trackIndex]->SerializeWrite(serializer);
+  for (const auto& track : tracksById) {
+    track.second->SerializeWrite(serializer);
   }
 
   w.EndArray();
   w.EndObject();
 
-  return true;
-}
-
-void Instrument::AddTrack(Track* track) {
-  tracks.push_back(track);
-}
-
-void Instrument::ReplaceTrack(uint32 index, Track* newTrack) {
-  delete tracks[index];
-  tracks[index] = newTrack;
-}
-
-void Instrument::RemoveTrack(uint32 index) {
-  if (soloTrack == index) {
-    soloTrack = -1;
-  }
-  delete tracks[index];
-  tracks.erase(tracks.begin() + index);
-}
-
-void Instrument::SetSoloTrack(int32 trackIndex) {
-  soloTrack = trackIndex;
-  if (trackIndex != -1) {
-    tracks[trackIndex]->SetMute(false);
-  }
-}
-
-void Instrument::PlayTrack(uint32 trackIndex) {
-  Sequencer::Get().PlayPatch(tracks[trackIndex]->GetPatch(), tracks[trackIndex]->GetVolume());
-}
-
-Track* Instrument::GetTrack(uint32 trackIndex) {
-  if (trackIndex < tracks.size()) {
-    return tracks[trackIndex];
-  }
-  return nullptr;
+  return std::make_pair<bool, std::string>(true, {});
 }
 
 bool Instrument::SaveInstrument(std::string fileName) {
+  ensure_fileext(fileName, Globals::kJsonTag);
+
   std::ofstream ofs(fileName);
   if (ofs.bad()) {
-    MCLOG(Warn, "Unable to save instrument to file %s ", fileName.c_str());
+    MCLOG(Error, "Unable to save instrument to file %s ", fileName.c_str());
     return false;
   }
 
   rapidjson::StringBuffer sb;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
 
-  if (SerializeWrite({ w, std::filesystem::path(fileName).parent_path() })) {
+  auto result = SerializeWrite({ w, std::filesystem::path(fileName).parent_path() });
+  if (result.first) {
     std::string outputString(sb.GetString());
     ofs.write(outputString.c_str(), outputString.length());
     ofs.close();
     return true;
   }
+  MCLOG(Error, result.second.c_str());
   return false;
 }
 
@@ -165,14 +155,14 @@ Instrument* Instrument::LoadInstrument(std::string fileName) {
   std::ifstream ifs(fileName);
 
   if (ifs.bad()) {
-    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
+    MCLOG(Error, "Unable to load instrument from file %s", fileName.c_str());
     return nullptr;
   }
 
   std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 
   if (!fileData.length()) {
-    MCLOG(Warn, "Unable to load instrument from file %s", fileName.c_str());
+    MCLOG(Error, "Unable to load instrument from file %s", fileName.c_str());
     return nullptr;
   }
 
@@ -181,21 +171,66 @@ Instrument* Instrument::LoadInstrument(std::string fileName) {
   document.Parse(fileData.c_str());
 
   if (!document.IsObject()) {
-    MCLOG(Warn, "Failure parsing JSON in file %s", fileName.c_str());
+    MCLOG(Error, "Failure parsing JSON in file %s", fileName.c_str());
     return nullptr;
   }
 
+  auto curpath = std::filesystem::current_path();
+
+  // Path needs to be relative to the instrument to load its WAV files
+  std::filesystem::current_path(std::filesystem::absolute(fileName).parent_path());
   Instrument* newInstrument = nullptr;
   try {
-    newInstrument = new Instrument({ document });
+    newInstrument = new Instrument({ document, fileName });
   }
   catch (std::runtime_error& rte) {
     MCLOG(Error, "Failed to serialize instrument: %s", rte.what());
   }
+  std::filesystem::current_path(curpath);
+
   return newInstrument;
 }
 
 void Instrument::SetName(const std::string& name) {
   this->name = name;
+}
+
+Track* Instrument::GetTrackById(uint32 trackId) {
+  auto trackById = tracksById.find(trackId);
+  if (trackById != tracksById.end()) {
+    return trackById->second;
+  }
+  return nullptr;
+}
+
+void Instrument::AddTrack(Track* track) {
+  auto trackId = track->GetUniqueId();
+  if (trackId == kInvalidUint32) {
+    trackId = nextTrackId++;
+  }
+  assert(tracksById.find(trackId) == tracksById.end());
+  tracksById[trackId] = track;
+  track->SetUniqueId(trackId);
+}
+
+void Instrument::ReplaceTrackById(uint32 trackId, Track* newTrack) {
+  auto trackEntry = tracksById.find(trackId);
+  assert(trackEntry != tracksById.end());
+  if (trackEntry != tracksById.end()) {
+    delete trackEntry->second;
+
+    // TODO: see if modifying the iterator works
+    tracksById[trackId] = newTrack;
+    newTrack->SetUniqueId(trackId);
+  }
+}
+
+void Instrument::RemoveTrackById(uint32 trackId) {
+  auto trackEntry = tracksById.find(trackId);
+  assert(trackEntry != tracksById.end());
+  if (trackEntry != tracksById.end()) {
+    delete trackEntry->second;
+    tracksById.erase(trackEntry);
+  }
 }
 

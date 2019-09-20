@@ -5,9 +5,11 @@
 #include <functional>
 
 #include "View.h"
+#include "Song.h"
 #include "GL/glew.h"
 #include "glm/vec4.hpp"
 #include <set>
+#include <atomic>
 
 class Dialog;
 class ComposerView : public View {
@@ -27,13 +29,13 @@ protected:
 
   bool wasPlaying = false;
 
-  int32 pendingSoloTrack = -2;
-  int32 pendingPlayTrack = -1;
-  int32 pendingRemoveTrack = -1;
-  int32 pendingCloneTrack = -1;
-  int32 pendingSubdivision = -1;
-  int32 pendingTempo = -1;
-  int32 pendingAddMeasures = -1;
+  uint32 pendingPlayTrack = kInvalidUint32;
+  uint32 pendingSoloTrack = kInvalidUint32;
+  uint32 pendingCloneTrack = kInvalidUint32;
+  uint32 pendingRemoveTrack = kInvalidUint32;
+  int32 pendingSubdivision = kInvalidUint32;
+  uint32 pendingTempo = kInvalidUint32;
+  uint32 pendingAddMeasures = kInvalidUint32;
   bool pendingNewInstrument = false;
   bool pendingLoadInstrument = false;
   bool pendingSaveInstrument = false;
@@ -41,14 +43,20 @@ protected:
   bool pendingLoadSong = false;
   bool pendingSaveSong = false;
 
-  uint32 noteCallbackId = UINT32_MAX;
-  std::vector<std::set<uint32>> noteClipboard;
-  std::vector<std::set<uint32>> noteSelectedStatus;
+  std::map<uint32, std::set<uint32>> noteClipboard;
+  std::map<uint32, std::set<uint32>> selectedNotesByTrackId;
+
+  struct SongLine {
+    uint32 trackId = kInvalidUint32;
+    std::vector<Song::Note*> notes;
+    bool mute = false;
+  };
+  std::map<uint32, SongLine> songLines;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
-  std::pair<int32, int32> toggledNote = { -1, -1 };
-  std::pair<int32, int32> hoveredNote = { -1, -1 };
-  std::pair<int32, float> pendingTrackVolume = { -1, 0.0f };
-  std::pair<int32, bool> pendingTrackMute = { -1, false };
+  std::pair<uint32, uint32> toggledNote = { kInvalidUint32, kInvalidUint32 };
+  std::pair<uint32, uint32> hoveredNote = { kInvalidUint32, kInvalidUint32 };
+  std::pair<uint32, float> pendingTrackVolume = { kInvalidUint32, 0.0f };
+  std::pair<uint32, bool> pendingTrackMute = { kInvalidUint32, false };
   uint32 stopButtonIconTexture = 0;
   uint32 pauseButtonIconTexture = 0;
   uint32 logResponderId = UINT32_MAX;
@@ -59,16 +67,31 @@ protected:
   ImGuiRenderable renderable;
   bool songWindowClicked = false;
   uint32 addMeasureCount = 1;
+  bool localGuiDisabled = false;
+  uint32 soloTrackId = kInvalidUint32;
 
+  void ConditionalEnableBegin(bool condition);
+  void ConditionalEnableEnd();
+  
   std::map<int, double> playingTrackFlashTimes[2];
+
+  std::atomic<bool> isMetronomeOn = false;
+  std::atomic<bool> isLooping = false;
 
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);
   void HandleInput();
   void NotePlayedCallback(uint32 trackIndex, uint32 noteIndex);
   void ProcessPendingActions();
-  void ClearSelectedNotes();
-  void SelectedGroupAction(std::function<void(int32, int32)> action);
+  void SelectedGroupAction(std::function<void(uint32, uint32)> action);
+  void NewInstrument();
+  Instrument* LoadInstrument(std::string requiredInstrument);
+  void SaveInstrument();
+  void NewSong();
+  void LoadSong();
+  void SaveSong();
+  std::string GetNewInstrumentName(std::string instrumentNameBase);
+  std::string GetNewTrackName(std::string trackNameBase);
 
 public:
   ComposerView(uint32 mainWindowHandle);
@@ -78,4 +101,6 @@ public:
 
   void Show() override;
   void Hide() override;
+
+  void OnBeat(uint32 beatIndex) override;
 };

@@ -14,6 +14,7 @@
 #include "Song.h"
 #include "FreeList.h"
 #include "InputState.h"
+#include "View.h"
 #include "SDL.h"
 
 #include <array>
@@ -26,8 +27,6 @@
 #include <sstream>
 
 static constexpr float kMetronomeVolume = 0.7f;
-static constexpr std::string_view kMidiTags[] = { ".midi", ".mid" };
-static constexpr std::string_view kJsonTag(".json");
 static constexpr std::string_view kNewInstrumentDefaultName("New Instrument");
 static constexpr uint32	kMaxCallbackSampleFrames = 256;
 static constexpr uint32 kMaxSimultaneousVoices = 64;
@@ -39,8 +38,6 @@ static constexpr uint32 kDefaultFrequency = 44100;
 static constexpr uint32 kDefaultChannels = 2;
 static constexpr float kDefaultMasterVolume = 0.7f;
 static constexpr uint32 kDefaultAudioBufferSize = 2048;
-
-static constexpr char kGameplayKeys[] = { 'a', 's', 'd', 'f' };
 
 // A voice is a playing instance of a patch
 class Voice {
@@ -130,8 +127,7 @@ bool Sequencer::TermSingleton() {
   return true;
 }
 
-Sequencer::Sequencer() 
-  : gameInput({ 'a', 's', 'd', 'f' }) {
+Sequencer::Sequencer() {
 
 }
 
@@ -201,9 +197,6 @@ Sequencer::~Sequencer() {
   delete song;
   song = nullptr;
 
-  delete instrument;
-  instrument = nullptr;
-
   for (auto& reservedPatch : reservedPatches) {
     delete reservedPatch;
   }
@@ -223,30 +216,16 @@ uint32 Sequencer::GetFrequency() const {
   return kDefaultFrequency;
 }
 
-uint32 Sequencer::GetTempo() const {
-  if (song != nullptr) {
-    return song->GetTempo();
-  }
-  return kDefaultTempo;
-}
-
-void Sequencer::SetTempo(uint32 tempo) {
-  if (song != nullptr) {
-    song->SetTempo(tempo);
-    UpdateInterval();
-  }
-}
-
 uint32 Sequencer::UpdateInterval() {
-  // Using min note value at all times so grid display does not affect playback
-  // https://trello.com/c/05XYJTLP
-  uint32 noteInterval = Globals::kDefaultMinNote;//currbeatSubdivision;
   if (song != nullptr) {
-    noteInterval = song->GetMinNoteValue();
+    // Using min note value at all times so grid display does not affect playback
+    // https://trello.com/c/05XYJTLP
+    interval = static_cast<uint32>((kDefaultFrequency / song->
+      GetTempo() * 60.0) / static_cast<double>(song->GetMinNoteValue()));
   }
-
-  interval = static_cast<uint32>((kDefaultFrequency /
-    GetTempo() * 60.0) / static_cast<double>(noteInterval));
+  else {
+    interval = kDefaultInterval;
+  }
 
   // Don't wait for a longer interval to apply a shorter interval
   ticksRemaining = std::min(ticksRemaining, static_cast<int32>(interval));
@@ -264,14 +243,11 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
   //UpdateInterval();
 }
 
-void Sequencer::OnBeat(uint32 beat, bool isDownBeat) {
-  if (IsMetronomeOn()) {
-    PlayMetronome(isDownBeat);
-  }
-
-  for (const auto& rootBeatCallback : beatCallbacks) {
-    rootBeatCallback.first(beat, isDownBeat, rootBeatCallback.second);
-  }
+void Sequencer::SetSong(Song* newSong) {
+  StopKill();
+  delete song;
+  song = newSong;
+  UpdateInterval();
 }
 
 void Sequencer::PlayMetronome(bool downBeat) {
@@ -279,14 +255,16 @@ void Sequencer::PlayMetronome(bool downBeat) {
   if (downBeat) {
     metronomeSound = static_cast<uint32>(ReservedSounds::MetronomeFull);
   }
+
   PlayPatch(reservedPatches[metronomeSound], kMetronomeVolume);
 }
 
 void Sequencer::Play() {
   AudioGlobals::LockAudio();
   isPlaying = true;
-  songStartFrame = frameCounter;
-  ticksRemaining = 0;
+  if (currBeat == 0) {
+    beatTime = 0.0f;;
+  }
   AudioGlobals::UnlockAudio();
 }
 
@@ -300,21 +278,24 @@ void Sequencer::PauseKill() {
 }
 
 void Sequencer::Stop() {
-  StopAllVoices();
-
   isPlaying = false;
-  loopIndex = 0;
   beatTime = 0.0f;
-
   SetPosition(0);
+}
+
+void Sequencer::StopKill() {
+  Stop();
+  StopAllVoices();
+}
+
+void Sequencer::Loop() {
+  beatTime = 0.0f;
+  currBeat = 0;
+  nextBeat = 1;
 }
 
 void Sequencer::SetPosition(uint32 newPosition) {
   nextBeat = currBeat = newPosition;
-}
-
-void Sequencer::SetLooping(bool looping) {
-  isLooping = looping;
 }
 
 uint32 Sequencer::GetPosition() const {
@@ -325,64 +306,19 @@ uint32 Sequencer::GetNextPosition() const {
   return nextBeat;
 }
 
-void Sequencer::ResetFrameCounter() {
-  AudioGlobals::LockAudio();
-  nextFrame = currFrame = 0;
-  AudioGlobals::UnlockAudio();
-}
-
 uint32 Sequencer::NextFrame()
 {
-  currFrame = nextFrame++;
-
-  if (!instrument || !song || !isPlaying) {
+  if (!song || !isPlaying) {
     return interval;
   }
 
   currBeat = nextBeat++;
 
-  if ((currBeat % song->GetMinNoteValue()) == 0) {
-    OnBeat((currBeat / song->GetMinNoteValue()) + 1,
-      (currBeat % (song->GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
+  auto view = View::GetCurrentView();
+  if (view != nullptr) {
+    view->OnBeat(currBeat);
   }
 
-  // Handle end-of-track / looping
-  if (currBeat >= static_cast<int32>(song->GetNoteCount())) {
-    if (isLooping) {
-      currBeat = 0;
-      nextBeat = 1;
-      ++loopIndex;
-    }
-    else {
-      Stop();
-    }
-  }
-
-  if (isPlaying) {
-    // TODO: This is only meaningful in gameplay mode!
-    int32 currNote = currBeat - introBeatCount * song->GetMinNoteValue();
-    if (currNote >= 0) {
-      for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
-        // NOTE: Will lines and tracks always be 1:1?
-        if (instrument->tracks[lineIndex]->GetMute()) {
-          continue;
-        }
-        auto soloTrackIndex = instrument->GetSoloTrack();
-        if (soloTrackIndex != -1 && soloTrackIndex != lineIndex) {
-          continue;
-        }
-
-        // TODO: Separate out composer and gameplay frame logic
-        auto d = song->GetLine(lineIndex).data() + currNote;
-        if (d->GetEnabled() && (!isGameplayMode || d->GetGameIndex() == -1)) {
-          for (auto& noteCallback : noteCallbacks) {
-            noteCallback.first(lineIndex, currNote, noteCallback.second);
-          }
-          instrument->PlayTrack(lineIndex);
-        }
-      }
-    }
-  }
   return interval;
 }
 
@@ -470,35 +406,23 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   length /= 4;
 
   while (length > 0) {
-    if (isPlaying) {
-      beatTime = static_cast<float>(frameCounter - songStartFrame) /
-        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
-
-      // TODO: This should only happen in the game mode audio callback
-      if (isGameplayMode) {
-        std::array<float, GameGlobals::kNumGameplayLines> presses = { 0.0f };
-        std::array<float, GameGlobals::kNumGameplayLines> releases = { 0.0f };
-
-        gameInput.TakeSnapshot(beatTime, presses, releases);
-
-        for (size_t gameLineIndex = 0; gameLineIndex < GameGlobals::kNumGameplayLines; ++gameLineIndex) {
-          if (presses[gameLineIndex]) {
-            // Trigger the sound associated with the line
-            instrument->PlayTrack(gameLineIndex);
-          }
-        }
-      }
-    }
-
-    if (ticksRemaining <= 0) {
-      ticksRemaining = NextFrame();
-    }
-
     int32 frames = std::min(std::min(ticksRemaining,
       static_cast<int32>(kMaxCallbackSampleFrames)), length);
 
+    if (isPlaying) {
+      beatTime = beatTime + static_cast<float>(frames) /
+        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
+    }
+
+    auto view = View::GetCurrentView();
+    if (view != nullptr) {
+      view->OnAudioCallback(beatTime);
+    }
+
     ticksRemaining -= frames;
-    frameCounter += frames;
+    if (ticksRemaining <= 0) {
+      ticksRemaining = NextFrame();
+    }
 
     // Mix and write audio
     MixVoices(mixbuf.data(), frames);
@@ -509,285 +433,12 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   }
 }
 
-void Sequencer::SetIntroBeats(uint32 introBeatCount) {
-  assert(!isPlaying);
-  this->introBeatCount = introBeatCount;
-}
-
-uint32 Sequencer::AddBeatCallback(Sequencer::BeatCallback rootBeatCallback, void* beatPlayedPayload) {
-  beatCallbacks.push_back({ rootBeatCallback, beatPlayedPayload });
-  return beatCallbacks.size() - 1;
-}
-
-void Sequencer::RemoveBeatCallback(uint32 callbackId) {
-  beatCallbacks.erase(beatCallbacks.begin() + callbackId);
-}
-
-uint32 Sequencer::AddNoteCallback(Sequencer::NoteCallback noteCallback, void* notePlayedPayload) {
-  noteCallbacks.push_back({ noteCallback, notePlayedPayload });
-  return noteCallbacks.size() - 1;
-}
-
-void Sequencer::RemoveNoteCallback(uint32 callbackId) {
-  noteCallbacks.erase(noteCallbacks.begin() + callbackId);
-}
-
-void Sequencer::PrepareGameplay(uint32 lineCount) {
-#if 0
-  if (song != nullptr) {
-    auto& beatLines = song->GetBarLines();
-
-    // Sort into gameplay line buckets
-    for (size_t lineIndex = 0; lineIndex < beatLines.size(); ++lineIndex) {
-      const auto& line = beatLines[lineIndex];
-      for (size_t beatIndex = 0; beatIndex < line.size(); ++beatIndex) {
-        const auto& beat = line[beatIndex];
-
-        if (beat.GetEnabled()) {
-          const auto gameIndex = beat.GetGameIndex();
-
-          if (gameIndex >= 0) {
-            if (gameIndex >= static_cast<int32>(lineCount)) {
-              MCLOG(Warn, "Game is being prepared for %d lines but song has reference to game line %d", lineCount, gameIndex);
-            }
-            else {
-              auto& gameLine = gameplayLines[gameIndex];
-
-              gameLine.notes.push_back({ beatIndex, beatIndex * interval });
-              gameLine.soundLine = lineIndex;
-            }
-          }
-        }
-      }
-    }
-  }
-#endif
-}
-
-
-bool Sequencer::NewInstrument() {
-  Instrument* newInstrument = new Instrument(std::string(kNewInstrumentDefaultName));
-  if (newInstrument) {
-    Stop();
-    delete instrument;
-    instrument = newInstrument;
-
-    // This is destructive
-    // https://trello.com/c/cSv285Tr
-    NewSong();
-
-    return true;
-  }
-  return false;
-}
-
-bool Sequencer::LoadInstrument(std::string fileName, std::string mustMatch) {
-  Instrument *newInstrument = Instrument::LoadInstrument(fileName);
-
-  if (newInstrument) {
-    if (mustMatch.length() != 0 && mustMatch != newInstrument->GetName()) {
-      delete newInstrument;
-    }
-    else {
-      Stop();
-
-      delete instrument;
-      instrument = newInstrument;
-
-      // This is destructive
-      // https://trello.com/c/cSv285Tr
-      NewSong();
-
-      return true;
-    }
-  }
-  return false;
-}
-
-void Sequencer::NewSong() {
-  delete song;
-  song = new Song(instrument->GetTrackCount(), Globals::kDefaultTempo,
-    kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
-  UpdateInterval();
-}
-
-bool Sequencer::SaveSong(std::string fileName) {
-  MCLOG(Info, "Saving song to file \'%s\'", fileName.c_str());
-
-  if (!song) {
-    MCLOG(Error, "Somehow there is no song in SaveSong");
-    return false;
-  }
-
-  rapidjson::StringBuffer sb;
-  rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
-
-  auto result = song->SerializeWrite({ w });
-  if (!result.first) {
-    MCLOG(Error, "Unable to save song: %s", result.second.c_str());
-    return false;
-  }
-
-  std::ofstream ofs(fileName);
-  if (ofs.bad()) {
-    MCLOG(Error, "Unable to save song to file %s ", fileName.c_str());
-    return false;
-  }
-
-  std::string outputString(sb.GetString());
-  ofs.write(outputString.c_str(), outputString.length());
-  ofs.close();
-
-  return true;
-}
-
-void Sequencer::LoadSongJson(std::string fileName) {
-  MCLOG(Info, "Loading song from file \'%s\'", fileName.c_str());
-
-  std::ifstream ifs(fileName);
-
-  if (ifs.bad()) {
-    MCLOG(Error, "Unable to load song from file %s", fileName.c_str());
-    return;
-  }
-
-  std::string fileData((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-
-  if (!fileData.length()) {
-    MCLOG(Error, "Unable to load song from file %s", fileName.c_str());
-    return;
-  }
-
-  rapidjson::Document document;
-  document.Parse(fileData.c_str());
-
-  if (!document.IsObject()) {
-    MCLOG(Error, "Failure parsing JSON in file %s", fileName.c_str());
-    return;
-  }
-
-  try {
-    auto newSong = new Song({ document });
-
-    if (newSong->GetMinNoteValue() > Globals::kDefaultMinNote) {
-      delete newSong;
-      MCLOG(Error, "Song subdivisions greater than sequencer max");
-      return;
-    }
-
-    if (newSong->GetInstrumentName() != instrument->GetName()) {
-      if (!loadInstrumentCallback) {
-        MCLOG(Error, "Song requires instrument \'%s\' but no load instrument "
-          "callback was provided", newSong->GetInstrumentName().c_str());
-        delete newSong;
-        return;
-      }
-      if (!loadInstrumentCallback(newSong->GetInstrumentName())) {
-        MCLOG(Error, "Incorrect instrument loaded for song");
-        delete newSong;
-        return;
-      }
-    }
-
-    delete song;
-    song = newSong;
-
-    UpdateInterval();
-  }
-  catch (std::runtime_error& rte) {
-    MCLOG(Error, "Failed to load song: %s", rte.what());
-  }
-}
-
-// TODO: Fix MIDI loading
-// https://trello.com/c/vQCRzrcm
-void Sequencer::LoadSongMidi(std::string fileName) {
-  if (!instrument) {
-    MCLOG(Error, "Cannot load MIDI file without a loaded instrument");
-    return;
-  }
-
-  if (!instrument->tracks.size()) {
-    MCLOG(Error, "Cannot load MIDI file if instrument has no tracks");
-    return;
-  }
-
-  MCLOG(Info, "Importing MIDI from file \'%s\'", fileName.c_str());
-
-  MidiSource midiSource;
-  if (!midiSource.openFile(fileName)) {
-    MCLOG(Warn, "Failed to load MIDI file \'%s\'", fileName.c_str());
-    return;
-  }
-
-  if (!midiSource.getTrackCount()) {
-    MCLOG(Warn, "Loading MIDI file \'%s\' resulted in no tracks", fileName.c_str());
-    return;
-  }
-
-  if (!midiConversionParamsCallback) {
-    MCLOG(Error, "MIDI file \'%s\' loaded but no callback provided", fileName.c_str());
-    return;
-  }
-
-  MidiConversionParams midiConversionParams;
-  if (midiConversionParamsCallback(midiSource, midiConversionParams)) {
-    MidiTrack midiTrack;
-
-    static constexpr uint32 kMinMidiValue = 21;
-
-    // Yikes
-    uint32 numMeasures = 1;
-    if (midiSource.CombineTracks(midiTrack, midiConversionParams.trackIndices)) {
-      // Ok. We now have all the tracks we want in one track; it is only note-ons;
-      // they are globally and locally time stamped
-      // Now we need to iterate these and add them as notes!
-      for (const auto& midiEvent : midiTrack.events) {
-        auto a = static_cast<int32>(midiEvent.dataptr[1]);
-        auto b = static_cast<int32>(kMinMidiValue);
-        auto trackIndex = (std::max(a, b) - b) % instrument->tracks.size();
-        auto beatsIndex = static_cast<uint32>(static_cast<double>(midiEvent.timeStamp) /
-          static_cast<double>(midiSource.getTimeDivision()) * Globals::kDefaultMinNote);
-
-        if (!(beatsIndex % Globals::kDefaultMinNote)) {
-          ++numMeasures;
-        }
-        
-        //instrument->SetTrackNote(trackIndex, beatsIndex, 1.0f);
-      }
-
-      MCLOG(Info, "Successfully loaded MIDI file \'%s\'", fileName.c_str());
-    }
-    else {
-      MCLOG(Error, "Failure while combining MIDI tracks");
-    }
-
-  }
-  else {
-    MCLOG(Error, "Failure while converting MIDI");
-  }
-}
-
-void Sequencer::LoadSong(std::string fileName) {
-  if (fileName.compare(fileName.length() -
-    kJsonTag.length(), kJsonTag.length(), kJsonTag) == 0) {
-    return LoadSongJson(fileName);
-  }
-  for (size_t m = 0; m < _countof(kMidiTags); ++m) {
-    if (fileName.compare(fileName.length() - 
-      kMidiTags[m].length(), kMidiTags[m].length(), kMidiTags[m]) == 0) {
-      return LoadSongMidi(fileName);
-    }
-  }
-}
-
 void Sequencer::StopAllVoices() {
   AudioGlobals::LockAudio();
 
   voiceFreeList.ReturnAll();
   voices.clear();
   numActiveVoices = 0;
-  frameCounter = 0;
 
   DrainExpiredPool();
 
