@@ -13,7 +13,6 @@ private:
   std::map<uint32, Track*> tracksById;
   std::string name;
   std::string fileName;
-  uint32 soloTrackId = kInvalidUint32;
   uint32 nextTrackId = 0;
 public:
   Instrument(const ReadSerializer& r);
@@ -28,11 +27,6 @@ public:
   inline std::string GetFileName() const {
     return fileName;
   }
-
-  inline int32 GetSoloTrackId() const {
-    return soloTrackId;
-  }
-  void SetSoloTrackById(uint32 trackId);
 
   inline const std::map<uint32, Track*>& GetTracks() const {
     return tracksById;

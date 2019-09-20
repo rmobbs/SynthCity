@@ -54,7 +54,7 @@ protected:
   // https://trello.com/c/8iaMDKmY
   Instrument* instrument = nullptr;
 
-  std::map<int32, std::list<Note>> lines;
+  std::map<uint32, std::list<Note>> lines;
   std::function<Instrument*(std::string)> instrumentLoader;
 
   static Song* LoadSongMidi(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
@@ -74,7 +74,7 @@ public:
     return instrument;
   }
 
-  inline const std::map<int32, std::list<Note>>& GetBarLines() const {
+  inline const std::map<uint32, std::list<Note>>& GetBarLines() const {
     return lines;
   }
 

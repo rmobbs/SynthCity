@@ -45,7 +45,13 @@ protected:
 
   std::map<uint32, std::set<uint32>> noteClipboard;
   std::map<uint32, std::set<uint32>> selectedNotesByTrackId;
-  std::map<uint32, std::vector<Song::Note*>> songNotes;
+
+  struct SongLine {
+    uint32 trackId = kInvalidUint32;
+    std::vector<Song::Note*> notes;
+    bool mute = false;
+  };
+  std::map<uint32, SongLine> songLines;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   std::pair<uint32, uint32> toggledNote = { kInvalidUint32, kInvalidUint32 };
   std::pair<uint32, uint32> hoveredNote = { kInvalidUint32, kInvalidUint32 };
@@ -62,6 +68,7 @@ protected:
   bool songWindowClicked = false;
   uint32 addMeasureCount = 1;
   bool localGuiDisabled = false;
+  uint32 soloTrackId = kInvalidUint32;
 
   void ConditionalEnableBegin(bool condition);
   void ConditionalEnableEnd();

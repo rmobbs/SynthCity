@@ -19,7 +19,6 @@ static constexpr const char* kTrackIdTag("id");
 Track::Track(const Track& that)
 : name(that.name)
 , colorScheme(that.colorScheme)
-, mute(that.mute)
 , volume(that.volume) {
   patch = new Patch(*that.patch);
 }

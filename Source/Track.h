@@ -12,7 +12,6 @@ class Track {
 protected:
   std::string name;
   std::string colorScheme;
-  bool mute = false;
   float volume = 1.0f;
   uint32 loadIndex = kInvalidUint32; // @DEPRECATE For version 1 songs, will be deprecated in version 3
   uint32 uniqueId = kInvalidUint32;
@@ -43,12 +42,6 @@ public:
   }
   void SetPatch(Patch* newPatch);
 
-  inline void SetMute(bool shouldMute) {
-    mute = shouldMute;
-  }
-  inline bool GetMute() {
-    return mute;
-  }
   inline void SetVolume(float newVolume) {
     volume = newVolume;
   }

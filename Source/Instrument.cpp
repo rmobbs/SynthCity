@@ -125,21 +125,6 @@ std::pair<bool, std::string> Instrument::SerializeWrite(const WriteSerializer& s
   return std::make_pair<bool, std::string>(true, {});
 }
 
-void Instrument::SetSoloTrackById(uint32 trackId) {
-  if (trackId != kInvalidUint32) {
-    auto trackEntry = tracksById.find(trackId);
-    assert(trackEntry != tracksById.end());
-    if (trackEntry != tracksById.end()) {
-      // Ensure it isn't muted
-      trackEntry->second->SetMute(false);
-    }
-    else {
-      trackId = kInvalidUint32;
-    }
-  }
-  soloTrackId = trackId;
-}
-
 bool Instrument::SaveInstrument(std::string fileName) {
   ensure_fileext(fileName, Globals::kJsonTag);
 
@@ -241,10 +226,6 @@ void Instrument::ReplaceTrackById(uint32 trackId, Track* newTrack) {
 }
 
 void Instrument::RemoveTrackById(uint32 trackId) {
-  if (soloTrackId == trackId) {
-    soloTrackId = kInvalidUint32;
-  }
-
   auto trackEntry = tracksById.find(trackId);
   assert(trackEntry != tracksById.end());
   if (trackEntry != tracksById.end()) {
