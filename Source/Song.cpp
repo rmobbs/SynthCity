@@ -59,7 +59,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
   switch (version) {
     case 1: {
-      name = kDefaultName;
+      name = std::filesystem::path(serializer.fileName).stem().generic_string();
 
       // Single instrument by name
       if (!d.HasMember(kInstrumentTag) || !d[kInstrumentTag].IsString()) {

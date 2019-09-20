@@ -244,6 +244,7 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
 }
 
 void Sequencer::SetSong(Song* newSong) {
+  StopKill();
   delete song;
   song = newSong;
   UpdateInterval();

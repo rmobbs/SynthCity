@@ -170,6 +170,9 @@ void ComposerView::SaveInstrument() {
   OPENFILENAME ofn = { 0 };
 
   USES_CONVERSION;
+  std::string windowTitle("Save Instrument");
+  ofn.lpstrTitle = A2W(windowTitle.c_str());
+  ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
   ofn.lStructSize = sizeof(ofn);
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
@@ -196,6 +199,9 @@ void ComposerView::LoadSong() {
   OPENFILENAME ofn = { 0 };
 
   USES_CONVERSION;
+  std::string windowTitle("Load Song");
+  ofn.lpstrTitle = A2W(windowTitle.c_str());
+  ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
   ofn.lStructSize = sizeof(ofn);
   ofn.lpstrFile = szFile;
   ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
@@ -233,6 +239,9 @@ void ComposerView::SaveSong() {
     OPENFILENAME ofn = { 0 };
 
     USES_CONVERSION;
+    std::string windowTitle("Save Song");
+    ofn.lpstrTitle = A2W(windowTitle.c_str());
+    ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
     ofn.lStructSize = sizeof(ofn);
     ofn.lpstrFile = szFile;
     ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
@@ -530,6 +539,7 @@ void ComposerView::ProcessPendingActions() {
     selectedNotesByTrackId.clear();
     auto instrument = LoadInstrument({});
     if (instrument != nullptr) {
+      Sequencer::Get().StopKill();
       song->SetInstrument(instrument);
     }
   }

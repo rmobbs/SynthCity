@@ -190,6 +190,10 @@ Instrument* Instrument::LoadInstrument(std::string fileName) {
     return nullptr;
   }
 
+  auto curpath = std::filesystem::current_path();
+
+  // Path needs to be relative to the instrument to load its WAV files
+  std::filesystem::current_path(std::filesystem::absolute(fileName).parent_path());
   Instrument* newInstrument = nullptr;
   try {
     newInstrument = new Instrument({ document, fileName });
@@ -197,6 +201,8 @@ Instrument* Instrument::LoadInstrument(std::string fileName) {
   catch (std::runtime_error& rte) {
     MCLOG(Error, "Failed to serialize instrument: %s", rte.what());
   }
+  std::filesystem::current_path(curpath);
+
   return newInstrument;
 }
 
