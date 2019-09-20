@@ -393,10 +393,6 @@ void Song::AddMeasures(uint32 numMeasures) {
   this->numMeasures += numMeasures;
 }
 
-void Song::RemoveLineByTrackId(uint32 trackId) {
-  //lines.erase(lines.begin() + lineIndex);
-}
-
 Song::Note* Song::AddNote(uint32 trackId, uint32 beatIndex) {
   auto lineEntry = lines.find(trackId);
   assert(lineEntry != lines.end());
@@ -453,8 +449,28 @@ void Song::SetInstrument(Instrument* newInstrument) {
   }
 }
 
-void Song::UpdateTracks() {
+void Song::UpdateLines() {
+  // Grab any new tracks
+  const auto& tracks = instrument->GetTracks();
+  for (const auto& track : tracks) {
+    auto lineEntry = lines.find(track.first);
+    if (lineEntry != lines.end()) {
+      continue;
+    }
 
+    lines.insert({ track.first, std::list<Note>() });
+  }
+  // Discard any removed ones
+  auto lineIter = lines.begin();
+  while (lineIter != lines.end()) {
+    auto trackEntry = tracks.find(lineIter->first);
+    if (trackEntry != tracks.end()) {
+      ++lineIter;
+    }
+    else {
+      lineIter = lines.erase(lineIter);
+    }
+  }
 }
 
 bool Song::Save(std::string fileName) {

@@ -41,7 +41,6 @@ private:
 
   GameInput gameInput;
 
-  uint32 loopIndex = 0;
   uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
   void* notePlayedPayload = nullptr;
   uint32 currFrame = 0;
@@ -63,11 +62,10 @@ private:
   std::atomic<bool> isGameplayMode = false;
   std::atomic<bool> isPlaying = false;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
-  std::atomic<uint32> frameCounter = 0;
   std::atomic<uint32> numActiveVoices = 0;
   std::atomic<float> beatTime = 0.0f;
+  std::atomic<bool> isLooping = false;
 
-  uint32 UpdateInterval();
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
   uint32 NextFrame();
@@ -108,6 +106,13 @@ public:
     return isPlaying;
   }
 
+  inline bool IsLooping() const {
+    return isLooping;
+  }
+  inline void SetLooping(bool isLooping) {
+    this->isLooping = isLooping;
+  }
+
   inline uint32 GetNumActiveVoices() const {
     return numActiveVoices;
   }
@@ -117,10 +122,6 @@ public:
   }
   void SetMasterVolume(float masterVolume) {
     this->masterVolume = masterVolume;
-  }
-
-  inline uint32 GetAudioFrame() const {
-    return frameCounter;
   }
 
   inline void SetGameplayMode(bool gameplayMode) {
@@ -137,9 +138,10 @@ public:
   void Pause();
   void PauseKill();
   void Stop();
-  void ResetFrameCounter();
+  void StopKill();
   void StopVoice(int32 voiceId);
   int32 PlayPatch(const Patch* patch, float volume);
+  uint32 UpdateInterval();
 
   void PlayMetronome(bool downBeat);
 

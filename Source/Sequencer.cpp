@@ -249,6 +249,7 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
 void Sequencer::SetSong(Song* newSong) {
   delete song;
   song = newSong;
+  UpdateInterval();
 }
 
 void Sequencer::PlayMetronome(bool downBeat) {
@@ -263,8 +264,9 @@ void Sequencer::PlayMetronome(bool downBeat) {
 void Sequencer::Play() {
   AudioGlobals::LockAudio();
   isPlaying = true;
-  songStartFrame = frameCounter;
-  ticksRemaining = 0;
+  if (currBeat == 0) {
+    beatTime = 0.0f;;
+  }
   AudioGlobals::UnlockAudio();
 }
 
@@ -278,13 +280,14 @@ void Sequencer::PauseKill() {
 }
 
 void Sequencer::Stop() {
-  StopAllVoices();
-
   isPlaying = false;
-  loopIndex = 0;
   beatTime = 0.0f;
-
   SetPosition(0);
+}
+
+void Sequencer::StopKill() {
+  Stop();
+  StopAllVoices();
 }
 
 void Sequencer::SetPosition(uint32 newPosition) {
@@ -297,12 +300,6 @@ uint32 Sequencer::GetPosition() const {
 
 uint32 Sequencer::GetNextPosition() const {
   return nextBeat;
-}
-
-void Sequencer::ResetFrameCounter() {
-  AudioGlobals::LockAudio();
-  nextFrame = currFrame = 0;
-  AudioGlobals::UnlockAudio();
 }
 
 uint32 Sequencer::NextFrame()
@@ -321,8 +318,22 @@ uint32 Sequencer::NextFrame()
 
   currBeat = nextBeat++;
 
-  if (view != nullptr) {
-    view->OnBeat(currBeat);
+  if (currBeat >= song->GetNoteCount()) {
+    if (isLooping) {
+      beatTime = 0.0f;
+
+      currBeat = 0;
+      nextBeat = 1;
+    }
+    else {
+      Stop();
+    }
+  }
+
+  if (isPlaying) {
+    if (view != nullptr) {
+      view->OnBeat(currBeat);
+    }
   }
 
   return interval;
@@ -412,25 +423,8 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   length /= 4;
 
   while (length > 0) {
-    if (isPlaying) {
-      beatTime = static_cast<float>(frameCounter - songStartFrame) /
-        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
-
-      auto view = View::GetCurrentView();
-      if (view != nullptr) {
-        view->OnAudioCallback();
-      }
-    }
-
-    if (ticksRemaining <= 0) {
-      ticksRemaining = NextFrame();
-    }
-
     int32 frames = std::min(std::min(ticksRemaining,
       static_cast<int32>(kMaxCallbackSampleFrames)), length);
-
-    ticksRemaining -= frames;
-    frameCounter += frames;
 
     // Mix and write audio
     MixVoices(mixbuf.data(), frames);
@@ -438,6 +432,17 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
 
     stream += frames * sizeof(int16) * 2;
     length -= frames;
+
+    ticksRemaining -= frames;
+
+    if (ticksRemaining <= 0) {
+      ticksRemaining = NextFrame();
+    }
+
+    if (isPlaying) {
+      beatTime = beatTime + static_cast<float>(frames) /
+        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
+    }
   }
 }
 
@@ -452,7 +457,6 @@ void Sequencer::StopAllVoices() {
   voiceFreeList.ReturnAll();
   voices.clear();
   numActiveVoices = 0;
-  frameCounter = 0;
 
   DrainExpiredPool();
 

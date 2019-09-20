@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <set>
+#include <map>
 
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string& sourceString);
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string_view& sourceString);
@@ -51,3 +52,44 @@ inline bool check_fileext(std::string fileName, std::string_view fileTag) {
     fileTag.length(), fileTag.length(), fileTag) == 0;
 }
 
+template<typename K, typename V> inline void map_remove(std::map<K, V>& theMap, const K& theKey) {
+  auto mapEntry = theMap.find(theKey);
+  if (mapEntry != theMap.end()) {
+    theMap.erase(mapEntry);
+  }
+}
+
+template<typename K, typename V, typename T> inline void mapped_set_toggle(std::map<K, std::set<V>>& theMap, const K& theKey, const T& theValue) {
+  auto mapEntry = theMap.find(theKey);
+  if (mapEntry != theMap.end()) {
+    set_toggle(mapEntry->second, theValue);
+  }
+  else {
+    theMap.insert({ theKey, { theValue } });
+  }
+}
+
+template<typename K, typename V, typename T> inline void mapped_set_add(std::map<K, std::set<V>>& theMap, const K& theKey, const T& theValue) {
+  auto mapEntry = theMap.find(theKey);
+  if (mapEntry != theMap.end()) {
+    set_add(mapEntry->second, theValue);
+  }
+  else {
+    theMap.insert({ theKey, { theValue } });
+  }
+}
+
+template<typename K, typename V, typename T> inline void mapped_set_remove(std::map<K, std::set<V>>& theMap, const K& theKey, const T& theValue) {
+  auto mapEntry = theMap.find(theKey);
+  if (mapEntry != theMap.end()) {
+    set_remove(mapEntry->second, theValue);
+  }
+}
+
+template<typename K, typename V, typename T> inline bool mapped_set_contains(std::map<K, std::set<V>>& theMap, const K& theKey, const T& theValue) {
+  auto mapEntry = theMap.find(theKey);
+  if (mapEntry != theMap.end()) {
+    return set_contains(mapEntry->second, theValue);
+  }
+  return false;
+}

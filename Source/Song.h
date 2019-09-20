@@ -109,12 +109,11 @@ public:
   }
 
   void AddMeasures(uint32 numMeasures);
-  void RemoveLineByTrackId(uint32 trackId);
   Note* AddNote(uint32 trackId, uint32 beatIndex);
   void RemoveNote(uint32 trackId, uint32 beatIndex);
   void SetInstrument(Instrument* newInstrument);
   bool Save(std::string fileName);
-  void UpdateTracks();
+  void UpdateLines();
 
   static Song* LoadSong(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 };

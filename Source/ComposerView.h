@@ -43,8 +43,8 @@ protected:
   bool pendingLoadSong = false;
   bool pendingSaveSong = false;
 
-  std::vector<std::set<uint32>> noteClipboard;
-  std::vector<std::set<uint32>> noteSelectedStatus;
+  std::map<uint32, std::set<uint32>> noteClipboard;
+  std::map<uint32, std::set<uint32>> selectedNotesByTrackId;
   std::map<uint32, std::vector<Song::Note*>> songNotes;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   std::pair<uint32, uint32> toggledNote = { kInvalidUint32, kInvalidUint32 };
@@ -69,14 +69,12 @@ protected:
   std::map<int, double> playingTrackFlashTimes[2];
 
   std::atomic<bool> isMetronomeOn = false;
-  std::atomic<bool> isLooping = false;
 
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);
   void HandleInput();
   void NotePlayedCallback(uint32 trackIndex, uint32 noteIndex);
   void ProcessPendingActions();
-  void ClearSelectedNotes();
   void SelectedGroupAction(std::function<void(uint32, uint32)> action);
   void NewInstrument();
   Instrument* LoadInstrument(std::string requiredInstrument);
