@@ -521,6 +521,10 @@ void ComposerView::ProcessPendingActions() {
 
     if (pendingAddMeasures != kInvalidUint32) {
       song->AddMeasures(pendingAddMeasures);
+
+      for (auto& line : songNotes) {
+        line.second.resize(song->GetNoteCount());
+      }
     }
 
     // Beats per minute changed
@@ -745,29 +749,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
         pendingSaveSong = true;
       }
 
-      if (ImGui::BeginMenu("Options")) {
-
-        imGuiStyle.ItemSpacing.x = 4;
-
-        int measuresToAdd = addMeasureCount;
-        if (ImGui::InputInt("", &measuresToAdd)) {
-          addMeasureCount = std::min(std::max(kMinMeasuresToAdd,
-            static_cast<uint32>(measuresToAdd)), kMaxMeasuresToAdd);
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::MenuItem("Add measure(s)")) {
-          // @Delay
-          pendingAddMeasures = addMeasureCount;
-        }
-
-        imGuiStyle.ItemSpacing.x = defaultItemSpacing.x;
-
-        ImGui::PopItemWidth();
-        ImGui::EndMenu();
-      }
-
       ConditionalEnableEnd();
 
       ImGui::EndMenu();
@@ -884,6 +865,25 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // @Delay
         pendingTempo = currentBpm;
       }
+
+      ImGui::SameLine();
+
+      imGuiStyle.ItemSpacing.x = 4;
+
+      int measuresToAdd = addMeasureCount;
+      if (ImGui::InputInt("", &measuresToAdd)) {
+        addMeasureCount = std::min(std::max(kMinMeasuresToAdd,
+          static_cast<uint32>(measuresToAdd)), kMaxMeasuresToAdd);
+      }
+
+      ImGui::SameLine();
+
+      if (ImGui::Button("Add measure(s)")) {
+        // @Delay
+        pendingAddMeasures = addMeasureCount;
+      }
+
+      imGuiStyle.ItemSpacing.x = defaultItemSpacing.x;
 
       ImGui::Separator();
 
