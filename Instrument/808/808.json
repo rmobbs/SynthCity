@@ -1,9 +1,11 @@
 {
-    "version": 1,
+    "version": 2,
     "name": "Roland TR-808",
+    "nextid": 4,
     "tracks": [
         {
             "name": "Kick",
+            "id": 0,
             "colorscheme": "808:Kick",
             "patch": {
                 "sounds": [
@@ -16,6 +18,7 @@
         },
         {
             "name": "Clap",
+            "id": 1,
             "colorscheme": "808:Clap",
             "patch": {
                 "sounds": [
@@ -28,6 +31,7 @@
         },
         {
             "name": "Cowbell",
+            "id": 2,
             "colorscheme": "808:Cowbell",
             "patch": {
                 "sounds": [
@@ -40,6 +44,7 @@
         },
         {
             "name": "Hi-Hat",
+            "id": 3,
             "colorscheme": "808:HiHat",
             "patch": {
                 "sounds": [
