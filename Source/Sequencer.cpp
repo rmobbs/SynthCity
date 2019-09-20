@@ -426,23 +426,22 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
     int32 frames = std::min(std::min(ticksRemaining,
       static_cast<int32>(kMaxCallbackSampleFrames)), length);
 
+    if (isPlaying) {
+      beatTime = beatTime + static_cast<float>(frames) /
+        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
+    }
+
+    ticksRemaining -= frames;
+    if (ticksRemaining <= 0) {
+      ticksRemaining = NextFrame();
+    }
+
     // Mix and write audio
     MixVoices(mixbuf.data(), frames);
     WriteOutput(mixbuf.data(), reinterpret_cast<int16 *>(stream), frames);
 
     stream += frames * sizeof(int16) * 2;
     length -= frames;
-
-    ticksRemaining -= frames;
-
-    if (ticksRemaining <= 0) {
-      ticksRemaining = NextFrame();
-    }
-
-    if (isPlaying) {
-      beatTime = beatTime + static_cast<float>(frames) /
-        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
-    }
   }
 }
 
