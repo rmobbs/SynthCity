@@ -90,6 +90,7 @@ protected:
   void NewSong();
   void LoadSong();
   void SaveSong();
+  void RefreshSongLines();
   std::string GetNewInstrumentName(std::string instrumentNameBase);
   std::string GetNewTrackName(std::string trackNameBase);
 

@@ -444,7 +444,7 @@ void Song::SetInstrument(Instrument* newInstrument) {
   if (instrument != nullptr) {
     const auto& tracks = instrument->GetTracks();
     for (const auto& track : tracks) {
-      lines.insert({ track.second->GetUniqueId(), std::list<Note>(GetNoteCount()) });
+      lines.insert({ track.second->GetUniqueId(), std::list<Note>() });
     }
   }
 }

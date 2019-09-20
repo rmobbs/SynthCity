@@ -99,6 +99,7 @@ std::string ComposerView:: GetNewInstrumentName(std::string instrumentNameBase) 
 }
 
 void ComposerView::NewInstrument() {
+  Sequencer::Get().StopKill();
   Sequencer::Get().GetSong()->SetInstrument(new
     Instrument(GetNewInstrumentName(Instrument::kDefaultName)));
 
@@ -217,15 +218,8 @@ void ComposerView::LoadSong() {
     });
 
     if (song != nullptr) {
-      songLines.clear();
-      for (auto& line : song->GetBarLines()) {
-        std::vector<Song::Note*> notes(song->GetNoteCount());        
-        for (auto lineIter = line.second.begin(); lineIter != line.second.end(); ++lineIter) {
-          notes[lineIter->GetBeatIndex()] = const_cast<Song::Note*>(&(*lineIter));
-        }
-        songLines.insert({ line.first, { line.first, notes } });
-      }
       Sequencer::Get().SetSong(song);
+      RefreshSongLines();
     }
   }
 }
@@ -419,6 +413,20 @@ void ComposerView::HandleInput() {
   hoveredNote = { -1, -1 };
 }
 
+void ComposerView::RefreshSongLines() {
+  songLines.clear();
+  auto song = Sequencer::Get().GetSong();
+  if (song != nullptr) {
+    for (auto& line : song->GetBarLines()) {
+      std::vector<Song::Note*> notes(song->GetNoteCount());
+      for (auto lineIter = line.second.begin(); lineIter != line.second.end(); ++lineIter) {
+        notes[lineIter->GetBeatIndex()] = const_cast<Song::Note*>(&(*lineIter));
+      }
+      songLines.insert({ line.first, { line.first, notes } });
+    }
+  }
+}
+
 void ComposerView::ProcessPendingActions() {
   auto& sequencer = Sequencer::Get();
 
@@ -445,11 +453,10 @@ void ComposerView::ProcessPendingActions() {
       // Track mute state changed
       if (pendingTrackMute.first != kInvalidUint32) {
         auto line = songLines.find(pendingTrackMute.first);
-        if (line != songLines.end()) {
-          line->second.mute = pendingTrackMute.second;
-          if (line->second.mute && pendingSoloTrack == pendingTrackMute.first) {
-            pendingSoloTrack = kInvalidUint32;
-          }
+        assert(line != songLines.end());
+        line->second.mute = pendingTrackMute.second;
+        if (line->second.mute && pendingSoloTrack == pendingTrackMute.first) {
+          pendingSoloTrack = kInvalidUint32;
         }
       }
 
@@ -457,9 +464,7 @@ void ComposerView::ProcessPendingActions() {
       if (pendingPlayTrack != kInvalidUint32) {
         auto track = instrument->GetTrackById(pendingPlayTrack);
         assert(track != nullptr);
-        if (track != nullptr) {
-          Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
-        }
+        Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
       }
 
       // Mute all voices except the solo track
@@ -470,21 +475,20 @@ void ComposerView::ProcessPendingActions() {
       // Track cloned via dialog previous frame
       if (pendingCloneTrack != kInvalidUint32) {
         auto oldTrack = instrument->GetTrackById(pendingCloneTrack);
-        if (oldTrack != nullptr) {
-          auto newTrack = new Track(*oldTrack);
+        assert(oldTrack != nullptr);
+        auto newTrack = new Track(*oldTrack);
           
-          newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
+        newTrack->SetName(GetNewTrackName(oldTrack->GetName()));
 
-          // Add track to instrument
-          instrument->AddTrack(newTrack);
+        // Add track to instrument
+        instrument->AddTrack(newTrack);
           
-          // Update song
-          song->UpdateLines();
+        // Update song
+        song->UpdateLines();
 
-          // Add line to note array
-          songLines.insert({ newTrack->GetUniqueId(),
-            { newTrack->GetUniqueId(), std::vector<Song::Note*>(song->GetNoteCount()) } });
-        }
+        // Add line to note array
+        songLines.insert({ newTrack->GetUniqueId(),
+          { newTrack->GetUniqueId(), std::vector<Song::Note*>(song->GetNoteCount()) } });
       }
 
       // Track removed via dialog previous frame
@@ -548,6 +552,7 @@ void ComposerView::ProcessPendingActions() {
     if (instrument != nullptr) {
       Sequencer::Get().StopKill();
       song->SetInstrument(instrument);
+      RefreshSongLines();
     }
   }
 
