@@ -411,7 +411,7 @@ void GamePreviewView::Hide() {
   }
   fallingNoteFreeList.ReturnAll();
 
-  Sequencer::Get().Stop();
+  Sequencer::Get().StopKill();
 }
 
 void GamePreviewView::HandleInput() {
