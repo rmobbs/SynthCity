@@ -3,9 +3,6 @@
 #include "BaseTypes.h"
 #include "SerializeFwd.h"
 
-// NO NO NO
-#include "GameInput.h"
-
 #include <vector>
 #include <string>
 #include <functional>
@@ -39,12 +36,7 @@ public:
 private:
   static Sequencer* singleton;
 
-  GameInput gameInput;
-
   uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
-  void* notePlayedPayload = nullptr;
-  uint32 currFrame = 0;
-  uint32 nextFrame = 0;
   uint32 currBeat = 0;
   uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
@@ -53,18 +45,14 @@ private:
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
   int32 ticksPerFrame = 0;
   int32 ticksRemaining = 0;
-  uint32 songStartFrame = 0;
-  uint32 introBeatCount = 0;
   std::vector<float> mixbuf;
   std::list<Voice*> voices;
   std::map<int32, Voice*> voiceMap;
 
-  std::atomic<bool> isGameplayMode = false;
   std::atomic<bool> isPlaying = false;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
   std::atomic<uint32> numActiveVoices = 0;
   std::atomic<float> beatTime = 0.0f;
-  std::atomic<bool> isLooping = false;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
@@ -76,16 +64,6 @@ private:
 public:
   inline Song* GetSong() const {
     return song;
-  }
-
-  inline GameInput& GetGameInput() {
-    return gameInput;
-  }
-
-  // Expects full beats
-  void SetIntroBeats(uint32 introBeatCount);
-  inline uint32 GetIntroBeats() const {
-    return introBeatCount;
   }
 
   inline uint32 GetSubdivision() const {
@@ -106,13 +84,6 @@ public:
     return isPlaying;
   }
 
-  inline bool IsLooping() const {
-    return isLooping;
-  }
-  inline void SetLooping(bool isLooping) {
-    this->isLooping = isLooping;
-  }
-
   inline uint32 GetNumActiveVoices() const {
     return numActiveVoices;
   }
@@ -122,10 +93,6 @@ public:
   }
   void SetMasterVolume(float masterVolume) {
     this->masterVolume = masterVolume;
-  }
-
-  inline void SetGameplayMode(bool gameplayMode) {
-    isGameplayMode = gameplayMode;
   }
 
   inline float GetBeatTime() const {
@@ -139,6 +106,7 @@ public:
   void PauseKill();
   void Stop();
   void StopKill();
+  void Loop();
   void StopVoice(int32 voiceId);
   int32 PlayPatch(const Patch* patch, float volume);
   uint32 UpdateInterval();

@@ -69,6 +69,7 @@ protected:
   std::map<int, double> playingTrackFlashTimes[2];
 
   std::atomic<bool> isMetronomeOn = false;
+  std::atomic<bool> isLooping = false;
 
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);

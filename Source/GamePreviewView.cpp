@@ -7,6 +7,7 @@
 #include "Sequencer.h"
 #include "Logging.h"
 #include "Song.h"
+#include "Instrument.h"
 #include "AudioGlobals.h"
 #include "soil.h"
 
@@ -53,6 +54,8 @@ static glm::vec2 placardLocations[] = {
 };
 static glm::vec2 readyPlacardLocation(600.0f, 200.0f);
 
+static constexpr char kGameplayKeys[] = { 'a', 's', 'd', 'f' };
+
 class NoteSprite : public SpriteRenderable {
 protected:
   uint32 lineIndex = UINT32_MAX;
@@ -63,6 +66,7 @@ protected:
   bool canTrigger = true;
   glm::vec2 originalExtents;
   glm::vec2 triggerPosition;
+  Track* track = nullptr;
 public:
   NoteSprite() {
 
@@ -74,6 +78,13 @@ public:
   , lineIndex(lineIndex)
   , originalExtents(fallingNoteExtent) {
  
+  }
+
+  inline void SetTrack(Track* track) {
+    this->track = track;
+  }
+  inline Track* GetTrack() const {
+    return track;
   }
 
   inline float GetBeatTime() const {
@@ -123,7 +134,8 @@ public:
 FreeList<NoteSprite, float, uint32> fallingNoteFreeList;
 
 GamePreviewView::GamePreviewView(uint32 mainWindowHandle)
-  : mainWindowHandle(mainWindowHandle) {
+  : mainWindowHandle(mainWindowHandle)
+  , gameInput({ 'a', 's', 'd', 'f' }) {
   InitResources();
 }
 
@@ -264,99 +276,142 @@ void GamePreviewView::TermResources() {
   readyPlacard = nullptr;
 }
 
-void GamePreviewView::OnBeat(uint32 beat) {
+void GamePreviewView::OnAudioCallback(float beatTime) {
+  std::array<float, GameGlobals::kNumGameplayLines> presses = { 0.0f };
+  std::array<float, GameGlobals::kNumGameplayLines> releases = { 0.0f };
 
-  switch (beat) {
-    case 1:
-      mode = Mode::Ready;
-      break;
-    case 5:
-      mode = Mode::Countdown_12;
-      Sequencer::Get().PlayMetronome(true);
-      break;
-    case 7:
-      mode = Mode::Countdown_34;
-      Sequencer::Get().PlayMetronome(true);
-      break;
-    case 9:
-      mode = Mode::Countdown_1;
-      Sequencer::Get().PlayMetronome(true);
-      break;
-    case 10:
-      mode = Mode::Countdown_2;
-      Sequencer::Get().PlayMetronome(true);
-      break;
-    case 11:
-      mode = Mode::Countdown_3;
-      Sequencer::Get().PlayMetronome(true);
-      break;
-    case 12:
-      mode = Mode::Countdown_4;
-      Sequencer::Get().PlayMetronome(true);
-      break;
-    case 13:
-      mode = Mode::Playing;
-      break;
-    default:
-      break;
+  gameInput.TakeSnapshot(beatTime, presses, releases);
+
+  for (size_t gameLineIndex = 0; gameLineIndex < GameGlobals::kNumGameplayLines; ++gameLineIndex) {
+    if (presses[gameLineIndex]) {
+      // Trigger the sound associated with the line
+      auto track = lineTracks[gameLineIndex];
+      if (track != nullptr) {
+        Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+      }
+    }
   }
 }
 
-void GamePreviewView::Show() {
-#if 0
-  auto& sequencer = Sequencer::Get();
 
-  auto song = sequencer.GetSong();
-  // Pre-spawn any necessary notes
+void GamePreviewView::OnBeat(uint32 beatIndex) {
 
-  float subdivStep = kDistanceBetweenQuarterNotes / song->GetMinNoteValue();
+  if (mode != Mode::Playing) {
+    if ((beatIndex % Sequencer::Get().GetSong()->GetMinNoteValue()) == 0) {
 
-  // Spawn initial notes
-  float offset = static_cast<float>(kReadyBeats + kCountdownBeats);
-  for (size_t noteIndex = 0; noteIndex < song->GetNoteCount(); ++noteIndex) {
-    for (size_t lineIndex = 0; lineIndex < song->GetLineCount(); ++lineIndex) {
-      const auto& note = song->GetLine(lineIndex)[noteIndex];
-      if (note.GetEnabled() && note.GetGameIndex() != -1) {
-        auto fallingNote = fallingNoteFreeList.Borrow(offset + static_cast<float>(noteIndex) /
-          static_cast<float>(song->GetMinNoteValue()), note.GetGameIndex());
-        fallingNote->SetExtents(fallingNoteExtent);
-        fallingNote->AddTexture(fallingNoteTextureId);
-        fallingNotes.push_back(fallingNote);
+      auto fullBeat = beatIndex / Sequencer::Get().GetSong()->GetMinNoteValue();
+      switch (fullBeat) {
+        case 0:
+          mode = Mode::Ready;
+          break;
+        case 4:
+          mode = Mode::Countdown_12;
+          Sequencer::Get().PlayMetronome(true);
+          break;
+        case 6:
+          mode = Mode::Countdown_34;
+          Sequencer::Get().PlayMetronome(true);
+          break;
+        case 8:
+          mode = Mode::Countdown_1;
+          Sequencer::Get().PlayMetronome(true);
+          break;
+        case 9:
+          mode = Mode::Countdown_2;
+          Sequencer::Get().PlayMetronome(true);
+          break;
+        case 10:
+          mode = Mode::Countdown_3;
+          Sequencer::Get().PlayMetronome(true);
+          break;
+        case 11:
+          mode = Mode::Countdown_4;
+          Sequencer::Get().PlayMetronome(true);
+          break;
+        case 12:
+          mode = Mode::Playing;
+          break;
+        default:
+          break;
       }
     }
   }
 
-  beatCallbackId = Sequencer::Get().AddBeatCallback(
-    [](uint32 beat, bool isDownBeat, void* payload) {
-      reinterpret_cast<GamePreviewView*>(payload)->OnBeat(beat);
-    }, this);
+  if (beatIndex >= introBeats) {
+    auto& sequencer = Sequencer::Get();
 
-  mode = Mode::Ready;
+    auto songBeat = beatIndex - introBeats;
+    for (auto& autoLine : autoNotes) {
+      if (autoLine.cur != autoLine.end) {
+        if (autoLine.cur->GetBeatIndex() == songBeat) {
+          // Autoplay any non-tagged notes
+          if (autoLine.cur->GetGameIndex() == kInvalidUint32) {
+            sequencer.PlayPatch(autoLine.track->GetPatch(), autoLine.track->GetVolume());
+          }
+          ++autoLine.cur;
+        }
+      }
+    }
+  }
+}
 
-  sequencer.SetGameplayMode(true);
-  sequencer.SetIntroBeats(kReadyBeats + kCountdownBeats);
-  sequencer.Play();
+void GamePreviewView::Show() {
+  // Gotta catch 'em all
+  auto& sequencer = Sequencer::Get();
+  auto song = sequencer.GetSong();
+  auto instrument = song->GetInstrument();
 
-  perfectScore = fallingNotes.size() * 1.0f;
+  // Pre-spawn and position note sprites on gameplay lines
+  uint32 numFallingNotes = 0;
+  const auto& lines = song->GetBarLines();
+  for (const auto& line : lines) {
+    for (const auto& note : line.second) {
+      auto gameIndex = note.GetGameIndex();
+      if (gameIndex < GameGlobals::kNumGameplayLines) {
+        auto fallingNote = fallingNoteFreeList.Borrow(static_cast<float>(kReadyBeats + kCountdownBeats) +
+          static_cast<float>(note.GetBeatIndex()) /
+          static_cast<float>(song->GetMinNoteValue()), gameIndex);
+        fallingNote->SetTrack(instrument->GetTrackById(line.first));
+        fallingNote->SetExtents(fallingNoteExtent);
+        fallingNote->AddTexture(fallingNoteTextureId);
+        fallingNotes[gameIndex].push_back(fallingNote);
+        ++numFallingNotes;
+      }
+    }
+  }
+
+  // Want them sorted by beat time
+  for (uint32 gameLine = 0; gameLine < GameGlobals::kNumGameplayLines; ++gameLine) {
+    fallingNotes[gameLine].sort([](const NoteSprite* a, const NoteSprite* b) {
+      return a->GetBeatTime() < b->GetBeatTime();
+    });
+  }
+
+  // Setup our autoplay
+  for (auto& line : lines) {
+    autoNotes.push_back({ instrument->GetTrackById(line.first), line.second.begin(), line.second.end() });
+  }
+
+  // Used in the beat callback, which is min beat
+  introBeats = (kReadyBeats + kCountdownBeats) * song->GetMinNoteValue();
+  perfectScore = numFallingNotes * 1.0f;
   currentScore = 0.0f;
   noteStreak = 0;
-#endif
+  mode = Mode::Ready;
+
+  sequencer.Play();
 }
 
 void GamePreviewView::Hide() {
-#if 0
-  auto& sequencer = Sequencer::Get();
+  autoNotes.clear();
 
-  sequencer.SetGameplayMode(false);
-
-  fallingNotes.clear();
-
-  if (beatCallbackId != UINT32_MAX) {
-    sequencer.RemoveBeatCallback(beatCallbackId);
-    beatCallbackId = UINT32_MAX;
+  for (uint32 gameLine = 0; gameLine < GameGlobals::kNumGameplayLines; ++gameLine) {
+    fallingNotes[gameLine].clear();
+    lineTracks[gameLine] = nullptr;
   }
-  sequencer.Stop();
-#endif
+  fallingNoteFreeList.ReturnAll();
+
+  Sequencer::Get().Stop();
 }
 
 void GamePreviewView::HandleInput() {
@@ -368,6 +423,17 @@ void GamePreviewView::HandleInput() {
 }
 
 void GamePreviewView::Render(ImVec2 canvasSize) {
+  AudioGlobals::LockAudio();
+  for (uint32 i = 0; i < GameGlobals::kNumGameplayLines; ++i) {
+    if (fallingNotes[i].empty()) {
+      lineTracks[i] = nullptr;
+    }
+    else {
+      lineTracks[i] = fallingNotes[i].front()->GetTrack();
+    }
+  }
+  AudioGlobals::UnlockAudio();
+
   HandleInput();
 
   glClearColor(0.2f, 0.2f, 0.7f, 0);
@@ -432,93 +498,91 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
   // Check for button presses
   std::array<float, GameGlobals::kNumGameplayLines> presses;
-  Sequencer::Get().GetGameInput().ConsumePresses(presses);
+  gameInput.ConsumePresses(presses);
 
   // Update falling notes
-  auto fallingNoteIter = fallingNotes.begin();
-  while (fallingNoteIter != fallingNotes.end()) {
-    auto fallingNote = *fallingNoteIter;
+  for (uint32 gameLine = 0; gameLine < GameGlobals::kNumGameplayLines; ++gameLine) {
+    auto fallingNoteIter = fallingNotes[gameLine].begin();
+    while (fallingNoteIter != fallingNotes[gameLine].end()) {
+      auto fallingNote = *fallingNoteIter;
 
-    if (fallingNote->Triggerable()) {
-      auto lineIndex = fallingNote->GetGameLineIndex();
-      if (presses[lineIndex] > 0.0f) {
-        auto visualDelta = (fallingNote->GetBeatTime() - presses[lineIndex]) * kDistanceBetweenQuarterNotes;
+      if (fallingNote->Triggerable()) {
+       if (presses[gameLine] > 0.0f) {
+          auto visualDelta = (fallingNote->GetBeatTime() - presses[gameLine]) * kDistanceBetweenQuarterNotes;
 
-        if (visualDelta < targetWindowScale) {
-          if (visualDelta > targetWindowDeltaNeg) {
-            // Trigger it
-            fallingNote->Trigger(beatTime, true);
+          if (visualDelta < targetWindowScale) {
+            if (visualDelta > targetWindowDeltaNeg) {
+              // Trigger it
+              fallingNote->Trigger(beatTime, true);
 
-            // Position (UL-relative)
-            fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
+              // Position (UL-relative)
+              fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
 
-            // Update score
-            float score = 0.0f;
-            if (std::fabsf(visualDelta) < std::numeric_limits<float>::epsilon()) {
-              score += 1.0f;
-            }
-            else if (visualDelta > 0.0f) {
-              score += 1.0f - (visualDelta / targetWindowScale);
+              // Update score
+              float score = 0.0f;
+              if (std::fabsf(visualDelta) < std::numeric_limits<float>::epsilon()) {
+                score += 1.0f;
+              }
+              else if (visualDelta > 0.0f) {
+                score += 1.0f - (visualDelta / targetWindowScale);
+              }
+              else {
+                score += 1.0f - (visualDelta / targetWindowDeltaNeg);
+              }
+
+              currentScore += score;
+              streakScore += score;
+
+              // Update note streak
+              ++noteStreak;
             }
             else {
-              score += 1.0f - (visualDelta / targetWindowDeltaNeg);
+              // Disqualify it
+              fallingNote->Disqualify();
+
+              // Reset note streak
+              noteStreak = 0;
+              streakScore = 0.0f;
             }
-
-            currentScore += score;
-            streakScore += score;
-
-            // Update note streak
-            ++noteStreak;
-          }
-          else {
-            // Disqualify it
-            fallingNote->Disqualify();
-
-            // Reset note streak
-            noteStreak = 0;
-            streakScore = 0.0f;
           }
         }
       }
-    }
 
-    // If it's already triggered, update its fade out effects until it expires
-    if (fallingNote->Triggered()) {
-      if (!fallingNote->UpdateEffects(beatTime)) {
-        fallingNoteIter = fallingNotes.erase(fallingNoteIter);
-        fallingNoteFreeList.Return(fallingNote);
-        continue;
+      // If it's already triggered, update its fade out effects until it expires
+      if (fallingNote->Triggered()) {
+        if (!fallingNote->UpdateEffects(beatTime)) {
+          fallingNoteIter = fallingNotes[gameLine].erase(fallingNoteIter);
+          fallingNoteFreeList.Return(fallingNote);
+          continue;
+        }
       }
-    }
-    // Otherwise keep dropping it
-    else {
-      float notePosY = targetLinePosition.y - fallingNoteExtent.y -
-        (fallingNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
-
-      // Bottom of screen
-      if (notePosY >= canvasSize.y) {
-        noteStreak = 0;
-        streakScore = 0.0f;
-        fallingNoteIter = fallingNotes.erase(fallingNoteIter);
-        fallingNoteFreeList.Return(fallingNote);
-        continue;
-      }
-      // Top of screen
-      else if (notePosY < -fretExtents.y) {
-        break;
-      }
-      // The rest
+      // Otherwise keep dropping it
       else {
-        fallingNote->position = glm::vec2(noteLanePosition[fallingNote->
-          GetGameLineIndex()].x + (noteLaneExtents.x * 0.5f) - fallingNoteExtent.x * 0.5f, notePosY);
+        float notePosY = targetLinePosition.y - fallingNoteExtent.y -
+          (fallingNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
+        // Bottom of screen
+        if (notePosY >= canvasSize.y) {
+          noteStreak = 0;
+          streakScore = 0.0f;
+          fallingNoteIter = fallingNotes[gameLine].erase(fallingNoteIter);
+          fallingNoteFreeList.Return(fallingNote);
+          continue;
+        }
+        // Top of screen
+        else if (notePosY < -fretExtents.y) {
+          break;
+        }
+        // The rest
+        else {
+          fallingNote->position = glm::vec2(noteLanePosition[fallingNote->
+            GetGameLineIndex()].x + (noteLaneExtents.x * 0.5f) - fallingNoteExtent.x * 0.5f, notePosY);
+        }
       }
+
+      fallingNote->Render();
+      ++fallingNoteIter;
     }
-
-    fallingNote->Render();
-    ++fallingNoteIter;
   }
-
-
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
@@ -534,7 +598,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
         mappingKey = lineIndex;
       }
       ImGui::SameLine();
-      ImGui::Text(SDL_GetKeyName(static_cast<SDL_Keycode>(Sequencer::Get().GetGameInput().GetLineKey(lineIndex))));
+      ImGui::Text(SDL_GetKeyName(static_cast<SDL_Keycode>(gameInput.GetLineKey(lineIndex))));
     }
 
     if (mappingKey != -1) {
@@ -544,7 +608,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
       auto keyCode = InputState::GetFirstPressedKey();
       if (keyCode != -1) {
         AudioGlobals::LockAudio();
-        Sequencer::Get().GetGameInput().SetLineKey(mappingKey, keyCode);
+        gameInput.SetLineKey(mappingKey, keyCode);
         AudioGlobals::UnlockAudio();
         mappingKey = -1;
       }

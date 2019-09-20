@@ -2,11 +2,17 @@
 
 #include "View.h"
 #include "FreeList.h"
+#include "glm/vec2.hpp"
+#include "GameGlobals.h"
+#include "GameInput.h"
+#include "Song.h"
+
 #include <list>
-#include "glm//vec2.hpp"
+#include <array>
 
 class SpriteRenderable;
 class NoteSprite;
+class Track;
 class GamePreviewView : public View {
 protected:
   enum class Mode {
@@ -25,15 +31,23 @@ protected:
   uint32 mainWindowHandle = UINT32_MAX;
   std::vector<SpriteRenderable*> staticSprites;
   std::vector<SpriteRenderable*> fretSprites;
-  std::list<NoteSprite*> fallingNotes;
+  std::array<Track*, GameGlobals::kNumGameplayLines> lineTracks = { nullptr };
+  std::array<std::list<NoteSprite*>, GameGlobals::kNumGameplayLines> fallingNotes;
   std::vector<SpriteRenderable*> countdownPlacards;
+
+  struct LineState {
+    Track* track = nullptr;
+    std::list<Song::Note>::const_iterator cur;
+    std::list<Song::Note>::const_iterator end;
+  };
+  std::vector<LineState> autoNotes;
   SpriteRenderable* readyPlacard = nullptr;
   SpriteRenderable* targetZone = nullptr;
-  uint32 beatCallbackId = UINT32_MAX;
   std::vector<uint32> loadedTextures;
   uint32 fallingNoteTextureId;
   uint32 whiteTextureId;
   glm::vec2 whiteTextureSize;
+  GameInput gameInput;
   float targetWindowScale = 0.0f;
   float targetWindowDeltaPos = 0.0f;
   float targetWindowDeltaNeg = 0.0f;
@@ -42,12 +56,12 @@ protected:
   float streakScore = 0.0f;
   bool drawZone = false;
   int32 mappingKey = -1;
+  uint32 introBeats = 0;
   uint32 noteStreak;
 
   void InitResources();
   void TermResources();
   void HandleInput();
-  void OnBeat(uint32 beat);
   uint32 LoadTexture(const std::string& textureName, uint32* outWidth = nullptr, uint32* outHeight = nullptr);
 public:
   GamePreviewView(uint32 mainWindowHandle);
@@ -56,4 +70,7 @@ public:
   void Show() override;
   void Hide() override;
   void Render(ImVec2 canvasSize) override;
+
+  void OnAudioCallback(float beatTime) override;
+  void OnBeat(uint32 beatIndex) override;
 };

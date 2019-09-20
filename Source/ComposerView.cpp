@@ -579,6 +579,17 @@ void ComposerView::OnBeat(uint32 beatIndex) {
       (song->GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
   }
 
+  if (beatIndex >= song->GetNoteCount()) {
+    if (isLooping) {
+      sequencer.Loop();
+      beatIndex = 0;
+    }
+    else {
+      sequencer.Stop();
+      return;
+    }
+  }
+
   auto instrument = song->GetInstrument();
 
   for (const auto& line : songNotes) {
@@ -1277,10 +1288,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // Loop
         ImGui::SameLine();
         ImGui::PushItemWidth(100);
-        bool isLooping = sequencer.IsLooping();
-        if (ImGui::Checkbox("Loop", &isLooping)) {
+        bool localIsLooping = isLooping;
+        if (ImGui::Checkbox("Loop", &localIsLooping)) {
           // @Atomic
-          sequencer.SetLooping(isLooping);
+          isLooping = localIsLooping;
         }
         ImGui::PopItemWidth();
 

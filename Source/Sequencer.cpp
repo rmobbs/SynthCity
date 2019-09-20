@@ -39,8 +39,6 @@ static constexpr uint32 kDefaultChannels = 2;
 static constexpr float kDefaultMasterVolume = 0.7f;
 static constexpr uint32 kDefaultAudioBufferSize = 2048;
 
-static constexpr char kGameplayKeys[] = { 'a', 's', 'd', 'f' };
-
 // A voice is a playing instance of a patch
 class Voice {
 private:
@@ -129,8 +127,7 @@ bool Sequencer::TermSingleton() {
   return true;
 }
 
-Sequencer::Sequencer() 
-  : gameInput({ 'a', 's', 'd', 'f' }) {
+Sequencer::Sequencer() {
 
 }
 
@@ -290,6 +287,12 @@ void Sequencer::StopKill() {
   StopAllVoices();
 }
 
+void Sequencer::Loop() {
+  beatTime = 0.0f;
+  currBeat = 0;
+  nextBeat = 1;
+}
+
 void Sequencer::SetPosition(uint32 newPosition) {
   nextBeat = currBeat = newPosition;
 }
@@ -304,36 +307,15 @@ uint32 Sequencer::GetNextPosition() const {
 
 uint32 Sequencer::NextFrame()
 {
-  currFrame = nextFrame++;
-
-  auto view = View::GetCurrentView();
-
-  if (view != nullptr) {
-    view->OnFrame(currFrame);
-  }
-
   if (!song || !isPlaying) {
     return interval;
   }
 
   currBeat = nextBeat++;
 
-  if (currBeat >= song->GetNoteCount()) {
-    if (isLooping) {
-      beatTime = 0.0f;
-
-      currBeat = 0;
-      nextBeat = 1;
-    }
-    else {
-      Stop();
-    }
-  }
-
-  if (isPlaying) {
-    if (view != nullptr) {
-      view->OnBeat(currBeat);
-    }
+  auto view = View::GetCurrentView();
+  if (view != nullptr) {
+    view->OnBeat(currBeat);
   }
 
   return interval;
@@ -431,6 +413,11 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
         (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
     }
 
+    auto view = View::GetCurrentView();
+    if (view != nullptr) {
+      view->OnAudioCallback(beatTime);
+    }
+
     ticksRemaining -= frames;
     if (ticksRemaining <= 0) {
       ticksRemaining = NextFrame();
@@ -443,11 +430,6 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
     stream += frames * sizeof(int16) * 2;
     length -= frames;
   }
-}
-
-void Sequencer::SetIntroBeats(uint32 introBeatCount) {
-  assert(!isPlaying);
-  this->introBeatCount = introBeatCount;
 }
 
 void Sequencer::StopAllVoices() {
