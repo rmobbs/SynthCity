@@ -425,11 +425,13 @@ void GamePreviewView::HandleInput() {
 void GamePreviewView::Render(ImVec2 canvasSize) {
   AudioGlobals::LockAudio();
   for (uint32 i = 0; i < GameGlobals::kNumGameplayLines; ++i) {
-    if (fallingNotes[i].empty()) {
-      lineTracks[i] = nullptr;
-    }
-    else {
-      lineTracks[i] = fallingNotes[i].front()->GetTrack();
+    lineTracks[i] = nullptr;
+
+    for (auto noteIter = fallingNotes[i].begin(); noteIter != fallingNotes[i].end(); ++noteIter) {
+      if ((*noteIter)->Triggerable()) {
+        lineTracks[i] = (*noteIter)->GetTrack();
+        break;
+      }
     }
   }
   AudioGlobals::UnlockAudio();
