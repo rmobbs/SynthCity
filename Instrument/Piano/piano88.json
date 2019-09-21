@@ -1,15 +1,17 @@
 {
-    "version": 1,
+    "version": 2,
     "name": "88-Key Piano",
+    "nextid": 88,
     "tracks": [
         {
             "name": "C8",
+            "id": 0,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -22,12 +24,13 @@
         },
         {
             "name": "B7",
+            "id": 1,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -40,12 +43,13 @@
         },
         {
             "name": "Bb7",
+            "id": 2,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -58,12 +62,13 @@
         },
         {
             "name": "A7",
+            "id": 3,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -76,12 +81,13 @@
         },
         {
             "name": "Ab7",
+            "id": 4,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -94,12 +100,13 @@
         },
         {
             "name": "G7",
+            "id": 5,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -112,12 +119,13 @@
         },
         {
             "name": "Gb7",
+            "id": 6,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -130,12 +138,13 @@
         },
         {
             "name": "F7",
+            "id": 7,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -148,12 +157,13 @@
         },
         {
             "name": "E7",
+            "id": 8,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -166,12 +176,13 @@
         },
         {
             "name": "Eb7",
+            "id": 9,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -184,12 +195,13 @@
         },
         {
             "name": "D7",
+            "id": 10,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -202,12 +214,13 @@
         },
         {
             "name": "Db7",
+            "id": 11,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -220,12 +233,13 @@
         },
         {
             "name": "C7",
+            "id": 12,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -238,12 +252,13 @@
         },
         {
             "name": "B6",
+            "id": 13,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -256,12 +271,13 @@
         },
         {
             "name": "Bb6",
+            "id": 14,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -274,12 +290,13 @@
         },
         {
             "name": "A6",
+            "id": 15,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -292,12 +309,13 @@
         },
         {
             "name": "Ab6",
+            "id": 16,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -310,12 +328,13 @@
         },
         {
             "name": "G6",
+            "id": 17,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -328,12 +347,13 @@
         },
         {
             "name": "Gb6",
+            "id": 18,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -346,12 +366,13 @@
         },
         {
             "name": "F6",
+            "id": 19,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -364,12 +385,13 @@
         },
         {
             "name": "E6",
+            "id": 20,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -382,12 +404,13 @@
         },
         {
             "name": "Eb6",
+            "id": 21,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -400,12 +423,13 @@
         },
         {
             "name": "D6",
+            "id": 22,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -418,12 +442,13 @@
         },
         {
             "name": "Db6",
+            "id": 23,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -436,12 +461,13 @@
         },
         {
             "name": "C6",
+            "id": 24,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -454,12 +480,13 @@
         },
         {
             "name": "B5",
+            "id": 25,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -472,12 +499,13 @@
         },
         {
             "name": "Bb5",
+            "id": 26,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -490,12 +518,13 @@
         },
         {
             "name": "A5",
+            "id": 27,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -508,12 +537,13 @@
         },
         {
             "name": "Ab5",
+            "id": 28,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -526,12 +556,13 @@
         },
         {
             "name": "G5",
+            "id": 29,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -544,12 +575,13 @@
         },
         {
             "name": "Gb5",
+            "id": 30,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -562,12 +594,13 @@
         },
         {
             "name": "F5",
+            "id": 31,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -580,12 +613,13 @@
         },
         {
             "name": "E5",
+            "id": 32,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -598,12 +632,13 @@
         },
         {
             "name": "Eb5",
+            "id": 33,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -616,12 +651,13 @@
         },
         {
             "name": "D5",
+            "id": 34,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -634,12 +670,13 @@
         },
         {
             "name": "Db5",
+            "id": 35,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -652,12 +689,13 @@
         },
         {
             "name": "C5",
+            "id": 36,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -670,12 +708,13 @@
         },
         {
             "name": "B4",
+            "id": 37,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -688,12 +727,13 @@
         },
         {
             "name": "Bb4",
+            "id": 38,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -706,12 +746,13 @@
         },
         {
             "name": "A4",
+            "id": 39,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -724,12 +765,13 @@
         },
         {
             "name": "Ab4",
+            "id": 40,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -742,12 +784,13 @@
         },
         {
             "name": "G4",
+            "id": 41,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -760,12 +803,13 @@
         },
         {
             "name": "Gb4",
+            "id": 42,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -778,12 +822,13 @@
         },
         {
             "name": "F4",
+            "id": 43,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -796,12 +841,13 @@
         },
         {
             "name": "E4",
+            "id": 44,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -814,12 +860,13 @@
         },
         {
             "name": "Eb4",
+            "id": 45,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -832,12 +879,13 @@
         },
         {
             "name": "D4",
+            "id": 46,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -850,12 +898,13 @@
         },
         {
             "name": "Db4",
+            "id": 47,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -868,12 +917,13 @@
         },
         {
             "name": "C4",
+            "id": 48,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -886,12 +936,13 @@
         },
         {
             "name": "B3",
+            "id": 49,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -904,12 +955,13 @@
         },
         {
             "name": "Bb3",
+            "id": 50,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -922,12 +974,13 @@
         },
         {
             "name": "A3",
+            "id": 51,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -940,12 +993,13 @@
         },
         {
             "name": "Ab3",
+            "id": 52,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -958,12 +1012,13 @@
         },
         {
             "name": "G3",
+            "id": 53,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -976,12 +1031,13 @@
         },
         {
             "name": "Gb3",
+            "id": 54,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -994,12 +1050,13 @@
         },
         {
             "name": "F3",
+            "id": 55,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1012,12 +1069,13 @@
         },
         {
             "name": "E3",
+            "id": 56,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1030,12 +1088,13 @@
         },
         {
             "name": "Eb3",
+            "id": 57,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1048,12 +1107,13 @@
         },
         {
             "name": "D3",
+            "id": 58,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1066,12 +1126,13 @@
         },
         {
             "name": "Db3",
+            "id": 59,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1084,12 +1145,13 @@
         },
         {
             "name": "C3",
+            "id": 60,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1102,12 +1164,13 @@
         },
         {
             "name": "B2",
+            "id": 61,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1120,12 +1183,13 @@
         },
         {
             "name": "Bb2",
+            "id": 62,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1138,12 +1202,13 @@
         },
         {
             "name": "A2",
+            "id": 63,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1156,12 +1221,13 @@
         },
         {
             "name": "Ab2",
+            "id": 64,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1174,12 +1240,13 @@
         },
         {
             "name": "G2",
+            "id": 65,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1192,12 +1259,13 @@
         },
         {
             "name": "Gb2",
+            "id": 66,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1210,12 +1278,13 @@
         },
         {
             "name": "F2",
+            "id": 67,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1228,12 +1297,13 @@
         },
         {
             "name": "E2",
+            "id": 68,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1246,12 +1316,13 @@
         },
         {
             "name": "Eb2",
+            "id": 69,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1264,12 +1335,13 @@
         },
         {
             "name": "D2",
+            "id": 70,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1282,12 +1354,13 @@
         },
         {
             "name": "Db2",
+            "id": 71,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1300,12 +1373,13 @@
         },
         {
             "name": "C2",
+            "id": 72,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1318,12 +1392,13 @@
         },
         {
             "name": "B1",
+            "id": 73,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1336,12 +1411,13 @@
         },
         {
             "name": "Bb1",
+            "id": 74,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1354,12 +1430,13 @@
         },
         {
             "name": "A1",
+            "id": 75,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1372,12 +1449,13 @@
         },
         {
             "name": "Ab1",
+            "id": 76,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1390,12 +1468,13 @@
         },
         {
             "name": "G1",
+            "id": 77,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1408,12 +1487,13 @@
         },
         {
             "name": "Gb1",
+            "id": 78,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1426,12 +1506,13 @@
         },
         {
             "name": "F1",
+            "id": 79,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1444,12 +1525,13 @@
         },
         {
             "name": "E1",
+            "id": 80,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1462,12 +1544,13 @@
         },
         {
             "name": "Eb1",
+            "id": 81,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1480,12 +1563,13 @@
         },
         {
             "name": "D1",
+            "id": 82,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1498,12 +1582,13 @@
         },
         {
             "name": "Db1",
+            "id": 83,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1516,12 +1601,13 @@
         },
         {
             "name": "C1",
+            "id": 84,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1534,12 +1620,13 @@
         },
         {
             "name": "B0",
+            "id": 85,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1552,12 +1639,13 @@
         },
         {
             "name": "Bb0",
+            "id": 86,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -1570,12 +1658,13 @@
         },
         {
             "name": "A0",
+            "id": 87,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [

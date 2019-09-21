@@ -1,457 +1,447 @@
 {
-    "version": 1,
-    "Instrument": "49-Key Piano",
+    "version": 2,
+    "name": "pianocascade",
     "Tempo": 120,
     "TimeSignature": "4/4",
     "MinimumNoteDuration": 8,
-    "Tracks": [
-        {
-            "Notes": [
-                {
-                    "Beat": 0,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 2,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 4,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 6,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 8,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 10,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 12,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 14,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 16,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 18,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 20,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 22,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 24,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 26,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 28,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 30,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 32,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 34,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 36,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 38,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 40,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 42,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 44,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 46,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 48,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 50,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 52,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 54,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 56,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 58,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 60,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 62,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 64,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 66,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 68,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 124,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 70,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 122,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 72,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 120,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 74,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 118,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 76,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 116,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 78,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 114,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 80,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 112,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 82,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 110,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 84,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 108,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 86,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 106,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 88,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 104,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 90,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 102,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 92,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 100,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 94,
-                    "Fret": -1
-                },
-                {
-                    "Beat": 98,
-                    "Fret": -1
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 96,
-                    "Fret": -1
-                }
-            ]
-        }
-    ]
+    "Instrument": {
+        "name": "49-Key Piano",
+        "path": "..\\Instrument\\Piano\\piano49.json",
+        "Tracks": [
+            {
+                "TrackId": 0,
+                "Notes": [
+                    {
+                        "Beat": 0
+                    }
+                ]
+            },
+            {
+                "TrackId": 1,
+                "Notes": [
+                    {
+                        "Beat": 2
+                    }
+                ]
+            },
+            {
+                "TrackId": 2,
+                "Notes": [
+                    {
+                        "Beat": 4
+                    }
+                ]
+            },
+            {
+                "TrackId": 3,
+                "Notes": [
+                    {
+                        "Beat": 6
+                    }
+                ]
+            },
+            {
+                "TrackId": 4,
+                "Notes": [
+                    {
+                        "Beat": 8
+                    }
+                ]
+            },
+            {
+                "TrackId": 5,
+                "Notes": [
+                    {
+                        "Beat": 10
+                    }
+                ]
+            },
+            {
+                "TrackId": 6,
+                "Notes": [
+                    {
+                        "Beat": 12
+                    }
+                ]
+            },
+            {
+                "TrackId": 7,
+                "Notes": [
+                    {
+                        "Beat": 14
+                    }
+                ]
+            },
+            {
+                "TrackId": 8,
+                "Notes": [
+                    {
+                        "Beat": 16
+                    }
+                ]
+            },
+            {
+                "TrackId": 9,
+                "Notes": [
+                    {
+                        "Beat": 18
+                    }
+                ]
+            },
+            {
+                "TrackId": 10,
+                "Notes": [
+                    {
+                        "Beat": 20
+                    }
+                ]
+            },
+            {
+                "TrackId": 11,
+                "Notes": [
+                    {
+                        "Beat": 22
+                    }
+                ]
+            },
+            {
+                "TrackId": 12,
+                "Notes": [
+                    {
+                        "Beat": 24
+                    }
+                ]
+            },
+            {
+                "TrackId": 13,
+                "Notes": [
+                    {
+                        "Beat": 26
+                    }
+                ]
+            },
+            {
+                "TrackId": 14,
+                "Notes": [
+                    {
+                        "Beat": 28
+                    }
+                ]
+            },
+            {
+                "TrackId": 15,
+                "Notes": [
+                    {
+                        "Beat": 30
+                    }
+                ]
+            },
+            {
+                "TrackId": 16,
+                "Notes": [
+                    {
+                        "Beat": 32
+                    }
+                ]
+            },
+            {
+                "TrackId": 17,
+                "Notes": [
+                    {
+                        "Beat": 34
+                    }
+                ]
+            },
+            {
+                "TrackId": 18,
+                "Notes": [
+                    {
+                        "Beat": 36
+                    }
+                ]
+            },
+            {
+                "TrackId": 19,
+                "Notes": [
+                    {
+                        "Beat": 38
+                    }
+                ]
+            },
+            {
+                "TrackId": 20,
+                "Notes": [
+                    {
+                        "Beat": 40
+                    }
+                ]
+            },
+            {
+                "TrackId": 21,
+                "Notes": [
+                    {
+                        "Beat": 42
+                    }
+                ]
+            },
+            {
+                "TrackId": 22,
+                "Notes": [
+                    {
+                        "Beat": 44
+                    }
+                ]
+            },
+            {
+                "TrackId": 23,
+                "Notes": [
+                    {
+                        "Beat": 46
+                    }
+                ]
+            },
+            {
+                "TrackId": 24,
+                "Notes": [
+                    {
+                        "Beat": 48
+                    }
+                ]
+            },
+            {
+                "TrackId": 25,
+                "Notes": [
+                    {
+                        "Beat": 50
+                    }
+                ]
+            },
+            {
+                "TrackId": 26,
+                "Notes": [
+                    {
+                        "Beat": 52
+                    }
+                ]
+            },
+            {
+                "TrackId": 27,
+                "Notes": [
+                    {
+                        "Beat": 54
+                    }
+                ]
+            },
+            {
+                "TrackId": 28,
+                "Notes": [
+                    {
+                        "Beat": 56
+                    }
+                ]
+            },
+            {
+                "TrackId": 29,
+                "Notes": [
+                    {
+                        "Beat": 58
+                    }
+                ]
+            },
+            {
+                "TrackId": 30,
+                "Notes": [
+                    {
+                        "Beat": 60
+                    }
+                ]
+            },
+            {
+                "TrackId": 31,
+                "Notes": [
+                    {
+                        "Beat": 62
+                    }
+                ]
+            },
+            {
+                "TrackId": 32,
+                "Notes": [
+                    {
+                        "Beat": 64
+                    }
+                ]
+            },
+            {
+                "TrackId": 33,
+                "Notes": [
+                    {
+                        "Beat": 66
+                    }
+                ]
+            },
+            {
+                "TrackId": 34,
+                "Notes": [
+                    {
+                        "Beat": 68
+                    },
+                    {
+                        "Beat": 124
+                    }
+                ]
+            },
+            {
+                "TrackId": 35,
+                "Notes": [
+                    {
+                        "Beat": 70
+                    },
+                    {
+                        "Beat": 122
+                    }
+                ]
+            },
+            {
+                "TrackId": 36,
+                "Notes": [
+                    {
+                        "Beat": 72
+                    },
+                    {
+                        "Beat": 120
+                    }
+                ]
+            },
+            {
+                "TrackId": 37,
+                "Notes": [
+                    {
+                        "Beat": 74
+                    },
+                    {
+                        "Beat": 118
+                    }
+                ]
+            },
+            {
+                "TrackId": 38,
+                "Notes": [
+                    {
+                        "Beat": 76
+                    },
+                    {
+                        "Beat": 116
+                    }
+                ]
+            },
+            {
+                "TrackId": 39,
+                "Notes": [
+                    {
+                        "Beat": 78
+                    },
+                    {
+                        "Beat": 114
+                    }
+                ]
+            },
+            {
+                "TrackId": 40,
+                "Notes": [
+                    {
+                        "Beat": 80
+                    },
+                    {
+                        "Beat": 112
+                    }
+                ]
+            },
+            {
+                "TrackId": 41,
+                "Notes": [
+                    {
+                        "Beat": 82
+                    },
+                    {
+                        "Beat": 110
+                    }
+                ]
+            },
+            {
+                "TrackId": 42,
+                "Notes": [
+                    {
+                        "Beat": 84
+                    },
+                    {
+                        "Beat": 108
+                    }
+                ]
+            },
+            {
+                "TrackId": 43,
+                "Notes": [
+                    {
+                        "Beat": 86
+                    },
+                    {
+                        "Beat": 106
+                    }
+                ]
+            },
+            {
+                "TrackId": 44,
+                "Notes": [
+                    {
+                        "Beat": 88
+                    },
+                    {
+                        "Beat": 104
+                    }
+                ]
+            },
+            {
+                "TrackId": 45,
+                "Notes": [
+                    {
+                        "Beat": 90
+                    },
+                    {
+                        "Beat": 102
+                    }
+                ]
+            },
+            {
+                "TrackId": 46,
+                "Notes": [
+                    {
+                        "Beat": 92
+                    },
+                    {
+                        "Beat": 100
+                    }
+                ]
+            },
+            {
+                "TrackId": 47,
+                "Notes": [
+                    {
+                        "Beat": 94
+                    },
+                    {
+                        "Beat": 98
+                    }
+                ]
+            },
+            {
+                "TrackId": 48,
+                "Notes": [
+                    {
+                        "Beat": 96
+                    }
+                ]
+            }
+        ]
+    }
 }

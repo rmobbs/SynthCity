@@ -1,15 +1,17 @@
 {
-    "version": 1,
+    "version": 2,
     "name": "Middle C Piano",
+    "nextid": 12,
     "tracks": [
         {
             "name": "B4",
+            "id": 0,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -22,12 +24,13 @@
         },
         {
             "name": "Bb4",
+            "id": 1,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -40,12 +43,13 @@
         },
         {
             "name": "A4",
+            "id": 2,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -58,12 +62,13 @@
         },
         {
             "name": "Ab4",
+            "id": 3,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -76,12 +81,13 @@
         },
         {
             "name": "G4",
+            "id": 4,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -94,12 +100,13 @@
         },
         {
             "name": "Gb4",
+            "id": 5,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -112,12 +119,13 @@
         },
         {
             "name": "F4",
+            "id": 6,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -130,12 +138,13 @@
         },
         {
             "name": "E4",
+            "id": 7,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -148,12 +157,13 @@
         },
         {
             "name": "Eb4",
+            "id": 8,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -166,12 +176,13 @@
         },
         {
             "name": "D4",
+            "id": 9,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -184,12 +195,13 @@
         },
         {
             "name": "Db4",
+            "id": 10,
             "colorscheme": "Piano:Black",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [
@@ -202,12 +214,13 @@
         },
         {
             "name": "C4",
+            "id": 11,
             "colorscheme": "Piano:White",
             "patch": {
                 "processes": [
                     {
                         "class": "ProcessDecay",
-                        "decay": 0.1
+                        "decay": 0.10000000149011612
                     }
                 ],
                 "sounds": [

@@ -1,2072 +1,2080 @@
 {
-    "version": 1,
-    "Instrument": "Roland TR-808",
+    "version": 2,
+    "name": "tapsimple",
     "Tempo": 120,
     "TimeSignature": "4/4",
     "MinimumNoteDuration": 8,
-    "Tracks": [
-        {
-            "Notes": [
-                {
-                    "Beat": 0,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 16,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 32,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 48,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 64,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 80,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 96,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 112,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 128,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 144,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 160,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 176,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 192,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 208,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 224,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 240,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 256,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 272,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 288,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 304,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 320,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 336,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 352,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 368,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 384,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 400,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 416,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 432,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 448,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 464,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 480,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 496,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 512,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 528,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 544,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 560,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 576,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 592,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 608,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 624,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 640,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 656,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 672,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 688,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 704,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 720,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 736,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 752,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 768,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 784,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 800,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 816,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 832,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 848,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 864,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 880,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 896,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 912,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 928,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 944,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 960,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 976,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 992,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1008,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1024,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1040,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1056,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1072,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1088,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1104,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1120,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1136,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1152,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1168,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1184,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1200,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1216,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1232,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1248,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1264,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1280,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1296,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1312,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1328,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1344,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1360,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1376,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1392,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1408,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1424,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1440,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1456,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1472,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1488,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1504,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1520,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1536,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1552,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1568,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1584,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1600,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1616,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1632,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1648,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1664,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1680,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1696,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1712,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1728,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1744,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1760,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1776,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1792,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1808,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1824,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1840,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1856,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1872,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1888,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1904,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1920,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1936,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1952,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1968,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 1984,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 2000,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 2016,
-                    "Fret": 0
-                },
-                {
-                    "Beat": 2032,
-                    "Fret": 0
-                }
-            ]
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 8,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 24,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 40,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 56,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 72,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 88,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 104,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 120,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 136,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 152,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 168,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 184,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 200,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 216,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 232,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 248,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 264,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 280,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 296,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 312,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 328,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 344,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 360,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 376,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 392,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 408,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 424,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 440,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 456,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 472,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 488,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 504,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 520,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 536,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 552,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 568,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 584,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 600,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 616,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 632,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 648,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 664,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 680,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 696,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 712,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 728,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 744,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 760,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 776,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 792,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 808,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 824,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 840,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 856,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 872,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 888,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 904,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 920,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 936,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 952,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 968,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 984,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1000,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1016,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1032,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1048,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1064,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1080,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1096,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1112,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1128,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1144,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1160,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1176,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1192,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1208,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1224,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1240,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1256,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1272,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1288,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1304,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1320,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1336,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1352,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1368,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1384,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1400,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1416,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1432,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1448,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1464,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1480,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1496,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1512,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1528,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1544,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1560,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1576,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1592,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1608,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1624,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1640,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1656,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1672,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1688,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1704,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1720,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1736,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1752,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1768,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1784,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1800,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1816,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1832,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1848,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1864,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1880,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1896,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1912,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1928,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1944,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1960,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1976,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 1992,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 2008,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 2024,
-                    "Fret": 2
-                },
-                {
-                    "Beat": 2040,
-                    "Fret": 2
-                }
-            ]
-        },
-        {
-            "Notes": []
-        },
-        {
-            "Notes": [
-                {
-                    "Beat": 0,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 8,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 16,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 24,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 32,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 40,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 48,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 56,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 64,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 72,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 80,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 88,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 96,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 104,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 112,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 120,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 128,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 136,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 144,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 152,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 160,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 168,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 176,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 184,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 192,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 200,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 208,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 216,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 224,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 232,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 240,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 248,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 256,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 264,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 272,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 280,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 288,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 296,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 304,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 312,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 320,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 328,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 336,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 344,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 352,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 360,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 368,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 376,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 384,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 392,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 400,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 408,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 416,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 424,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 432,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 440,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 448,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 456,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 464,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 472,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 480,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 488,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 496,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 504,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 512,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 520,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 528,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 536,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 544,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 552,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 560,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 568,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 576,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 584,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 592,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 600,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 608,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 616,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 624,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 632,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 640,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 648,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 656,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 664,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 672,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 680,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 688,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 696,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 704,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 712,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 720,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 728,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 736,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 744,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 752,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 760,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 768,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 776,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 784,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 792,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 800,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 808,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 816,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 824,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 832,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 840,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 848,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 856,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 864,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 872,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 880,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 888,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 896,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 904,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 912,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 920,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 928,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 936,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 944,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 952,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 960,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 968,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 976,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 984,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 992,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1000,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1008,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1016,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1024,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1032,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1040,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1048,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1056,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1064,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1072,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1080,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1088,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1096,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1104,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1112,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1120,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1128,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1136,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1144,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1152,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1160,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1168,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1176,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1184,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1192,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1200,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1208,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1216,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1224,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1232,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1240,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1248,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1256,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1264,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1272,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1280,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1288,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1296,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1304,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1312,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1320,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1328,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1336,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1344,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1352,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1360,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1368,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1376,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1384,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1392,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1400,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1408,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1416,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1424,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1432,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1440,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1448,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1456,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1464,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1472,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1480,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1488,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1496,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1504,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1512,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1520,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1528,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1536,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1544,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1552,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1560,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1568,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1576,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1584,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1592,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1600,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1608,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1616,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1624,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1632,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1640,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1648,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1656,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1664,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1672,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1680,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1688,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1696,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1704,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1712,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1720,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1728,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1736,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1744,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1752,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1760,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1768,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1776,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1784,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1792,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1800,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1808,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1816,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1824,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1832,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1840,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1848,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1856,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1864,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1872,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1880,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1888,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1896,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1904,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1912,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1920,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1928,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1936,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1944,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1952,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1960,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1968,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1976,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 1984,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 1992,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 2000,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 2008,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 2016,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 2024,
-                    "Fret": 3
-                },
-                {
-                    "Beat": 2032,
-                    "Fret": 1
-                },
-                {
-                    "Beat": 2040,
-                    "Fret": 3
-                }
-            ]
-        }
-    ]
+    "Instrument": {
+        "name": "Roland TR-808",
+        "path": "..\\Instrument\\808\\808.json",
+        "Tracks": [
+            {
+                "TrackId": 0,
+                "Notes": [
+                    {
+                        "Beat": 0,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 16,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 32,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 48,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 64,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 80,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 96,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 112,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 128,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 144,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 160,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 176,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 192,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 208,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 224,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 240,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 256,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 272,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 288,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 304,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 320,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 336,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 352,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 368,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 384,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 400,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 416,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 432,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 448,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 464,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 480,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 496,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 512,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 528,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 544,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 560,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 576,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 592,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 608,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 624,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 640,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 656,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 672,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 688,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 704,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 720,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 736,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 752,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 768,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 784,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 800,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 816,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 832,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 848,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 864,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 880,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 896,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 912,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 928,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 944,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 960,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 976,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 992,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1008,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1024,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1040,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1056,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1072,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1088,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1104,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1120,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1136,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1152,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1168,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1184,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1200,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1216,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1232,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1248,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1264,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1280,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1296,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1312,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1328,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1344,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1360,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1376,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1392,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1408,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1424,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1440,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1456,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1472,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1488,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1504,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1520,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1536,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1552,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1568,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1584,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1600,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1616,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1632,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1648,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1664,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1680,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1696,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1712,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1728,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1744,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1760,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1776,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1792,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1808,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1824,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1840,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1856,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1872,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1888,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1904,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1920,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1936,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1952,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1968,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 1984,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 2000,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 2016,
+                        "GameLine": 0
+                    },
+                    {
+                        "Beat": 2032,
+                        "GameLine": 0
+                    }
+                ]
+            },
+            {
+                "TrackId": 1,
+                "Notes": [
+                    {
+                        "Beat": 8,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 24,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 40,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 56,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 72,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 88,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 104,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 120,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 136,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 152,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 168,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 184,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 200,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 216,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 232,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 248,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 264,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 280,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 296,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 312,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 328,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 344,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 360,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 376,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 392,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 408,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 424,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 440,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 456,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 472,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 488,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 504,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 520,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 536,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 552,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 568,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 584,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 600,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 616,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 632,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 648,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 664,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 680,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 696,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 712,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 728,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 744,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 760,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 776,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 792,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 808,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 824,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 840,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 856,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 872,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 888,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 904,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 920,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 936,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 952,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 968,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 984,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1000,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1016,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1032,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1048,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1064,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1080,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1096,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1112,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1128,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1144,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1160,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1176,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1192,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1208,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1224,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1240,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1256,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1272,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1288,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1304,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1320,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1336,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1352,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1368,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1384,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1400,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1416,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1432,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1448,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1464,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1480,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1496,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1512,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1528,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1544,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1560,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1576,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1592,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1608,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1624,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1640,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1656,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1672,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1688,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1704,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1720,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1736,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1752,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1768,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1784,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1800,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1816,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1832,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1848,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1864,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1880,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1896,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1912,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1928,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1944,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1960,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1976,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 1992,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 2008,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 2024,
+                        "GameLine": 2
+                    },
+                    {
+                        "Beat": 2040,
+                        "GameLine": 2
+                    }
+                ]
+            },
+            {
+                "TrackId": 2,
+                "Notes": []
+            },
+            {
+                "TrackId": 3,
+                "Notes": [
+                    {
+                        "Beat": 0,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 8,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 16,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 24,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 32,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 40,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 48,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 56,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 64,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 72,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 80,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 88,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 96,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 104,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 112,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 120,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 128,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 136,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 144,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 152,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 160,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 168,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 176,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 184,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 192,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 200,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 208,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 216,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 224,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 232,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 240,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 248,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 256,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 264,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 272,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 280,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 288,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 296,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 304,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 312,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 320,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 328,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 336,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 344,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 352,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 360,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 368,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 376,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 384,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 392,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 400,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 408,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 416,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 424,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 432,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 440,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 448,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 456,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 464,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 472,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 480,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 488,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 496,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 504,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 512,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 520,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 528,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 536,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 544,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 552,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 560,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 568,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 576,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 584,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 592,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 600,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 608,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 616,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 624,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 632,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 640,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 648,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 656,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 664,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 672,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 680,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 688,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 696,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 704,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 712,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 720,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 728,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 736,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 744,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 752,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 760,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 768,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 776,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 784,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 792,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 800,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 808,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 816,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 824,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 832,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 840,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 848,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 856,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 864,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 872,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 880,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 888,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 896,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 904,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 912,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 920,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 928,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 936,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 944,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 952,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 960,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 968,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 976,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 984,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 992,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1000,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1008,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1016,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1024,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1032,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1040,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1048,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1056,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1064,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1072,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1080,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1088,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1096,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1104,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1112,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1120,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1128,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1136,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1144,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1152,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1160,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1168,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1176,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1184,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1192,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1200,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1208,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1216,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1224,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1232,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1240,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1248,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1256,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1264,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1272,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1280,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1288,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1296,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1304,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1312,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1320,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1328,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1336,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1344,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1352,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1360,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1368,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1376,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1384,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1392,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1400,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1408,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1416,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1424,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1432,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1440,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1448,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1456,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1464,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1472,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1480,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1488,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1496,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1504,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1512,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1520,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1528,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1536,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1544,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1552,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1560,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1568,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1576,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1584,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1592,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1600,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1608,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1616,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1624,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1632,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1640,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1648,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1656,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1664,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1672,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1680,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1688,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1696,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1704,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1712,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1720,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1728,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1736,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1744,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1752,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1760,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1768,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1776,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1784,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1792,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1800,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1808,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1816,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1824,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1832,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1840,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1848,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1856,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1864,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1872,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1880,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1888,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1896,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1904,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1912,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1920,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1928,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1936,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1944,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1952,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1960,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1968,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1976,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 1984,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 1992,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 2000,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 2008,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 2016,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 2024,
+                        "GameLine": 3
+                    },
+                    {
+                        "Beat": 2032,
+                        "GameLine": 1
+                    },
+                    {
+                        "Beat": 2040,
+                        "GameLine": 3
+                    }
+                ]
+            }
+        ]
+    }
 }
