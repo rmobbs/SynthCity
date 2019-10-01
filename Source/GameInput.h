@@ -21,7 +21,7 @@ public:
   bool ConsumePresses(std::array<float, GameGlobals::kNumGameplayLines>& outPresses);
   bool ConsumeReleases(std::array<float, GameGlobals::kNumGameplayLines>& outReleases);
 
-  void SetLineKey(uint32 line, uint32 key);
+  bool SetLineKey(uint32 line, uint32 key);
 
   inline uint32 GetLineKey(uint32 lineIndex) {
     return buttonKeys[lineIndex];

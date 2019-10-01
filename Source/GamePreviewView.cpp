@@ -610,9 +610,11 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
       auto keyCode = InputState::GetFirstPressedKey();
       if (keyCode != -1) {
         AudioGlobals::LockAudio();
-        gameInput.SetLineKey(mappingKey, keyCode);
+        bool success = gameInput.SetLineKey(mappingKey, keyCode);
         AudioGlobals::UnlockAudio();
-        mappingKey = -1;
+        if (success) {
+          mappingKey = -1;
+        }
       }
     }
 
