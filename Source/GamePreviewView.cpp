@@ -591,6 +591,11 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   ImGui::SetNextWindowPos(ImVec2(canvasSize.x - 180.0f, 10.0f));
   ImGui::Begin("Instructions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
   {
+    char workBuf[256];
+    sprintf(workBuf, "FPS: %03.2f", 1.0f / Globals::elapsedTime);
+    ImGui::Text(workBuf);
+    sprintf(workBuf, "Beat: %03.2f", beatTime);
+    ImGui::Text(workBuf);
     ImGui::Text("Press ESC to exit");
     ImGui::Checkbox("Draw zone", &drawZone);
 
@@ -619,13 +624,12 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     }
 
     ImGui::Separator();
-    char scoreBuf[256];
-    sprintf(scoreBuf, "Score: %03.2f/%03.2f", currentScore, perfectScore);
-    ImGui::Text(scoreBuf);
+    sprintf(workBuf, "Score: %03.2f/%03.2f", currentScore, perfectScore);
+    ImGui::Text(workBuf);
     std::string streakString("Streak: " + std::to_string(noteStreak));
     ImGui::Text(streakString.c_str());
-    sprintf(scoreBuf, "Streak score: %03.2f/%03.2f", streakScore, static_cast<float>(noteStreak));
-    ImGui::Text(scoreBuf);
+    sprintf(workBuf, "Streak score: %03.2f/%03.2f", streakScore, static_cast<float>(noteStreak));
+    ImGui::Text(workBuf);
 
     ImGui::End();
   }

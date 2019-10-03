@@ -15,4 +15,5 @@ namespace Globals {
   static constexpr uint32 kDefaultTempo = 120;
 
   extern double currentTime;
+  extern double elapsedTime;
 }

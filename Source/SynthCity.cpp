@@ -49,6 +49,10 @@ static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
 static constexpr uint32 kSwapInterval = 1;
 
+static double computerFrequency = 0.0;
+static LONGLONG counterStart = 0;
+static LONGLONG counterCurr = 0;
+
 static GLuint fontTextureId;
 
 InputState::MouseButton SdlMouseButtonToInputMouseButton(uint8 sdlMouseButton) {
@@ -138,11 +142,7 @@ void UpdateInput() {
 
   inputState.modState = SDL_GetModState();
 
-  // Update time
-  Globals::currentTime = static_cast<double>(SDL_GetTicks()) / 1000.0;
-  static double lastUpdateTime = 0.0;
-  imGuiIo.DeltaTime = std::max(1.0f / 120.0f, static_cast<float>(Globals::currentTime - lastUpdateTime));
-  lastUpdateTime = Globals::currentTime;
+  imGuiIo.DeltaTime = static_cast<float>(Globals::elapsedTime);
 
   // Update mouse
   imGuiIo.MousePos = ImVec2(static_cast<float>(inputState.mouseX), static_cast<float>(inputState.mouseY));
@@ -158,6 +158,32 @@ void UpdateInput() {
   imGuiIo.KeyCtrl = (SDL_GetModState() & KMOD_CTRL) != 0;
   imGuiIo.KeyAlt = (SDL_GetModState() & KMOD_ALT) != 0;
   imGuiIo.KeySuper = (SDL_GetModState() & KMOD_GUI) != 0;
+}
+
+void InitTime() {
+  LARGE_INTEGER largeInteger;
+
+  if (!QueryPerformanceFrequency(&largeInteger)) {
+    MCLOG(Warn, "Failed to query performance frequency; timing calculations will be incorrect");
+  }
+
+  computerFrequency = static_cast<double>(largeInteger.QuadPart) / 1000.0;
+
+  QueryPerformanceCounter(&largeInteger);
+  counterStart = largeInteger.QuadPart;
+}
+
+void UpdateTime() {
+  LARGE_INTEGER largeInteger;
+
+  QueryPerformanceCounter(&largeInteger);
+
+  Globals::elapsedTime = 1.0e-3 * static_cast<double>
+    (largeInteger.QuadPart - counterCurr) / computerFrequency;
+  counterCurr = largeInteger.QuadPart;
+
+  Globals::currentTime = 1.0e-3 * static_cast<double>
+    (largeInteger.QuadPart - counterStart) / computerFrequency;
 }
 
 void MainLoop() {
@@ -186,6 +212,8 @@ void MainLoop() {
   View::GetCurrentView()->Render(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
 
   SDL_GL_SwapWindow(sdlWindow);
+
+  UpdateTime();
 }
 
 bool InitImGui() {
@@ -372,6 +400,9 @@ bool Init() {
 
   //Sequencer::Get().LoadInstrument("Instrument\\808\\808.json", "");
   //Sequencer::Get().LoadSongJson("Songs\\tapsimple.json");
+
+  // Initialize timing systems
+  InitTime();
 
   MCLOG(Info, "SynthCity %s", Globals::kVersionString);
 
