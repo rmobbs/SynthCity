@@ -10,6 +10,7 @@
 #include "Instrument.h"
 #include "AudioGlobals.h"
 #include "soil.h"
+#include <chrono>
 
 static glm::vec2 noteLaneExtents(10, 800);
 static glm::vec4 noteLaneColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -423,7 +424,12 @@ void GamePreviewView::HandleInput() {
 }
 
 void GamePreviewView::Render(ImVec2 canvasSize) {
+
   AudioGlobals::LockAudio();
+
+  auto beatTime = Sequencer::Get().CalculateBeatTime();
+  auto beatFrac = beatTime - std::floor(beatTime);
+
   for (uint32 i = 0; i < GameGlobals::kNumGameplayLines; ++i) {
     lineTracks[i] = nullptr;
 
@@ -481,10 +487,6 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     default:
       break;
   }
-
-  // Get current high-precision beat time
-  float beatTime = Sequencer::Get().GetBeatTime();
-  float beatFrac = beatTime - std::floorf(beatTime);
 
   // Position rolling frets so their top is touching the target line as the beat falls;
   // that way notes rest on top of the frets

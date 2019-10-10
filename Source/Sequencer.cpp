@@ -263,7 +263,8 @@ void Sequencer::Play() {
   AudioGlobals::LockAudio();
   isPlaying = true;
   if (currBeat == 0) {
-    beatTime = 0.0f;;
+    beatClock = std::chrono::system_clock::now();
+    lastBeatTime = 0.0;
   }
   AudioGlobals::UnlockAudio();
 }
@@ -279,7 +280,7 @@ void Sequencer::PauseKill() {
 
 void Sequencer::Stop() {
   isPlaying = false;
-  beatTime = 0.0f;
+  lastBeatTime = 0.0;
   SetPosition(0);
 }
 
@@ -289,7 +290,8 @@ void Sequencer::StopKill() {
 }
 
 void Sequencer::Loop() {
-  beatTime = 0.0f;
+  beatClock = std::chrono::system_clock::now();
+  lastBeatTime = 0.0;
   currBeat = 0;
   nextBeat = 1;
 }
@@ -405,19 +407,18 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
   // 2 channels, 2 bytes/sample = 4 bytes/frame
   length /= 4;
 
+  auto origLength = length;
+
   while (length > 0) {
     int32 frames = std::min(std::min(ticksRemaining,
       static_cast<int32>(kMaxCallbackSampleFrames)), length);
 
-    if (isPlaying) {
-      beatTime = beatTime + static_cast<float>(frames) /
-        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
-    }
-
+#if 0
     auto view = View::GetCurrentView();
     if (view != nullptr) {
       view->OnAudioCallback(beatTime);
     }
+#endif
 
     ticksRemaining -= frames;
     if (ticksRemaining <= 0) {
@@ -431,6 +432,14 @@ void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
     stream += frames * sizeof(int16) * 2;
     length -= frames;
   }
+}
+
+double Sequencer::CalculateBeatTime() {
+  if (isPlaying) {
+    std::chrono::duration<double> delta = std::chrono::system_clock::now() - beatClock;
+    lastBeatTime = delta.count() * (static_cast<double>(song->GetTempo()) / 60.0);
+  }
+  return lastBeatTime;
 }
 
 void Sequencer::StopAllVoices() {

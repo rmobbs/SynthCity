@@ -10,6 +10,7 @@
 #include <array>
 #include <atomic>
 #include <queue>
+#include <chrono>
 
 class Patch;
 class Song;
@@ -52,7 +53,8 @@ private:
   std::atomic<bool> isPlaying = false;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
   std::atomic<uint32> numActiveVoices = 0;
-  std::atomic<float> beatTime = 0.0f;
+  std::atomic<double> lastBeatTime = 0.0;
+  std::chrono::system_clock::time_point beatClock;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
@@ -62,6 +64,7 @@ private:
   void StopAllVoices();
 
 public:
+
   inline Song* GetSong() const {
     return song;
   }
@@ -95,9 +98,7 @@ public:
     this->masterVolume = masterVolume;
   }
 
-  inline float GetBeatTime() const {
-    return beatTime;
-  }
+  double CalculateBeatTime();
 
   uint32 GetFrequency() const;
 

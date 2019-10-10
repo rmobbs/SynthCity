@@ -47,7 +47,7 @@ static SDL_SysWMinfo sysWmInfo;
 
 static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
-static constexpr uint32 kSwapInterval = 1;
+static constexpr uint32 kSwapInterval = 0;
 
 static double computerFrequency = 0.0;
 static LONGLONG counterStart = 0;

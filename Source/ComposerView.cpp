@@ -1169,7 +1169,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             }
 
             // Draw the play line
-            cursorPosX = kFullBeatWidth * sequencer.GetBeatTime();
+            cursorPosX = kFullBeatWidth * sequencer.CalculateBeatTime();
             ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
             ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
               ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
