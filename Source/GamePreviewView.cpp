@@ -277,24 +277,6 @@ void GamePreviewView::TermResources() {
   readyPlacard = nullptr;
 }
 
-void GamePreviewView::OnAudioCallback(float beatTime) {
-  std::array<float, GameGlobals::kNumGameplayLines> presses = { 0.0f };
-  std::array<float, GameGlobals::kNumGameplayLines> releases = { 0.0f };
-
-  gameInput.TakeSnapshot(beatTime, presses, releases);
-
-  for (size_t gameLineIndex = 0; gameLineIndex < GameGlobals::kNumGameplayLines; ++gameLineIndex) {
-    if (presses[gameLineIndex]) {
-      // Trigger the sound associated with the line
-      auto track = lineTracks[gameLineIndex];
-      if (track != nullptr) {
-        Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
-      }
-    }
-  }
-}
-
-
 void GamePreviewView::OnBeat(uint32 beatIndex) {
 
   if (mode != Mode::Playing) {
@@ -427,22 +409,40 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
   AudioGlobals::LockAudio();
 
-  auto beatTime = Sequencer::Get().CalculateBeatTime();
+  auto clockBeatTime = Sequencer::Get().GetClockBeatTime();
+  auto frameBeatTime = Sequencer::Get().GetFrameBeatTime();
+
+  auto beatTime = clockBeatTime;
   auto beatFrac = beatTime - std::floor(beatTime);
 
-  for (uint32 i = 0; i < GameGlobals::kNumGameplayLines; ++i) {
-    lineTracks[i] = nullptr;
-
-    for (auto noteIter = fallingNotes[i].begin(); noteIter != fallingNotes[i].end(); ++noteIter) {
-      if ((*noteIter)->Triggerable()) {
-        lineTracks[i] = (*noteIter)->GetTrack();
-        break;
-      }
-    }
-  }
   AudioGlobals::UnlockAudio();
 
   HandleInput();
+
+  // Check input
+  std::array<double, GameGlobals::kNumGameplayLines> presses = { 0.0f };
+  std::array<double, GameGlobals::kNumGameplayLines> releases = { 0.0f };
+
+  gameInput.TakeSnapshot(beatTime, presses, releases);
+
+  // Update line sounds and handle triggering any sounds
+  for (size_t gameLineIndex = 0; gameLineIndex < GameGlobals::kNumGameplayLines; ++gameLineIndex) {
+    lineTracks[gameLineIndex] = nullptr;
+
+    for (auto noteIter = fallingNotes[gameLineIndex].begin(); noteIter != fallingNotes[gameLineIndex].end(); ++noteIter) {
+      if ((*noteIter)->Triggerable()) {
+        lineTracks[gameLineIndex] = (*noteIter)->GetTrack();
+        break;
+      }
+    }
+
+    if (presses[gameLineIndex]) {
+      auto track = lineTracks[gameLineIndex];
+      if (track != nullptr) {
+        Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+      }
+    }
+  }
 
   glClearColor(0.2f, 0.2f, 0.7f, 0);
   glClear(GL_COLOR_BUFFER_BIT);
@@ -500,10 +500,6 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     renderable->Render();
   }
 
-  // Check for button presses
-  std::array<float, GameGlobals::kNumGameplayLines> presses;
-  gameInput.ConsumePresses(presses);
-
   // Update falling notes
   for (uint32 gameLine = 0; gameLine < GameGlobals::kNumGameplayLines; ++gameLine) {
     auto fallingNoteIter = fallingNotes[gameLine].begin();
@@ -512,12 +508,12 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
       if (fallingNote->Triggerable()) {
        if (presses[gameLine] > 0.0f) {
-          auto visualDelta = (fallingNote->GetBeatTime() - presses[gameLine]) * kDistanceBetweenQuarterNotes;
+          auto visualDelta = static_cast<float>((fallingNote->GetBeatTime() - presses[gameLine]) * kDistanceBetweenQuarterNotes);
 
           if (visualDelta < targetWindowScale) {
             if (visualDelta > targetWindowDeltaNeg) {
               // Trigger it
-              fallingNote->Trigger(beatTime, true);
+              fallingNote->Trigger(static_cast<float>(beatTime), true);
 
               // Position (UL-relative)
               fallingNote->position.y = targetLinePosition.y - fallingNoteExtent.y - visualDelta;
@@ -554,7 +550,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
       // If it's already triggered, update its fade out effects until it expires
       if (fallingNote->Triggered()) {
-        if (!fallingNote->UpdateEffects(beatTime)) {
+        if (!fallingNote->UpdateEffects(static_cast<float>(beatTime))) {
           fallingNoteIter = fallingNotes[gameLine].erase(fallingNoteIter);
           fallingNoteFreeList.Return(fallingNote);
           continue;
@@ -562,8 +558,8 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
       }
       // Otherwise keep dropping it
       else {
-        float notePosY = targetLinePosition.y - fallingNoteExtent.y -
-          (fallingNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes;
+        float notePosY = static_cast<float>(targetLinePosition.y - fallingNoteExtent.y -
+          (fallingNote->GetBeatTime() - beatTime) * kDistanceBetweenQuarterNotes);
         // Bottom of screen
         if (notePosY >= canvasSize.y) {
           noteStreak = 0;

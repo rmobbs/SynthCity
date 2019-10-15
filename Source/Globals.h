@@ -16,4 +16,6 @@ namespace Globals {
 
   extern double currentTime;
   extern double elapsedTime;
+
+  extern bool vsyncEnabled;
 }

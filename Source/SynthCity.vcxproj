@@ -194,6 +194,7 @@
     <ClInclude Include="BaseTypes.h" />
     <ClInclude Include="BaseWindows.h" />
     <ClInclude Include="ComposerView.h" />
+    <ClInclude Include="DialogOptions.h" />
     <ClInclude Include="DialogTrack.h" />
     <ClInclude Include="Factory.h" />
     <ClInclude Include="FreeList.h" />
@@ -241,6 +242,7 @@
     <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="AudioGlobals.cpp" />
     <ClCompile Include="ComposerView.cpp" />
+    <ClCompile Include="DialogOptions.cpp" />
     <ClCompile Include="DialogTrack.cpp" />
     <ClCompile Include="GameInput.cpp" />
     <ClCompile Include="GamePreviewView.cpp" />

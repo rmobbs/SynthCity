@@ -36,18 +36,11 @@
 
 static SDL_Window* sdlWindow = nullptr;
 
-static constexpr uint32 kDefaultNumMeasures = 2;
-static constexpr uint32 kDefaultBeatsPerMeasure = 4;
-static constexpr uint32 kDefaultSubdivisions = 4;
-static constexpr uint32 kDefaultBpm = 120;
-static constexpr uint32 kMaxSubdivisions = 8;
-
 static bool wantQuit = false;
 static SDL_SysWMinfo sysWmInfo;
 
 static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
-static constexpr uint32 kSwapInterval = 0;
 
 static double computerFrequency = 0.0;
 static LONGLONG counterStart = 0;
@@ -375,7 +368,7 @@ bool Init() {
   SDL_GetWindowWMInfo(sdlWindow, &sysWmInfo);
 
   SDL_GL_CreateContext(sdlWindow);
-  SDL_GL_SetSwapInterval(kSwapInterval);
+  SDL_GL_SetSwapInterval(Globals::vsyncEnabled ? 1 : 0);
 
   InitGL();
   InitImGui();

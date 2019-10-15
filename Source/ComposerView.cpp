@@ -27,6 +27,7 @@
 #include "Song.h"
 #include "OddsAndEnds.h"
 #include "SerializeImpl.h"
+#include "DialogOptions.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -736,6 +737,9 @@ void ComposerView::Render(ImVec2 canvasSize) {
     mainMenuBarHeight = ImGui::GetWindowSize().y;
 
     if (ImGui::BeginMenu("File")) {
+      if (ImGui::MenuItem("Options")) {
+        pendingDialog = new DialogOptions;
+      }
       if (ImGui::MenuItem("Exit")) {
         SDL_PushEvent(&SDL_Event({ SDL_QUIT }));
       }
@@ -817,19 +821,21 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
   if (activeDialog != nullptr) {
     if (!activeDialog->Render()) {
-      // Might have added a track
+      // TODO: This needs to only happen for the one dialog
       auto song = sequencer.GetSong();
+      if (song != nullptr) {
+        // Might have added a track
+        song->UpdateLines();
 
-      song->UpdateLines();
-
-      const auto& lines = song->GetBarLines();
-      for (const auto& line : lines) {
-        auto noteEntry = songLines.find(line.first);
-        if (noteEntry != songLines.end()) {
-          continue;
+        const auto& lines = song->GetBarLines();
+        for (const auto& line : lines) {
+          auto noteEntry = songLines.find(line.first);
+          if (noteEntry != songLines.end()) {
+            continue;
+          }
+          songLines.insert({ line.first, { line.first,
+            std::vector<Song::Note*>(song->GetNoteCount()) } });
         }
-        songLines.insert({ line.first, { line.first,
-          std::vector<Song::Note*>(song->GetNoteCount()) } });
       }
 
       delete activeDialog;
@@ -1169,7 +1175,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             }
 
             // Draw the play line
-            cursorPosX = kFullBeatWidth * sequencer.CalculateBeatTime();
+            cursorPosX = static_cast<float>(kFullBeatWidth * sequencer.GetClockBeatTime());
             ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
             ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
               ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
@@ -1374,6 +1380,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
     }
     ImGui::SameLine();
     ImGui::Text("Voices: %d", sequencer.GetNumActiveVoices());
+    char workBuf[256];
+    sprintf(workBuf, "FPS: %03.2f", 1.0f / Globals::elapsedTime);
+    ImGui::SameLine();
+    ImGui::Text(workBuf);
     ImGui::Separator();
 
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);

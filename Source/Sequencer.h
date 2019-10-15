@@ -53,13 +53,16 @@ private:
   std::atomic<bool> isPlaying = false;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
   std::atomic<uint32> numActiveVoices = 0;
-  std::atomic<double> lastBeatTime = 0.0;
-  std::chrono::system_clock::time_point beatClock;
+  std::chrono::high_resolution_clock::time_point clockTimePoint;
+  std::chrono::high_resolution_clock::time_point frameTimePoint;
+  double frameBeatTime = 0.0;
+  double clockBeatTime = 0.0;
+  double increment = 0.0;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
   uint32 NextFrame();
-  void AudioCallback(void *userData, uint8 *stream, int32 length);
+  void AudioCallback(uint8 *stream, int32 length);
   void MixVoices(float* mixBuffer, uint32 numFrames);
   void StopAllVoices();
 
@@ -98,7 +101,8 @@ public:
     this->masterVolume = masterVolume;
   }
 
-  double CalculateBeatTime();
+  double GetClockBeatTime();
+  double GetFrameBeatTime();
 
   uint32 GetFrequency() const;
 

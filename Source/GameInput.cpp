@@ -7,7 +7,7 @@ GameInput::GameInput(const std::array<uint32, GameGlobals::kNumGameplayLines>& b
 
 }
 
-void GameInput::TakeSnapshot(float beatTime, std::array<float, GameGlobals::kNumGameplayLines>& presses, std::array<float, GameGlobals::kNumGameplayLines>& releases) {
+void GameInput::TakeSnapshot(double beatTime, std::array<double, GameGlobals::kNumGameplayLines>& presses, std::array<double, GameGlobals::kNumGameplayLines>& releases) {
   int32 sdlKeyboardCount = 0;
   auto sdlKeyboardState = SDL_GetKeyboardState(&sdlKeyboardCount);
 
@@ -17,34 +17,16 @@ void GameInput::TakeSnapshot(float beatTime, std::array<float, GameGlobals::kNum
       if (sdlKeyboardState[scanCode]) {
         if (!lastButtonState[keyIndex]) {
           presses[keyIndex] = beatTime;
-          buttonPressTimes[keyIndex] = beatTime;
         }
       }
       else {
         if (lastButtonState[keyIndex]) {
           releases[keyIndex] = beatTime;
-          buttonReleaseTimes[keyIndex] = beatTime;
         }
       }
     }
     lastButtonState[keyIndex] = sdlKeyboardState[scanCode];
   }
-}
-
-bool GameInput::ConsumePresses(std::array<float, GameGlobals::kNumGameplayLines>& outPresses) {
-  bool anyPressed = false;
-  for (size_t keyIndex = 0; keyIndex < GameGlobals::kNumGameplayLines; ++keyIndex) {
-    anyPressed |= (outPresses[keyIndex] = buttonPressTimes[keyIndex].exchange(0.0f)) > 0.0f;
-  }
-  return anyPressed;
-}
-
-bool GameInput::ConsumeReleases(std::array<float, GameGlobals::kNumGameplayLines>& outReleases) {
-  bool anyReleased = false;
-  for (size_t keyIndex = 0; keyIndex < GameGlobals::kNumGameplayLines; ++keyIndex) {
-    anyReleased |= (outReleases[keyIndex] = buttonReleaseTimes[keyIndex].exchange(0.0f)) > 0.0f;
-  }
-  return anyReleased;
 }
 
 bool GameInput::SetLineKey(uint32 line, uint32 key) {
