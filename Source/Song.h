@@ -86,6 +86,8 @@ public:
     this->name = name;
   }
 
+  // Get rid of this, songs should not specify min note value
+  // https://trello.com/c/WoH4c9LD
   uint32 GetNoteCount() const {
     return numMeasures * beatsPerMeasure * minNoteValue;
   }
@@ -95,6 +97,8 @@ public:
   uint32 GetBeatsPerMeasure() const {
     return beatsPerMeasure;
   }
+  // Get rid of this, songs should not specify min note value
+  // https://trello.com/c/WoH4c9LD
   uint32 GetMinNoteValue() const {
     return minNoteValue;
   }

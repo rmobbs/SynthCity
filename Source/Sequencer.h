@@ -10,6 +10,7 @@
 #include <array>
 #include <atomic>
 #include <queue>
+#include <chrono>
 
 class Patch;
 class Song;
@@ -52,16 +53,21 @@ private:
   std::atomic<bool> isPlaying = false;
   std::atomic<float> masterVolume = kDefaultMasterVolume;
   std::atomic<uint32> numActiveVoices = 0;
-  std::atomic<float> beatTime = 0.0f;
+  std::chrono::high_resolution_clock::time_point clockTimePoint;
+  std::chrono::high_resolution_clock::time_point frameTimePoint;
+  double frameBeatTime = 0.0;
+  double clockBeatTime = 0.0;
+  double increment = 0.0;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
   uint32 NextFrame();
-  void AudioCallback(void *userData, uint8 *stream, int32 length);
+  void AudioCallback(uint8 *stream, int32 length);
   void MixVoices(float* mixBuffer, uint32 numFrames);
   void StopAllVoices();
 
 public:
+
   inline Song* GetSong() const {
     return song;
   }
@@ -95,9 +101,8 @@ public:
     this->masterVolume = masterVolume;
   }
 
-  inline float GetBeatTime() const {
-    return beatTime;
-  }
+  double GetClockBeatTime();
+  double GetFrameBeatTime();
 
   uint32 GetFrequency() const;
 

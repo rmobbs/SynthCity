@@ -71,6 +71,5 @@ public:
   void Hide() override;
   void Render(ImVec2 canvasSize) override;
 
-  void OnAudioCallback(float beatTime) override;
   void OnBeat(uint32 beatIndex) override;
 };

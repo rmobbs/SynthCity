@@ -4,7 +4,7 @@
 
 namespace Globals {
   static constexpr const char* kVersionTag("version");
-  static constexpr const char* kVersionString("0.0.9");
+  static constexpr const char* kVersionString("0.0.11");
   static constexpr const char* kMidiTags[] = { ".midi", ".mid" };
   static constexpr const char* kJsonTag(".json");
   static constexpr const char* kNameTag("name");
@@ -16,4 +16,6 @@ namespace Globals {
 
   extern double currentTime;
   extern double elapsedTime;
+
+  extern bool vsyncEnabled;
 }

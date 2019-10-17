@@ -38,6 +38,8 @@ static constexpr uint32 kDefaultFrequency = 44100;
 static constexpr uint32 kDefaultChannels = 2;
 static constexpr float kDefaultMasterVolume = 0.7f;
 static constexpr uint32 kDefaultAudioBufferSize = 2048;
+static constexpr double kBpmToBps = 1.0 / 60.0;
+static constexpr auto kInvalidTimePoint = std::chrono::high_resolution_clock::time_point::max();
 
 // A voice is a playing instance of a patch
 class Voice {
@@ -151,7 +153,7 @@ bool Sequencer::Init() {
   as.samples = kDefaultAudioBufferSize;
   as.userdata = this;
   as.callback = [](void *userData, uint8 *stream, int32 length) {
-    reinterpret_cast<Sequencer*>(userData)->AudioCallback(userData, stream, length);
+    reinterpret_cast<Sequencer*>(userData)->AudioCallback(stream, length);
   };
 
   audioDeviceId = SDL_OpenAudioDevice(nullptr, 0, &as, &audioSpec, 0);
@@ -218,10 +220,14 @@ uint32 Sequencer::GetFrequency() const {
 
 uint32 Sequencer::UpdateInterval() {
   if (song != nullptr) {
-    // Using min note value at all times so grid display does not affect playback
-    // https://trello.com/c/05XYJTLP
-    interval = static_cast<uint32>((kDefaultFrequency / song->
-      GetTempo() * 60.0) / static_cast<double>(song->GetMinNoteValue()));
+    // TODO: We should probably always tick at our fastest BPM and only
+    // update the song when necessary; this would get rid of last requirement
+    // to have a song loaded
+    // https://trello.com/c/hWgLfWZV
+    interval = static_cast<uint32>((kDefaultFrequency / (song->
+      GetTempo() * kBpmToBps)) / static_cast<double>(Globals::kDefaultMinNote));
+    increment = static_cast<double>(interval) /
+      (kDefaultFrequency / (song->GetTempo() * kBpmToBps));
   }
   else {
     interval = kDefaultInterval;
@@ -238,9 +244,6 @@ void Sequencer::SetSubdivision(uint32 subdivision) {
   if (song != nullptr) {
     currBeatSubdivision = std::min(subdivision, song->GetMinNoteValue());
   }
-  // Changing the display subdivision does not affect playback
-  // https://trello.com/c/05XYJTLP
-  //UpdateInterval();
 }
 
 void Sequencer::SetSong(Song* newSong) {
@@ -262,14 +265,12 @@ void Sequencer::PlayMetronome(bool downBeat) {
 void Sequencer::Play() {
   AudioGlobals::LockAudio();
   isPlaying = true;
-  if (currBeat == 0) {
-    beatTime = 0.0f;;
-  }
   AudioGlobals::UnlockAudio();
 }
 
 void Sequencer::Pause() {
   isPlaying = false;
+  clockTimePoint = kInvalidTimePoint;
 }
 
 void Sequencer::PauseKill() {
@@ -278,9 +279,11 @@ void Sequencer::PauseKill() {
 }
 
 void Sequencer::Stop() {
+  clockBeatTime = 0.0;
+  frameBeatTime = -increment;
   isPlaying = false;
-  beatTime = 0.0f;
   SetPosition(0);
+  clockTimePoint = kInvalidTimePoint;
 }
 
 void Sequencer::StopKill() {
@@ -289,9 +292,28 @@ void Sequencer::StopKill() {
 }
 
 void Sequencer::Loop() {
-  beatTime = 0.0f;
+  clockBeatTime = 0.0;
+  frameBeatTime = -increment;
   currBeat = 0;
   nextBeat = 1;
+  clockTimePoint = kInvalidTimePoint;
+}
+
+double Sequencer::GetClockBeatTime() {
+  if (isPlaying && clockTimePoint != kInvalidTimePoint) {
+    assert(song != nullptr);
+    auto timePoint = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> delta = timePoint - clockTimePoint;
+    clockBeatTime += delta.count() *
+      (static_cast<double>(song->GetTempo()) * kBpmToBps);
+    clockTimePoint = timePoint;
+  }
+
+  return clockBeatTime;
+}
+
+double Sequencer::GetFrameBeatTime() {
+  return frameBeatTime;
 }
 
 void Sequencer::SetPosition(uint32 newPosition) {
@@ -312,6 +334,14 @@ uint32 Sequencer::NextFrame()
     return interval;
   }
 
+  // Wait for the callback to ensure perfect frame-zero sync
+  if (clockTimePoint == kInvalidTimePoint) {
+    clockTimePoint = std::chrono::high_resolution_clock::now();
+  }
+
+  frameTimePoint = std::chrono::high_resolution_clock::now();
+  frameBeatTime += increment;
+
   currBeat = nextBeat++;
 
   auto view = View::GetCurrentView();
@@ -325,7 +355,7 @@ uint32 Sequencer::NextFrame()
 void Sequencer::MixVoices(float* mixBuffer, uint32 numFrames) {
   uint32 maxFrames = 0;
 
-  // Fill remainder with zeroes
+  // Fill buffer with zeroes
   std::memset(mixBuffer, 0, numFrames * sizeof(float) * 2);
 
   if (voices.size() > 0) {
@@ -401,35 +431,26 @@ void Sequencer::WriteOutput(float *input, int16 *output, int32 frames) {
   }
 }
 
-void Sequencer::AudioCallback(void *userData, uint8 *stream, int32 length) {
+void Sequencer::AudioCallback(uint8 *stream, int32 length) {
   // 2 channels, 2 bytes/sample = 4 bytes/frame
   length /= 4;
 
-  while (length > 0) {
-    int32 frames = std::min(std::min(ticksRemaining,
-      static_cast<int32>(kMaxCallbackSampleFrames)), length);
+  int32 frames = length;
+  while (frames > 0) {
+    int32 chunk = std::min(std::min(ticksRemaining,
+      static_cast<int32>(kMaxCallbackSampleFrames)), frames);
 
-    if (isPlaying) {
-      beatTime = beatTime + static_cast<float>(frames) /
-        (static_cast<float>(interval) * static_cast<float>(song->GetMinNoteValue()));
-    }
-
-    auto view = View::GetCurrentView();
-    if (view != nullptr) {
-      view->OnAudioCallback(beatTime);
-    }
-
-    ticksRemaining -= frames;
+    ticksRemaining -= chunk;
     if (ticksRemaining <= 0) {
       ticksRemaining = NextFrame();
     }
 
     // Mix and write audio
-    MixVoices(mixbuf.data(), frames);
-    WriteOutput(mixbuf.data(), reinterpret_cast<int16 *>(stream), frames);
+    MixVoices(mixbuf.data(), chunk);
+    WriteOutput(mixbuf.data(), reinterpret_cast<int16 *>(stream), chunk);
 
-    stream += frames * sizeof(int16) * 2;
-    length -= frames;
+    stream += chunk * sizeof(int16) * 2;
+    frames -= chunk;
   }
 }
 

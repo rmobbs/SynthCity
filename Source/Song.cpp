@@ -451,24 +451,26 @@ void Song::SetInstrument(Instrument* newInstrument) {
 
 void Song::UpdateLines() {
   // Grab any new tracks
-  const auto& tracks = instrument->GetTracks();
-  for (const auto& track : tracks) {
-    auto lineEntry = lines.find(track.first);
-    if (lineEntry != lines.end()) {
-      continue;
-    }
+  if (instrument != nullptr) {
+    const auto& tracks = instrument->GetTracks();
+    for (const auto& track : tracks) {
+      auto lineEntry = lines.find(track.first);
+      if (lineEntry != lines.end()) {
+        continue;
+      }
 
-    lines.insert({ track.first, std::list<Note>() });
-  }
-  // Discard any removed ones
-  auto lineIter = lines.begin();
-  while (lineIter != lines.end()) {
-    auto trackEntry = tracks.find(lineIter->first);
-    if (trackEntry != tracks.end()) {
-      ++lineIter;
+      lines.insert({ track.first, std::list<Note>() });
     }
-    else {
-      lineIter = lines.erase(lineIter);
+    // Discard any removed ones
+    auto lineIter = lines.begin();
+    while (lineIter != lines.end()) {
+      auto trackEntry = tracks.find(lineIter->first);
+      if (trackEntry != tracks.end()) {
+        ++lineIter;
+      }
+      else {
+        lineIter = lines.erase(lineIter);
+      }
     }
   }
 }
