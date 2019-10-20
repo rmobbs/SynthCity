@@ -178,9 +178,6 @@ uint32 GamePreviewView::LoadTexture(const std::string& textureName, uint32* outW
 void GamePreviewView::InitResources() {
   targetWindowScale = fallingNoteExtent.y * 0.5f;
 
-  targetWindowDeltaPos = targetWindowScale;
-  targetWindowDeltaNeg = -(targetWindowScale + targetLineExtents.y + fallingNoteExtent.y);
-
   // TODO: Need texture management https://trello.com/c/BRVZcDuP
   uint32 w, h;
 
@@ -191,9 +188,11 @@ void GamePreviewView::InitResources() {
 
   // Zone renderer
   targetZone = new SpriteRenderable(glm::vec2(targetLineExtents.x, 
-    targetWindowScale * 2.0f + targetLineExtents.y), kColorTargetZone);
+    targetWindowScale * 2.0f), kColorTargetZone);
   targetZone->AddTexture(whiteTextureId);
-  targetZone->SetPosition(glm::vec2(targetLinePosition.x, targetLinePosition.y - targetWindowScale));
+  targetZone->SetPosition(glm::vec2(targetLinePosition.x,
+    (targetLinePosition.y + targetLineExtents.y * 0.5f) - targetWindowScale +
+    (beatTimeSlop * kDistanceBetweenQuarterNotes)));
 
   // Placards
   auto readyTexture = LoadTexture("Assets\\ReadyPlacard.png", &w, &h);
@@ -419,6 +418,9 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
   HandleInput();
 
+  targetWindowDeltaPos = targetWindowScale;
+  targetWindowDeltaNeg = -(targetWindowScale + targetLineExtents.y + fallingNoteExtent.y);
+
   // Check input
   std::array<double, GameGlobals::kNumGameplayLines> presses = { 0.0f };
   std::array<double, GameGlobals::kNumGameplayLines> releases = { 0.0f };
@@ -448,6 +450,10 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
   glClear(GL_COLOR_BUFFER_BIT);
 
   if (drawZone) {
+    targetZone->SetExtents(glm::vec2(targetLineExtents.x, targetWindowScale * 2.0f));
+    targetZone->SetPosition(glm::vec2(targetLinePosition.x,
+      (targetLinePosition.y + targetLineExtents.y * 0.5f) - targetWindowScale +
+      (beatTimeSlop * kDistanceBetweenQuarterNotes)));
     targetZone->Render();
   }
 
@@ -508,9 +514,9 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
       if (fallingNote->Triggerable()) {
        if (presses[gameLine] > 0.0f) {
-          auto visualDelta = static_cast<float>((fallingNote->GetBeatTime() - presses[gameLine]) * kDistanceBetweenQuarterNotes);
+          auto visualDelta = static_cast<float>(((fallingNote->GetBeatTime() + beatTimeSlop) - presses[gameLine]) * kDistanceBetweenQuarterNotes);
 
-          if (visualDelta < targetWindowScale) {
+          if (visualDelta < targetWindowDeltaPos) {
             if (visualDelta > targetWindowDeltaNeg) {
               // Trigger it
               fallingNote->Trigger(static_cast<float>(beatTime), true);
@@ -524,7 +530,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
                 score += 1.0f;
               }
               else if (visualDelta > 0.0f) {
-                score += 1.0f - (visualDelta / targetWindowScale);
+                score += 1.0f - (visualDelta / targetWindowDeltaPos);
               }
               else {
                 score += 1.0f - (visualDelta / targetWindowDeltaNeg);
@@ -586,7 +592,7 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
-  ImGui::SetNextWindowPos(ImVec2(canvasSize.x - 180.0f, 10.0f));
+  ImGui::SetNextWindowPos(ImVec2(canvasSize.x - 300.0f, 10.0f));
   ImGui::Begin("Instructions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
   {
     char workBuf[256];
@@ -596,6 +602,8 @@ void GamePreviewView::Render(ImVec2 canvasSize) {
     ImGui::Text(workBuf);
     ImGui::Text("Press ESC to exit");
     ImGui::Checkbox("Draw zone", &drawZone);
+    ImGui::SliderFloat("Zone scale", &targetWindowScale, targetLineExtents.y * 0.5f, 24.0f);
+    ImGui::SliderFloat("Beat slop", &beatTimeSlop, -1.0f, 1.0f);
 
     for (uint32 lineIndex = 0; lineIndex < GameGlobals::kNumGameplayLines; ++lineIndex) {
       std::string label("Key " + std::to_string(lineIndex + 1));

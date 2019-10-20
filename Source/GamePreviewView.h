@@ -54,6 +54,7 @@ protected:
   float currentScore = 0.0f;
   float perfectScore = 0.0f;
   float streakScore = 0.0f;
+  float beatTimeSlop = 0.0f;
   bool drawZone = false;
   int32 mappingKey = -1;
   uint32 introBeats = 0;
