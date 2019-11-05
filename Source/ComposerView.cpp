@@ -101,11 +101,12 @@ std::string ComposerView:: GetNewInstrumentName(std::string instrumentNameBase) 
 
 void ComposerView::NewInstrument() {
   Sequencer::Get().StopKill();
-  Sequencer::Get().GetSong()->SetInstrument(new
-    Instrument(GetNewInstrumentName(Instrument::kDefaultName)));
 
-  // On creation an instrument has no tracks, thus no notes
-  songLines.clear();
+  auto instrument = new Instrument(GetNewInstrumentName(Instrument::kDefaultName));
+  assert(instrument);
+
+  const auto& instrumentInstance = Sequencer::Get().GetSong()->AddInstrument(instrument);
+  AddSongTracks(&instrumentInstance);
 }
 
 Instrument* ComposerView::LoadInstrument(std::string requiredInstrument) {
@@ -167,33 +168,12 @@ Instrument* ComposerView::LoadInstrument(std::string requiredInstrument) {
   return instrument;
 }
 
-void ComposerView::SaveInstrument() {
-  WCHAR szFile[FILENAME_MAX] = { 0 };
-  OPENFILENAME ofn = { 0 };
-
-  USES_CONVERSION;
-  std::string windowTitle("Save Instrument");
-  ofn.lpstrTitle = A2W(windowTitle.c_str());
-  ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
-  ofn.lStructSize = sizeof(ofn);
-  ofn.lpstrFile = szFile;
-  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
-  ofn.nFilterIndex = 0;
-  ofn.Flags = OFN_OVERWRITEPROMPT;
-
-  if (GetSaveFileName(&ofn)) {
-    Sequencer::Get().GetSong()->GetInstrument()->SaveInstrument(W2A(szFile));
-  }
-}
-
 void ComposerView::NewSong() {
   auto song = new Song(Song::kDefaultName, Globals::kDefaultTempo,
     Song::kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
   Sequencer::Get().SetSong(song);
 
-  // On creation a song has no instrument, thus no notes
-  songLines.clear();
+  ClearSongLines();
 }
 
 void ComposerView::LoadSong() {
@@ -226,31 +206,27 @@ void ComposerView::LoadSong() {
 }
 
 void ComposerView::SaveSong() {
-  if (Sequencer::Get().GetSong()->GetInstrument()->GetFileName().empty()) {
-    MCLOG(Warn, "Please save instrument first (so song can refer to it)");
-  }
-  else {
-    WCHAR szFile[FILENAME_MAX] = { 0 };
-    OPENFILENAME ofn = { 0 };
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
 
-    USES_CONVERSION;
-    std::string windowTitle("Save Song");
-    ofn.lpstrTitle = A2W(windowTitle.c_str());
-    ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
-    ofn.lStructSize = sizeof(ofn);
-    ofn.lpstrFile = szFile;
-    ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
-    ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
-    ofn.nFilterIndex = 0;
-    ofn.Flags = OFN_OVERWRITEPROMPT;
+  USES_CONVERSION;
+  std::string windowTitle("Save Song");
+  ofn.lpstrTitle = A2W(windowTitle.c_str());
+  ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
+  ofn.lStructSize = sizeof(ofn);
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_OVERWRITEPROMPT;
 
-    if (GetSaveFileName(&ofn)) {
-      Sequencer::Get().GetSong()->Save(W2A(szFile));
-    }
+  if (GetSaveFileName(&ofn)) {
+    Sequencer::Get().GetSong()->Save(W2A(szFile));
   }
 }
 
 std::string ComposerView::GetNewTrackName(std::string trackNameBase) {
+#if 0
   // Pick an available name
   std::string trackName = trackNameBase;
 
@@ -275,6 +251,9 @@ std::string ComposerView::GetNewTrackName(std::string trackNameBase) {
   }
 
   return trackName;
+#else
+  return "";
+#endif
 }
 
 // TODO: Better implementation of custom track color schemes
@@ -310,6 +289,7 @@ void ComposerView::SelectedGroupAction(std::function<void(uint32, uint32)> actio
 }
 
 void ComposerView::HandleInput() {
+#if 0
   if (activeDialog != nullptr || ImGui::IsEditing()) {
     return;
   }
@@ -321,8 +301,8 @@ void ComposerView::HandleInput() {
       Sequencer::Get().GetSong()->RemoveNote(trackId, beatIndex);
 
       // Clear any references to the note
-      auto trackEntry = songLines.find(trackId);
-      if (trackEntry != songLines.end()) {
+      auto trackEntry = songTracks.find(trackId);
+      if (trackEntry != songTracks.end()) {
         trackEntry->second.notes[beatIndex] = nullptr;
       }
     });
@@ -409,17 +389,19 @@ void ComposerView::HandleInput() {
 
   if (newGameIndex != -2) {
     SelectedGroupAction([=](uint32 trackId, uint32 beatIndex) {
-      auto trackEntry = songLines.find(trackId);
-      assert(trackEntry != songLines.end());
+      auto trackEntry = songTracks.find(trackId);
+      assert(trackEntry != songTracks.end());
       trackEntry->second.notes[beatIndex]->SetGameIndex(newGameIndex);
     });
   }
+#endif
 
   hoveredNote = { -1, -1 };
 }
 
 void ComposerView::RefreshSongLines() {
-  songLines.clear();
+#if 0
+  songTracks.clear();
   auto song = Sequencer::Get().GetSong();
   if (song != nullptr) {
     for (auto& line : song->GetBarLines()) {
@@ -427,9 +409,27 @@ void ComposerView::RefreshSongLines() {
       for (auto lineIter = line.second.begin(); lineIter != line.second.end(); ++lineIter) {
         notes[lineIter->GetBeatIndex()] = const_cast<Song::Note*>(&(*lineIter));
       }
-      songLines.insert({ line.first, { line.first, notes } });
+      songTracks.insert({ line.first, { line.first, notes } });
     }
   }
+#endif
+}
+
+void ComposerView::AddSongTracks(const Song::InstrumentInstance* instrumentInstance) {
+  assert(songTracksByInstrument.find(instrumentInstance) == songTracksByInstrument.end());
+
+  auto song = Sequencer::Get().GetSong();
+
+  std::map<uint32, SongTrack> songTracks;
+  for (auto& line : instrumentInstance->lines) {
+    std::vector<Song::Note*> notes(song->GetNoteCount());
+    for (auto lineIter = line.second.begin(); lineIter != line.second.end(); ++lineIter) {
+      notes[lineIter->GetBeatIndex()] = const_cast<Song::Note*>(&(*lineIter));
+    }
+    songTracks.insert({ line.first, { line.first, notes } });
+  }
+
+  songTracksByInstrument.insert({ instrumentInstance, songTracks });
 }
 
 void ComposerView::ProcessPendingActions() {
@@ -445,6 +445,7 @@ void ComposerView::ProcessPendingActions() {
 
   auto song = sequencer.GetSong();
   if (song != nullptr) {
+#if 0
     auto instrument = song->GetInstrument();
     if (instrument != nullptr) {
       // Track volume changed
@@ -457,8 +458,8 @@ void ComposerView::ProcessPendingActions() {
 
       // Track mute state changed
       if (pendingTrackMute.first != kInvalidUint32) {
-        auto line = songLines.find(pendingTrackMute.first);
-        assert(line != songLines.end());
+        auto line = songTracks.find(pendingTrackMute.first);
+        assert(line != songTracks.end());
         line->second.mute = pendingTrackMute.second;
         if (line->second.mute && pendingSoloTrack == pendingTrackMute.first) {
           pendingSoloTrack = kInvalidUint32;
@@ -492,7 +493,7 @@ void ComposerView::ProcessPendingActions() {
         song->UpdateLines();
 
         // Add line to note array
-        songLines.insert({ newTrack->GetUniqueId(),
+        songTracks.insert({ newTrack->GetUniqueId(),
           { newTrack->GetUniqueId(), std::vector<Song::Note*>(song->GetNoteCount()) } });
       }
 
@@ -513,7 +514,7 @@ void ComposerView::ProcessPendingActions() {
         song->UpdateLines();
 
         // Remove line from our myriad observers
-        map_remove(songLines, pendingRemoveTrack);
+        map_remove(songTracks, pendingRemoveTrack);
         map_remove(selectedNotesByTrackId, pendingRemoveTrack);
         map_remove(noteClipboard, pendingRemoveTrack);
 
@@ -522,11 +523,13 @@ void ComposerView::ProcessPendingActions() {
         }
       }
     }
+#endif
 
+#if 0
     // Toggle a note on
     if (toggledNote.first != kInvalidUint32) {
-      auto noteEntry = songLines.find(toggledNote.first);
-      assert(noteEntry != songLines.end());
+      auto noteEntry = songTracks.find(toggledNote.first);
+      assert(noteEntry != songTracks.end());
       noteEntry->second.notes[toggledNote.second] = 
         song->AddNote(toggledNote.first, toggledNote.second);
     }
@@ -534,10 +537,11 @@ void ComposerView::ProcessPendingActions() {
     if (pendingAddMeasures != kInvalidUint32) {
       song->AddMeasures(pendingAddMeasures);
 
-      for (auto& line : songLines) {
+      for (auto& line : songTracks) {
         line.second.notes.resize(song->GetNoteCount());
       }
     }
+#endif
 
     // Beats per minute changed
     if (pendingTempo != kInvalidUint32) {
@@ -556,14 +560,15 @@ void ComposerView::ProcessPendingActions() {
     auto instrument = LoadInstrument({});
     if (instrument != nullptr) {
       Sequencer::Get().StopKill();
-      song->SetInstrument(instrument);
-      RefreshSongLines();
+      AddSongTracks(&song->AddInstrument(instrument));
     }
   }
 
+#if 0
   if (pendingSaveInstrument) {
     SaveInstrument();
   }
+#endif
 
   if (pendingNewSong) {
     selectedNotesByTrackId.clear();
@@ -598,6 +603,7 @@ void ComposerView::ProcessPendingActions() {
 }
 
 void ComposerView::OnBeat(uint32 beatIndex) {
+#if 0
   auto& sequencer = Sequencer::Get();
   auto song = sequencer.GetSong();
 
@@ -619,7 +625,7 @@ void ComposerView::OnBeat(uint32 beatIndex) {
 
   auto instrument = song->GetInstrument();
 
-  for (const auto& line : songLines) {
+  for (const auto& line : songTracks) {
     auto track = instrument->GetTrackById(line.first);
     assert(track != nullptr);
 
@@ -636,7 +642,7 @@ void ComposerView::OnBeat(uint32 beatIndex) {
       sequencer.PlayPatch(track->GetPatch(), track->GetVolume());
     }
   }
-
+#endif
 }
 
 void ComposerView::InitResources() {
@@ -758,6 +764,14 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
       ConditionalEnableBegin(song != nullptr);
 
+      if (ImGui::MenuItem("New Instrument")) {
+        pendingNewInstrument = true;
+      }
+
+      if (ImGui::MenuItem("Load Instrument")) {
+        pendingLoadInstrument = true;
+      }
+
       if (ImGui::MenuItem("Save Song")) {
         pendingSaveSong = true;
       }
@@ -768,6 +782,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
     }
 
     if (song != nullptr) {
+#if 0
       auto instrument = song->GetInstrument();
 
       if (ImGui::BeginMenu("Instrument")) {
@@ -804,6 +819,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::EndMenu();
       }
       ConditionalEnableEnd();
+#endif
     }
     ImGui::EndMainMenuBar();
   }
@@ -827,15 +843,17 @@ void ComposerView::Render(ImVec2 canvasSize) {
         // Might have added a track
         song->UpdateLines();
 
+#if 0
         const auto& lines = song->GetBarLines();
         for (const auto& line : lines) {
-          auto noteEntry = songLines.find(line.first);
-          if (noteEntry != songLines.end()) {
+          auto noteEntry = songTracks.find(line.first);
+          if (noteEntry != songTracks.end()) {
             continue;
           }
-          songLines.insert({ line.first, { line.first,
+          songTracks.insert({ line.first, { line.first,
             std::vector<Song::Note*>(song->GetNoteCount()) } });
         }
+#endif
       }
 
       delete activeDialog;
@@ -855,8 +873,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
   auto song = sequencer.GetSong();
   if (song != nullptr) {
-    auto instrument = song->GetInstrument();
-
     ImVec2 sequencerCanvasSize(canvasSize.x, canvasSize.y - outputWindowHeight - mainMenuBarHeight);
 
     // Main window which contains the tracks on the left and the song lines on the right
@@ -912,13 +928,22 @@ void ComposerView::Render(ImVec2 canvasSize) {
         false,
         ImGuiWindowFlags_AlwaysAutoResize);
       {
-        // Leave vertical space for the measure labels in the song line area
-        ImGui::NewLine();
-
         auto trackLabelWidth = imGuiFont->CalcTextSizeA(imGuiFont->FontSize, FLT_MAX, 0.0f, kTrackNameFormat).x;
         auto trackTotalWidth = trackLabelWidth + kHamburgerMenuWidth + defaultItemSpacing.x;
 
-        if (instrument != nullptr) {
+        const auto& instrumentInstances = song->GetInstruments();
+        for (const auto& instrumentInstance : instrumentInstances) {
+          const auto instrument = instrumentInstance->instrument;
+
+          if (instrumentInstance != instrumentInstances.front()) {
+            // Delinate the instruments
+            ImGui::Separator();
+          }
+          else {
+            // Leave vertical space for the measure labels in the song line area
+            ImGui::NewLine();
+          }
+
           imGuiStyle.FramePadding.y = imGuiStyle.ItemSpacing.y * 0.5f;
           imGuiStyle.ItemSpacing.y = 0.0f;
           char newInstrumentName[256] = { 0 };
@@ -932,158 +957,177 @@ void ComposerView::Render(ImVec2 canvasSize) {
           imGuiStyle.FramePadding = defaultFramePadding;
 
           // Tracks
-          {
-            for (const auto& line : songLines) {
-              auto trackId = line.first;
+          const auto& instrumentSongTracks = songTracksByInstrument.find(instrumentInstance);
+          assert(instrumentSongTracks != songTracksByInstrument.end());
+          const auto& songTracks = instrumentSongTracks->second;
 
-              auto track = instrument->GetTrackById(trackId);
-              assert(track != nullptr);
+          for (const auto& songTrack : songTracks) {
+            auto trackId = songTrack.first;
 
-              ImVec4 defaultColors[ImGuiCol_COUNT];
-              memcpy(defaultColors, imGuiStyle.Colors, sizeof(defaultColors));
+            auto track = instrument->GetTrackById(trackId);
+            assert(track != nullptr);
 
-              uint32 flashColor = kPlayTrackFlashColor;
-              SetTrackColors(track->GetColorScheme(), flashColor);
+            ImVec4 defaultColors[ImGuiCol_COUNT];
+            memcpy(defaultColors, imGuiStyle.Colors, sizeof(defaultColors));
 
-              // Hamburger menu
-              std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackId);
-              std::string trackProperties = std::string("TrackProperties") + std::to_string(trackId);
-              ImGui::PushID(trackHamburgers.c_str());
-              if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
-                ImGui::PopID();
-                ImGui::OpenPopup(trackProperties.c_str());
+            uint32 flashColor = kPlayTrackFlashColor;
+            SetTrackColors(track->GetColorScheme(), flashColor);
+
+            // Hamburger menu
+            std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackId);
+            std::string trackProperties = std::string("TrackProperties") + std::to_string(trackId);
+            ImGui::PushID(trackHamburgers.c_str());
+            if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
+              ImGui::PopID();
+              ImGui::OpenPopup(trackProperties.c_str());
+            }
+            else {
+              ImGui::PopID();
+            }
+            memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
+            if (ImGui::BeginPopup(trackProperties.c_str())) {
+              bool closePopup = false;
+
+              bool mute = songTracks.find(trackId)->second.mute;
+              if (ImGui::Checkbox("Mute", &mute)) {
+                pendingTrackMute = { trackId, mute };
               }
-              else {
-                ImGui::PopID();
-              }
-              memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
-              if (ImGui::BeginPopup(trackProperties.c_str())) {
-                bool closePopup = false;
-
-                bool mute = songLines.find(trackId)->second.mute;
-                if (ImGui::Checkbox("Mute", &mute)) {
-                  pendingTrackMute = { trackId, mute };
-                }
-                ImGui::SameLine();
-                bool solo = soloTrackId == trackId;
-                if (ImGui::Checkbox("Solo", &solo)) {
-                  if (solo) {
-                    pendingSoloTrack = trackId;
-                    pendingTrackMute = { trackId, false };
-                  }
-                  else {
-                    pendingSoloTrack = kInvalidUint32;
-                  }
-                }
-                float volume = track->GetVolume();
-                if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
-                  pendingTrackVolume = { trackId, volume };
-                }
-                if (ImGui::Button("Duplicate")) {
-                  pendingCloneTrack = trackId;
-                  closePopup = true;
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Delete")) {
-                  pendingRemoveTrack = trackId;
-                  closePopup = true;
-                }
-                ImGui::SameLine();
-                if (ImGui::Button("Properties...")) {
-                  pendingDialog = new DialogTrack("Edit Track",
-                    instrument, trackId, new Track(*track), stopButtonIconTexture);
-                  closePopup = true;
-                }
-
-                ImGui::Spacing();
-                ImGui::Spacing();
-                ImGui::Spacing();
-
-                closePopup |= ImGui::Button("OK");
-
-                if (closePopup) {
-                  ImGui::CloseCurrentPopup();
-                }
-                ImGui::EndPopup();
-              }
-
-              imGuiStyle.ItemSpacing.y = 0.0f;
-              imGuiStyle.ItemSpacing.x = 0.0f;
-
               ImGui::SameLine();
-
-              flashColor = kPlayTrackFlashColor;
-              SetTrackColors(track->GetColorScheme(), flashColor);
-
-              // Track button
-              auto trackButtonBegCursor = ImGui::GetCursorPos();
-              if (ImGui::Button(track->GetName().
-                c_str(), ImVec2(trackLabelWidth, kKeyboardKeyHeight))) {
-                pendingPlayTrack = trackId;
-              }
-              auto trackButtonEndCursor = ImGui::GetCursorPos();
-
-              imGuiStyle.ItemSpacing = defaultItemSpacing;
-              memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
-
-              // If it's playing, flash it
-              float flashPct = 0.0f;
-              {
-                auto flashTime = playingTrackFlashTimes[0].find(trackId);
-                if (flashTime != playingTrackFlashTimes[0].end()) {
-                  auto pct = static_cast<float>((Globals::currentTime - flashTime->second) / kPlayTrackFlashDuration);
-                  if (pct >= 1.0f) {
-                    playingTrackFlashTimes[0].erase(flashTime);
-                  }
-                  else {
-                    flashPct = 1.0f - pct;
-                  }
+              bool solo = soloTrackId == trackId;
+              if (ImGui::Checkbox("Solo", &solo)) {
+                if (solo) {
+                  pendingSoloTrack = trackId;
+                  pendingTrackMute = { trackId, false };
+                }
+                else {
+                  pendingSoloTrack = kInvalidUint32;
                 }
               }
-
-              if (flashPct > 0.0f) {
-                ImGui::SetCursorPos(trackButtonBegCursor);
-                ImGui::FillRect(ImVec2(trackLabelWidth, kKeyboardKeyHeight),
-                  (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
-                ImGui::SetCursorPos(trackButtonEndCursor);
+              float volume = track->GetVolume();
+              if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
+                pendingTrackVolume = { trackId, volume };
               }
+              if (ImGui::Button("Duplicate")) {
+                pendingCloneTrack = trackId;
+                closePopup = true;
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Delete")) {
+                pendingRemoveTrack = trackId;
+                closePopup = true;
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Properties...")) {
+                pendingDialog = new DialogTrack("Edit Track",
+                  instrument, trackId, new Track(*track), stopButtonIconTexture);
+                closePopup = true;
+              }
+
+              ImGui::Spacing();
+              ImGui::Spacing();
+              ImGui::Spacing();
+
+              closePopup |= ImGui::Button("OK");
+
+              if (closePopup) {
+                ImGui::CloseCurrentPopup();
+              }
+              ImGui::EndPopup();
+            }
+
+            imGuiStyle.ItemSpacing.y = 0.0f;
+            imGuiStyle.ItemSpacing.x = 0.0f;
+
+            ImGui::SameLine();
+
+            flashColor = kPlayTrackFlashColor;
+            SetTrackColors(track->GetColorScheme(), flashColor);
+
+            // Track button
+            auto trackButtonBegCursor = ImGui::GetCursorPos();
+            if (ImGui::Button(track->GetName().
+              c_str(), ImVec2(trackLabelWidth, kKeyboardKeyHeight))) {
+              pendingPlayTrack = trackId;
+            }
+            auto trackButtonEndCursor = ImGui::GetCursorPos();
+
+            imGuiStyle.ItemSpacing = defaultItemSpacing;
+            memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
+
+            // If it's playing, flash it
+            float flashPct = 0.0f;
+            {
+              auto flashTime = playingTrackFlashTimes[0].find(trackId);
+              if (flashTime != playingTrackFlashTimes[0].end()) {
+                auto pct = static_cast<float>((Globals::currentTime - flashTime->second) / kPlayTrackFlashDuration);
+                if (pct >= 1.0f) {
+                  playingTrackFlashTimes[0].erase(flashTime);
+                }
+                else {
+                  flashPct = 1.0f - pct;
+                }
+              }
+            }
+
+            if (flashPct > 0.0f) {
+              ImGui::SetCursorPos(trackButtonBegCursor);
+              ImGui::FillRect(ImVec2(trackLabelWidth, kKeyboardKeyHeight),
+                (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
+              ImGui::SetCursorPos(trackButtonEndCursor);
             }
           }
+        }
 
-          auto songWindowHovered = false;
+        auto songWindowHovered = false;
 
-          // Song lines
-          auto parentWindowPos = ImGui::GetWindowPos();
-          ImGui::SetNextWindowPos(ImVec2(parentWindowPos.x + trackTotalWidth,
-            parentWindowPos.y - ImGui::GetScrollY()));
+        // Song lines
+        auto parentWindowPos = ImGui::GetWindowPos();
+        ImGui::SetNextWindowPos(ImVec2(parentWindowPos.x + trackTotalWidth,
+          parentWindowPos.y - ImGui::GetScrollY()));
 
-          ImVec2 songCanvasSize(scrollingCanvasSize.x - trackTotalWidth - Globals::kScrollBarWidth,
-            std::max(ImGui::GetCursorPosY() + Globals::kScrollBarHeight, scrollingCanvasSize.y));
+        ImVec2 songCanvasSize(scrollingCanvasSize.x - trackTotalWidth - Globals::kScrollBarWidth,
+          std::max(ImGui::GetCursorPosY() + Globals::kScrollBarHeight, scrollingCanvasSize.y));
 
-          ImGui::BeginChild("##Song",
-            songCanvasSize,
-            false,
-            ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-          {
-            songWindowHovered = ImGui::IsWindowHovered();
+        ImGui::BeginChild("##Song",
+          songCanvasSize,
+          false,
+          ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        {
+          songWindowHovered = ImGui::IsWindowHovered();
 
-            // Measure numbers
-            auto measureNumberPos = ImGui::GetCursorPos();
-            auto beatLineBegY = 0.0f;
-            for (size_t m = 0; m < song->GetNumMeasures(); ++m) {
-              ImGui::SetCursorPos(measureNumberPos);
-              ImGui::Text(std::to_string(m + 1).c_str());
-              beatLineBegY = ImGui::GetCursorPosY();
-              measureNumberPos.x += kFullBeatWidth * song->GetBeatsPerMeasure();
-            }
+          // Measure numbers
+          auto measureNumberPos = ImGui::GetCursorPos();
+          auto beatLineBegY = 0.0f;
+          for (size_t m = 0; m < song->GetNumMeasures(); ++m) {
+            ImGui::SetCursorPos(measureNumberPos);
+            ImGui::Text(std::to_string(m + 1).c_str());
+            beatLineBegY = ImGui::GetCursorPosY();
+            measureNumberPos.x += kFullBeatWidth * song->GetBeatsPerMeasure();
+          }
+
+          auto beatWidth = kFullBeatWidth / sequencer.GetSubdivision();
+
+          for (const auto& instrumentInstance : instrumentInstances) {
+            const auto instrument = instrumentInstance->instrument;
+
+            // Leave vertical space for the instrument name
+            imGuiStyle.ItemSpacing = defaultItemSpacing;
 
             ImGui::NewLine();
+
+            if (instrumentInstance != instrumentInstances.front()) {
+              // Delinate the instruments
+              ImGui::InvisibleSeparator();
+            }
 
             imGuiStyle.ItemSpacing.x = 0.0f;
             imGuiStyle.ItemSpacing.y = 0.0f;
 
-            auto beatWidth = kFullBeatWidth / sequencer.GetSubdivision();
-            for (const auto& line : songLines) {
+            const auto& instrumentSongTracks = songTracksByInstrument.find(instrumentInstance);
+            assert(instrumentSongTracks != songTracksByInstrument.end());
+            const auto& songTracks = instrumentSongTracks->second;
+
+            for (const auto& songTrack : songTracks) {
               ImGui::NewLine();
 
               // Notes (displayed at current beat zoom level)
@@ -1096,9 +1140,9 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 1.0f);
                 }
 
-                auto uniqueLabel("sl#" + std::to_string(line.first) + ":" + std::to_string(beatIndex));
+                auto uniqueLabel("sl#" + std::to_string(songTrack.first) + ":" + std::to_string(beatIndex));
 
-                Song::Note* note = line.second.notes[beatIndex];
+                Song::Note* note = songTrack.second.notes[beatIndex];
 
                 // Draw empty or filled square radio button depending on whether or not it's enabled
                 auto buttonBegPos = ImGui::GetCursorPos();
@@ -1109,15 +1153,15 @@ void ComposerView::Render(ImVec2 canvasSize) {
                     if (!(InputState::Get().modState & KMOD_SHIFT)) {
                       selectedNotesByTrackId.clear();
                     }
-                    mapped_set_toggle(selectedNotesByTrackId, line.first, beatIndex);
+                    mapped_set_toggle(selectedNotesByTrackId, songTrack.first, beatIndex);
                   }
                   else {
-                    toggledNote = { line.first, beatIndex };
+                    toggledNote = { songTrack.first, beatIndex };
                   }
                 }
 
                 if (ImGui::IsItemHovered()) {
-                  hoveredNote = { line.first, beatIndex };
+                  hoveredNote = { songTrack.first, beatIndex };
                 }
 
                 if (note != nullptr) {
@@ -1140,15 +1184,15 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                     if (dragBox.x <= noteBox.z && noteBox.x <= dragBox.z &&
                       dragBox.w >= noteBox.y && noteBox.w >= dragBox.y) {
-                      mapped_set_add(selectedNotesByTrackId, line.first, beatIndex);
+                      mapped_set_add(selectedNotesByTrackId, songTrack.first, beatIndex);
                     }
                     else {
-                      mapped_set_remove(selectedNotesByTrackId, line.first, beatIndex);
+                      mapped_set_remove(selectedNotesByTrackId, songTrack.first, beatIndex);
                     }
                   }
 
                   // Draw selection box around note if selected
-                  if (mapped_set_contains(selectedNotesByTrackId, line.first, beatIndex)) {
+                  if (mapped_set_contains(selectedNotesByTrackId, songTrack.first, beatIndex)) {
                     ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
                     ImGui::DrawRect(ImVec2(buttonExtent.x - 2.0f,
                       buttonExtent.y - 2.0f), ImGui::ColorConvertFloat4ToU32(kDragSelectColor));
@@ -1156,101 +1200,101 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 }
               }
             }
+          }
 
-            ImGui::SetCursorPosY(songCanvasSize.y);
-            auto beatLineEndY = ImGui::GetCursorPosY();
+          ImGui::SetCursorPosY(songCanvasSize.y);
+          auto beatLineEndY = ImGui::GetCursorPosY();
 
-            imGuiStyle.ItemSpacing = defaultItemSpacing;
+          imGuiStyle.ItemSpacing = defaultItemSpacing;
 
-            // Draw the beat demarcation lines
-            float cursorPosX = 0.0f;
-            for (uint32 m = 0; m < song->GetNumMeasures(); ++m) {
-              uint32 c = ImGui::ColorConvertFloat4ToU32(kMeasureDemarcationLineColor);
-              for (uint32 b = 0; b < song->GetBeatsPerMeasure(); ++b) {
-                ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
-                ImGui::FillRect(ImVec2(2.0f, beatLineEndY - beatLineBegY), c);
-                cursorPosX += kFullBeatWidth;
-                c = ImGui::ColorConvertFloat4ToU32(kBeatDemarcationLineColor);
-              }
+          // Draw the beat demarcation lines
+          float cursorPosX = 0.0f;
+          for (uint32 m = 0; m < song->GetNumMeasures(); ++m) {
+            uint32 c = ImGui::ColorConvertFloat4ToU32(kMeasureDemarcationLineColor);
+            for (uint32 b = 0; b < song->GetBeatsPerMeasure(); ++b) {
+              ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
+              ImGui::FillRect(ImVec2(2.0f, beatLineEndY - beatLineBegY), c);
+              cursorPosX += kFullBeatWidth;
+              c = ImGui::ColorConvertFloat4ToU32(kBeatDemarcationLineColor);
             }
+          }
 
-            // Draw the play line
-            cursorPosX = static_cast<float>(kFullBeatWidth * sequencer.GetClockBeatTime());
-            ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
-            ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
-              ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
+          // Draw the play line
+          cursorPosX = static_cast<float>(kFullBeatWidth * sequencer.GetClockBeatTime());
+          ImGui::SetCursorPos(ImVec2(cursorPosX, beatLineBegY));
+          ImGui::FillRect(ImVec2(2, beatLineEndY - beatLineBegY),
+            ImGui::ColorConvertFloat4ToU32(kPlayLineColor));
 
-            // Keep it in sight while playing
-            if (Sequencer::Get().IsPlaying()) {
-              if (cursorPosX > ImGui::GetScrollX() + songCanvasSize.x) {
-                ImGui::SetScrollX(cursorPosX);
-              }
+          // Keep it in sight while playing
+          if (Sequencer::Get().IsPlaying()) {
+            if (cursorPosX > ImGui::GetScrollX() + songCanvasSize.x) {
+              ImGui::SetScrollX(cursorPosX);
             }
+          }
 
-            // Drag box
-            {
-              static ImVec2 mouseDragBeg;
+          // Drag box
+          {
+            static ImVec2 mouseDragBeg;
 
-              // On mouse l-press, start the box recording (if we wait for drag to kick in we
-              // lose a few pixels)
-              if (ImGui::IsMouseClicked(0) && songWindowHovered) {
-                // Don't clear notes if they are attempting to add to the set
-                if (!(InputState::Get().modState & KMOD_SHIFT)) {
-                  // Don't clear notes if they are beginning a selected group drag
-                  if (hoveredNote.first == -1 || !set_contains<uint32>(selectedNotesByTrackId[hoveredNote.first], hoveredNote.second)) {
-                    selectedNotesByTrackId.clear();
-                  }
-                }
-
-                songWindowClicked = true;
-
-                mouseDragBeg = ImGui::GetMousePos();
-                mouseDragBeg -= ImGui::GetWindowPos();
-
-                mouseDragBeg.x += ImGui::GetScrollX();
-                mouseDragBeg.y += ImGui::GetScrollY();
-              }
-
-              // On mouse release, clear drag box
-              if (ImGui::IsMouseReleased(0)) {
-                songWindowClicked = false;
-                dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
-              }
-
-              // Update drag box while dragging (if initiating click happened in song window)
-              if (ImGui::IsMouseDragging() && songWindowClicked) {
-                auto mouseDragCur = ImGui::GetIO().MousePos;
-
-                if (mouseDragCur.x != -FLT_MAX && mouseDragCur.y != -FLT_MAX) {
-                  mouseDragCur -= ImGui::GetWindowPos();
-                  mouseDragCur.x += ImGui::GetScrollX();
-                  mouseDragCur.y += ImGui::GetScrollY();
-
-                  dragBox.x = std::min(mouseDragBeg.x, mouseDragCur.x);
-                  dragBox.y = std::min(mouseDragBeg.y, mouseDragCur.y);
-                  dragBox.z = std::max(mouseDragBeg.x, mouseDragCur.x);
-                  dragBox.w = std::max(mouseDragBeg.y, mouseDragCur.y);
+            // On mouse l-press, start the box recording (if we wait for drag to kick in we
+            // lose a few pixels)
+            if (ImGui::IsMouseClicked(0) && songWindowHovered) {
+              // Don't clear notes if they are attempting to add to the set
+              if (!(InputState::Get().modState & KMOD_SHIFT)) {
+                // Don't clear notes if they are beginning a selected group drag
+                if (hoveredNote.first == -1 || !set_contains<uint32>(selectedNotesByTrackId[hoveredNote.first], hoveredNote.second)) {
+                  selectedNotesByTrackId.clear();
                 }
               }
 
-              // Render drag box if valid
-              auto w = dragBox.z - dragBox.x;
-              auto h = dragBox.w - dragBox.y;
+              songWindowClicked = true;
 
-              if (w > 0 && h > 0) {
-                auto oldCursorPos = ImGui::GetCursorPos();
-                ImGui::SetCursorPos(ImVec2(dragBox.x, dragBox.y));
-                ImGui::FillRect(ImVec2(static_cast<float>(w),
-                  static_cast<float>(h)), ImGui::GetColorU32(kDragBoxFillColor));
-                ImGui::DrawRect(ImVec2(static_cast<float>(w),
-                  static_cast<float>(h)), ImGui::GetColorU32(kDragBoxOutlineColor));
-                ImGui::SetCursorPos(oldCursorPos);
+              mouseDragBeg = ImGui::GetMousePos();
+              mouseDragBeg -= ImGui::GetWindowPos();
+
+              mouseDragBeg.x += ImGui::GetScrollX();
+              mouseDragBeg.y += ImGui::GetScrollY();
+            }
+
+            // On mouse release, clear drag box
+            if (ImGui::IsMouseReleased(0)) {
+              songWindowClicked = false;
+              dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
+            }
+
+            // Update drag box while dragging (if initiating click happened in song window)
+            if (ImGui::IsMouseDragging() && songWindowClicked) {
+              auto mouseDragCur = ImGui::GetIO().MousePos;
+
+              if (mouseDragCur.x != -FLT_MAX && mouseDragCur.y != -FLT_MAX) {
+                mouseDragCur -= ImGui::GetWindowPos();
+                mouseDragCur.x += ImGui::GetScrollX();
+                mouseDragCur.y += ImGui::GetScrollY();
+
+                dragBox.x = std::min(mouseDragBeg.x, mouseDragCur.x);
+                dragBox.y = std::min(mouseDragBeg.y, mouseDragCur.y);
+                dragBox.z = std::max(mouseDragBeg.x, mouseDragCur.x);
+                dragBox.w = std::max(mouseDragBeg.y, mouseDragCur.y);
               }
             }
 
-            ImGui::EndChild();
-          } // Song child region          
-        } // if (instrument != nullptr)
+            // Render drag box if valid
+            auto w = dragBox.z - dragBox.x;
+            auto h = dragBox.w - dragBox.y;
+
+            if (w > 0 && h > 0) {
+              auto oldCursorPos = ImGui::GetCursorPos();
+              ImGui::SetCursorPos(ImVec2(dragBox.x, dragBox.y));
+              ImGui::FillRect(ImVec2(static_cast<float>(w),
+                static_cast<float>(h)), ImGui::GetColorU32(kDragBoxFillColor));
+              ImGui::DrawRect(ImVec2(static_cast<float>(w),
+                static_cast<float>(h)), ImGui::GetColorU32(kDragBoxOutlineColor));
+              ImGui::SetCursorPos(oldCursorPos);
+            }
+          }
+
+          ImGui::EndChild();
+        } // Song child region      
 
         ImGui::EndChild();
       } // Track + Song vertical scroling region

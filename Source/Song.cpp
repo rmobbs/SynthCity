@@ -7,6 +7,7 @@
 
 #include <fstream>
 
+static constexpr const char *kInstrumentsTag = "Instruments";
 static constexpr const char *kInstrumentTag = "Instrument";
 static constexpr const char *kTempoTag = "Tempo";
 static constexpr const char *kMeasuresTag = "Measures";
@@ -20,6 +21,11 @@ static constexpr const char* kGameLineTag = "GameLine";
 static constexpr const char* kTrackIdTag = "TrackId";
 static constexpr uint32 kSongFileVersion = 2;
 static constexpr uint32 kDefaultNoteValue = 4;
+
+Song::InstrumentInstance::~InstrumentInstance() {
+  delete instrument;
+  instrument = nullptr;
+}
 
 Song::Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
   : name(name)
@@ -39,8 +45,10 @@ Song::Song(const ReadSerializer& serializer, std::function<Instrument*(std::stri
 }
 
 Song::~Song() {
-  delete instrument;
-  instrument = nullptr;
+  for (const auto& instance : instrumentInstances) {
+    delete instance;
+  }
+  instrumentInstances.clear();
 }
 
 std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serializer) {
@@ -72,10 +80,13 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
         return std::make_pair(false, "No instrument loader callback provided to load instrument for song");
       }
 
-      instrument = instrumentLoader(instrumentName);
+      auto instrument = instrumentLoader(instrumentName);
       if (!instrument) {
         return std::make_pair(false, "Unable to load required instrument to load song");
       }
+
+      instrumentInstances.push_back(new InstrumentInstance(instrument));
+
       MCLOG(Warn, "Song is version 1 and this will be deprecated. Please re-save.");
       break;
     }
@@ -138,7 +149,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
       if (d.HasMember(kTracksTag) && d[kTracksTag].IsArray()) {
         const auto& tracksArray = d[kTracksTag];
 
-        const auto& tracks = instrument->GetTracks();
+        const auto& tracks = instrumentInstances.front()->instrument->GetTracks();
 
         uint32 lastBeat = 0;
         uint32 lastLine = std::min(tracksArray.Size(), tracks.size());
@@ -184,7 +195,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
             }
           }
 
-          lines.insert({ tracksByIndex[trackArrayIndex]->GetUniqueId(), notes });
+          instrumentInstances.front()->lines.insert({ tracksByIndex[trackArrayIndex]->GetUniqueId(), notes });
 
           // Match measure count up with time signature
           numMeasures = (lastBeat + (minNoteValue *
@@ -214,7 +225,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
       std::string instrumentPath = i[Globals::kPathTag].GetString();
 
       // Attempt to automatically load it
-      instrument = Instrument::LoadInstrument(instrumentPath);
+      auto instrument = Instrument::LoadInstrument(instrumentPath);
       if (!instrument) {
         if (!instrumentLoader) {
           return std::make_pair(false, "Unable to load instrument by path and no instrument loader callback provided");
@@ -223,8 +234,8 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
         if (!instrument) {
           return std::make_pair(false, "Unable to load required instrument to load song");
         }
-
       }
+      instrumentInstances.push_back(new InstrumentInstance(instrument));
 
       // Read tracks (can have none)
       numMeasures = 0;
@@ -282,7 +293,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
             }
           }
 
-          lines.insert({ trackId, notes });
+          instrumentInstances.front()->lines.insert({ trackId, notes });
 
           // Match measure count up with time signature
           numMeasures = (lastBeat + (minNoteValue *
@@ -323,67 +334,71 @@ std::pair<bool, std::string> Song::SerializeWrite(const WriteSerializer& seriali
   w.Key(kMinimumNoteDurationTag);
   w.Uint(minNoteValue);
 
-  // Instrument
-  w.Key(kInstrumentTag);
-  w.StartObject();
+  // Instruments array
+  w.Key(kInstrumentsTag);
+  w.StartArray();
+  for (const auto& instance : instrumentInstances) {
+    w.StartObject();
 
-  // Instrument name
-  w.Key(Globals::kNameTag);
-  w.String(instrument->GetName().c_str());
+    // Instrument name
+    w.Key(Globals::kNameTag);
+    w.String(instance->instrument->GetName().c_str());
 
-  // Instrument path
-  std::string serializeFileName(instrument->GetFileName());
-  if (serializer.rootPath.generic_string().length()) {
-    std::string newFileName = std::filesystem::relative(serializeFileName, serializer.rootPath).generic_string();
-    if (newFileName.length() > 0) {
-      serializeFileName = newFileName;
+    // Instrument path
+    std::string serializeFileName(instance->instrument->GetFileName());
+    if (serializer.rootPath.generic_string().length()) {
+      std::string newFileName = std::filesystem::relative(serializeFileName, serializer.rootPath).generic_string();
+      if (newFileName.length() > 0) {
+        serializeFileName = newFileName;
 
-      // Everything should work with the incorrect (on Windows) forward-slash paths
-      // returned from std::filesystem functions, but for consistency we'll convert
-      // the result to Windows-style backslashes
-      std::replace(serializeFileName.begin(), serializeFileName.end(), '/', '\\');
+        // Everything should work with the incorrect (on Windows) forward-slash paths
+        // returned from std::filesystem functions, but for consistency we'll convert
+        // the result to Windows-style backslashes
+        std::replace(serializeFileName.begin(), serializeFileName.end(), '/', '\\');
+      }
+      else {
+        MCLOG(Warn, "Unable to localize instrument filename; song will refer to instrument by absolute path");
+      }
     }
-    else {
-      MCLOG(Warn, "Unable to localize instrument filename; song will refer to instrument by absolute path");
-    }
-  }
-  w.Key(Globals::kPathTag);
-  w.String(serializeFileName.c_str());
- 
-  if (GetNoteCount() != 0) {
-    w.Key(kTracksTag);
-    w.StartArray();
+    w.Key(Globals::kPathTag);
+    w.String(serializeFileName.c_str());
 
-    for (const auto& line : lines) {
-      w.StartObject();
-      
-      w.Key(kTrackIdTag);
-      w.Uint(line.first);
-
-      w.Key(kNotesTag);
+    if (GetNoteCount() != 0) {
+      w.Key(kTracksTag);
       w.StartArray();
 
-      for (const auto& note : line.second) {
+      for (const auto& line : instance->lines) {
         w.StartObject();
 
-        w.Key(kBeatTag);
-        w.Uint(note.GetBeatIndex());
-        auto gameIndex = note.GetGameIndex();
-        if (gameIndex != kInvalidUint32) {
-          w.Key(kGameLineTag);
-          w.Uint(gameIndex);
+        w.Key(kTrackIdTag);
+        w.Uint(line.first);
+
+        w.Key(kNotesTag);
+        w.StartArray();
+
+        for (const auto& note : line.second) {
+          w.StartObject();
+
+          w.Key(kBeatTag);
+          w.Uint(note.GetBeatIndex());
+          auto gameIndex = note.GetGameIndex();
+          if (gameIndex != kInvalidUint32) {
+            w.Key(kGameLineTag);
+            w.Uint(gameIndex);
+          }
+          w.EndObject();
         }
+
+        w.EndArray();
         w.EndObject();
       }
 
       w.EndArray();
-      w.EndObject();
     }
 
-    w.EndArray();
+    w.EndObject();
   }
-
-  w.EndObject();
+  w.EndArray();
   w.EndObject();
 
   return std::make_pair(true, "");
@@ -394,6 +409,7 @@ void Song::AddMeasures(uint32 numMeasures) {
 }
 
 Song::Note* Song::AddNote(uint32 trackId, uint32 beatIndex) {
+#if 0
   auto lineEntry = lines.find(trackId);
   assert(lineEntry != lines.end());
   if (lineEntry != lines.end()) {
@@ -410,10 +426,12 @@ Song::Note* Song::AddNote(uint32 trackId, uint32 beatIndex) {
       return &(*lineEntry->second.insert(lineIter, Song::Note(beatIndex, -1)));
     }
   }
+#endif
   return nullptr;
 }
 
 void Song::RemoveNote(uint32 trackId, uint32 beatIndex) {
+#if 0
   auto lineEntry = lines.find(trackId);
   assert(lineEntry != lines.end());
   if (lineEntry != lines.end()) {
@@ -424,32 +442,26 @@ void Song::RemoveNote(uint32 trackId, uint32 beatIndex) {
       }
     }
   }
+#endif
 }
 
-std::string Song::GetInstrumentName() const {
-  if (instrument != nullptr) {
-    return instrument->GetName();
-  }
-  return {};
-}
+const Song::InstrumentInstance& Song::AddInstrument(Instrument* newInstrument) {
+  assert(newInstrument != nullptr);
 
-void Song::SetInstrument(Instrument* newInstrument) {
-  delete instrument;
+  auto instrumentInstance = new InstrumentInstance(newInstrument);
 
-  lines.clear();
-  numMeasures = kDefaultNumMeasures;
-  
-  instrument = newInstrument;
-  
-  if (instrument != nullptr) {
-    const auto& tracks = instrument->GetTracks();
-    for (const auto& track : tracks) {
-      lines.insert({ track.second->GetUniqueId(), std::list<Note>() });
-    }
+  const auto& tracks = newInstrument->GetTracks();
+  for (const auto& track : tracks) {
+    instrumentInstance->lines.insert({ track.second->GetUniqueId(), std::list<Note>() });
   }
+
+  instrumentInstances.push_back(instrumentInstance);
+
+  return *instrumentInstance;
 }
 
 void Song::UpdateLines() {
+#if 0
   // Grab any new tracks
   if (instrument != nullptr) {
     const auto& tracks = instrument->GetTracks();
@@ -473,6 +485,7 @@ void Song::UpdateLines() {
       }
     }
   }
+#endif
 }
 
 bool Song::Save(std::string fileName) {

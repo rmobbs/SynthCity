@@ -46,12 +46,12 @@ protected:
   std::map<uint32, std::set<uint32>> noteClipboard;
   std::map<uint32, std::set<uint32>> selectedNotesByTrackId;
 
-  struct SongLine {
+  struct SongTrack {
     uint32 trackId = kInvalidUint32;
     std::vector<Song::Note*> notes;
     bool mute = false;
   };
-  std::map<uint32, SongLine> songLines;
+  std::map<const Song::InstrumentInstance*, std::map<uint32, SongTrack>> songTracksByInstrument;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   std::pair<uint32, uint32> toggledNote = { kInvalidUint32, kInvalidUint32 };
   std::pair<uint32, uint32> hoveredNote = { kInvalidUint32, kInvalidUint32 };
@@ -91,6 +91,8 @@ protected:
   void LoadSong();
   void SaveSong();
   void RefreshSongLines();
+  void AddSongTracks(const Song::InstrumentInstance* instrument);
+  void ClearSongLines() {}
   std::string GetNewInstrumentName(std::string instrumentNameBase);
   std::string GetNewTrackName(std::string trackNameBase);
 

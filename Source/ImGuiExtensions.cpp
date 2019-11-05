@@ -52,5 +52,12 @@ namespace ImGui {
   bool IsEditing() {
     return (GImGui->InputTextState.ID != 0 && GImGui->InputTextState.ID == GImGui->ActiveId);
   }
+
+  void InvisibleSeparator() {
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+      return;
+    window->DC.CursorPos.y += 1.0f + GImGui->Style.ItemSpacing.y;
+  }
 };
 

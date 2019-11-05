@@ -338,6 +338,7 @@ void GamePreviewView::OnBeat(uint32 beatIndex) {
 }
 
 void GamePreviewView::Show() {
+#if 0
   // Gotta catch 'em all
   auto& sequencer = Sequencer::Get();
   auto song = sequencer.GetSong();
@@ -382,6 +383,7 @@ void GamePreviewView::Show() {
   mode = Mode::Ready;
 
   sequencer.Play();
+#endif
 }
 
 void GamePreviewView::Hide() {

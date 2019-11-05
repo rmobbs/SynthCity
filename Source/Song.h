@@ -43,6 +43,18 @@ public:
     }
   };
   
+  class InstrumentInstance {
+  public:
+    Instrument* instrument = nullptr;
+    std::map<uint32, std::list<Note>> lines;
+
+    inline InstrumentInstance(Instrument* instrument) :
+      instrument(instrument) {
+
+    }
+    ~InstrumentInstance();
+  };
+
 protected:
   uint32 tempo = Globals::kDefaultTempo;
   uint32 numMeasures = 0;
@@ -50,11 +62,8 @@ protected:
   uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string name;
 
-  // TODO: Permit songs to reference multiple instruments
-  // https://trello.com/c/8iaMDKmY
-  Instrument* instrument = nullptr;
+  std::vector<InstrumentInstance*> instrumentInstances;
 
-  std::map<uint32, std::list<Note>> lines;
   std::function<Instrument*(std::string)> instrumentLoader;
 
   static Song* LoadSongMidi(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
@@ -68,14 +77,8 @@ public:
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
 
-  std::string GetInstrumentName() const;
-
-  inline Instrument* GetInstrument() const {
-    return instrument;
-  }
-
-  inline const std::map<uint32, std::list<Note>>& GetBarLines() const {
-    return lines;
+  inline const std::vector<InstrumentInstance*>& GetInstruments() const {
+    return instrumentInstances;
   }
 
   inline std::string GetName() const {
@@ -90,9 +93,6 @@ public:
   // https://trello.com/c/WoH4c9LD
   uint32 GetNoteCount() const {
     return numMeasures * beatsPerMeasure * minNoteValue;
-  }
-  uint32 GetLineCount() const {
-    return lines.size();
   }
   uint32 GetBeatsPerMeasure() const {
     return beatsPerMeasure;
@@ -115,7 +115,7 @@ public:
   void AddMeasures(uint32 numMeasures);
   Note* AddNote(uint32 trackId, uint32 beatIndex);
   void RemoveNote(uint32 trackId, uint32 beatIndex);
-  void SetInstrument(Instrument* newInstrument);
+  const InstrumentInstance& AddInstrument(Instrument* newInstrument);
   bool Save(std::string fileName);
   void UpdateLines();
 
