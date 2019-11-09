@@ -27,6 +27,53 @@ Song::InstrumentInstance::~InstrumentInstance() {
   instrument = nullptr;
 }
 
+void Song::InstrumentInstance::AddTrack(Track* newTrack) {
+  instrument->AddTrack(newTrack);
+  assert(lines.find(newTrack->GetUniqueId()) == lines.end());
+  lines.insert({ newTrack->GetUniqueId(), std::list<Note>() });
+}
+
+void Song::InstrumentInstance::RemoveTrack(uint32 trackId) {
+  instrument->RemoveTrackById(trackId);
+  auto lineEntry = lines.find(trackId);
+  assert(lineEntry != lines.end());
+  lines.erase(lineEntry);
+}
+
+Song::Note* Song::InstrumentInstance::AddNote(uint32 trackId, uint32 beatIndex) {
+  auto lineEntry = lines.find(trackId);
+  assert(lineEntry != lines.end());
+  if (lineEntry != lines.end()) {
+    auto lineIter = lineEntry->second.begin();
+    while (lineIter != lineEntry->second.end()) {
+      if (lineIter->GetBeatIndex() > beatIndex) {
+        return &(*lineEntry->second.insert(lineIter, Song::Note(beatIndex, -1)));
+        break;
+      }
+      ++lineIter;
+    }
+
+    if (lineIter == lineEntry->second.end()) {
+      return &(*lineEntry->second.insert(lineIter, Song::Note(beatIndex, -1)));
+    }
+  }
+  return nullptr;
+}
+
+void Song::InstrumentInstance::RemoveNote(uint32 trackId, uint32 beatIndex) {
+  auto lineEntry = lines.find(trackId);
+  assert(lineEntry != lines.end());
+  if (lineEntry != lines.end()) {
+    for (auto lineIter = lineEntry->second.begin(); lineIter != lineEntry->second.end(); ++lineIter) {
+      if (lineIter->GetBeatIndex() == beatIndex) {
+        lineEntry->second.erase(lineIter);
+        break;
+      }
+    }
+  }
+}
+
+
 Song::Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
   : name(name)
   , tempo(tempo)
@@ -408,43 +455,6 @@ void Song::AddMeasures(uint32 numMeasures) {
   this->numMeasures += numMeasures;
 }
 
-Song::Note* Song::AddNote(uint32 trackId, uint32 beatIndex) {
-#if 0
-  auto lineEntry = lines.find(trackId);
-  assert(lineEntry != lines.end());
-  if (lineEntry != lines.end()) {
-    auto lineIter = lineEntry->second.begin();
-    while (lineIter != lineEntry->second.end()) {
-      if (lineIter->GetBeatIndex() > beatIndex) {
-        return &(*lineEntry->second.insert(lineIter, Song::Note(beatIndex, -1)));
-        break;
-      }
-      ++lineIter;
-    }
-
-    if (lineIter == lineEntry->second.end()) {
-      return &(*lineEntry->second.insert(lineIter, Song::Note(beatIndex, -1)));
-    }
-  }
-#endif
-  return nullptr;
-}
-
-void Song::RemoveNote(uint32 trackId, uint32 beatIndex) {
-#if 0
-  auto lineEntry = lines.find(trackId);
-  assert(lineEntry != lines.end());
-  if (lineEntry != lines.end()) {
-    for (auto lineIter = lineEntry->second.begin(); lineIter != lineEntry->second.end(); ++lineIter) {
-      if (lineIter->GetBeatIndex() == beatIndex) {
-        lineEntry->second.erase(lineIter);
-        break;
-      }
-    }
-  }
-#endif
-}
-
 const Song::InstrumentInstance& Song::AddInstrument(Instrument* newInstrument) {
   assert(newInstrument != nullptr);
 
@@ -458,34 +468,6 @@ const Song::InstrumentInstance& Song::AddInstrument(Instrument* newInstrument) {
   instrumentInstances.push_back(instrumentInstance);
 
   return *instrumentInstance;
-}
-
-void Song::UpdateLines() {
-#if 0
-  // Grab any new tracks
-  if (instrument != nullptr) {
-    const auto& tracks = instrument->GetTracks();
-    for (const auto& track : tracks) {
-      auto lineEntry = lines.find(track.first);
-      if (lineEntry != lines.end()) {
-        continue;
-      }
-
-      lines.insert({ track.first, std::list<Note>() });
-    }
-    // Discard any removed ones
-    auto lineIter = lines.begin();
-    while (lineIter != lines.end()) {
-      auto trackEntry = tracks.find(lineIter->first);
-      if (trackEntry != tracks.end()) {
-        ++lineIter;
-      }
-      else {
-        lineIter = lines.erase(lineIter);
-      }
-    }
-  }
-#endif
 }
 
 bool Song::Save(std::string fileName) {

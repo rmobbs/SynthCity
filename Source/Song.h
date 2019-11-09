@@ -9,6 +9,7 @@
 #include <functional>
 
 class Instrument;
+class Track;
 class Song {
 public:
   static constexpr uint32 kDefaultNumMeasures = 4;
@@ -53,6 +54,11 @@ public:
 
     }
     ~InstrumentInstance();
+
+    Note* AddNote(uint32 trackId, uint32 beatIndex);
+    void RemoveNote(uint32 trackId, uint32 beatIndex);
+    void AddTrack(Track* newTrack);
+    void RemoveTrack(uint32 trackId);
   };
 
 protected:
@@ -113,11 +119,8 @@ public:
   }
 
   void AddMeasures(uint32 numMeasures);
-  Note* AddNote(uint32 trackId, uint32 beatIndex);
-  void RemoveNote(uint32 trackId, uint32 beatIndex);
   const InstrumentInstance& AddInstrument(Instrument* newInstrument);
   bool Save(std::string fileName);
-  void UpdateLines();
 
   static Song* LoadSong(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 };

@@ -52,13 +52,6 @@ inline bool check_fileext(std::string fileName, std::string_view fileTag) {
     fileTag.length(), fileTag.length(), fileTag) == 0;
 }
 
-template<typename K, typename V> inline void map_remove(std::map<K, V>& theMap, const K& theKey) {
-  auto mapEntry = theMap.find(theKey);
-  if (mapEntry != theMap.end()) {
-    theMap.erase(mapEntry);
-  }
-}
-
 template<typename K, typename V, typename T> inline void mapped_set_toggle(std::map<K, std::set<V>>& theMap, const K& theKey, const T& theValue) {
   auto mapEntry = theMap.find(theKey);
   if (mapEntry != theMap.end()) {

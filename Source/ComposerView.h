@@ -12,6 +12,7 @@
 #include <atomic>
 
 class Dialog;
+
 class ComposerView : public View {
 protected:
   class  OutputWindowState {
@@ -27,12 +28,49 @@ protected:
 
   OutputWindowState outputWindowState;
 
+  struct InstrumentTrackBeat {
+    Song::InstrumentInstance* instrumentInstance = nullptr;
+    uint32 trackId = kInvalidUint32;
+    uint32 beatIndex = kInvalidUint32;
+
+    inline bool operator==(const InstrumentTrackBeat& that) {
+      return instrumentInstance == that.instrumentInstance && trackId == that.trackId && beatIndex == that.beatIndex;
+    }
+    inline bool operator!=(const InstrumentTrackBeat& that) {
+      return !operator==(that);
+    }
+  };
+
+  struct InstrumentTrack {
+    Song::InstrumentInstance* instrumentInstance = nullptr;
+    uint32 trackId = kInvalidUint32;
+
+    inline bool operator==(const InstrumentTrack& that) {
+      return instrumentInstance == that.instrumentInstance && trackId == that.trackId;
+    }
+    inline bool operator!=(const InstrumentTrack& that) {
+      return !operator==(that);
+    }
+  };
+
+  struct TrackBeat {
+    uint32 trackId = kInvalidUint32;
+    uint32 beatIndex = kInvalidUint32;
+
+    inline bool operator==(const TrackBeat& that) {
+      return trackId == that.trackId && beatIndex == that.beatIndex;
+    }
+    inline bool operator!=(const TrackBeat& that) {
+      return !operator==(that);
+    }
+  };
+
   bool wasPlaying = false;
 
-  uint32 pendingPlayTrack = kInvalidUint32;
-  uint32 pendingSoloTrack = kInvalidUint32;
-  uint32 pendingCloneTrack = kInvalidUint32;
-  uint32 pendingRemoveTrack = kInvalidUint32;
+  InstrumentTrack pendingPlayTrack;
+  InstrumentTrack pendingSoloTrack;
+  InstrumentTrack pendingCloneTrack;
+  InstrumentTrack pendingRemoveTrack;
   int32 pendingSubdivision = kInvalidUint32;
   uint32 pendingTempo = kInvalidUint32;
   uint32 pendingAddMeasures = kInvalidUint32;
@@ -43,20 +81,20 @@ protected:
   bool pendingLoadSong = false;
   bool pendingSaveSong = false;
 
-  std::map<uint32, std::set<uint32>> noteClipboard;
-  std::map<uint32, std::set<uint32>> selectedNotesByTrackId;
+  std::map<Song::InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectedNotesByInstrument;
+  std::map<Song::InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectingNotesByInstrument;
 
   struct SongTrack {
     uint32 trackId = kInvalidUint32;
     std::vector<Song::Note*> notes;
     bool mute = false;
   };
-  std::map<const Song::InstrumentInstance*, std::map<uint32, SongTrack>> songTracksByInstrument;
+  std::map<const Song::InstrumentInstance*, std::map<uint32, SongTrack>> songTracksByInstrumentInstance;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
-  std::pair<uint32, uint32> toggledNote = { kInvalidUint32, kInvalidUint32 };
-  std::pair<uint32, uint32> hoveredNote = { kInvalidUint32, kInvalidUint32 };
-  std::pair<uint32, float> pendingTrackVolume = { kInvalidUint32, 0.0f };
-  std::pair<uint32, bool> pendingTrackMute = { kInvalidUint32, false };
+  InstrumentTrackBeat toggledNote;
+  InstrumentTrackBeat hoveredNote;
+  struct { Song::InstrumentInstance* i; uint32 t; float v; } pendingTrackVolume = { nullptr, kInvalidUint32, 0.0f };
+  struct { Song::InstrumentInstance* i; uint32 t; bool m; } pendingTrackMute = { nullptr, kInvalidUint32, false };
   uint32 stopButtonIconTexture = 0;
   uint32 pauseButtonIconTexture = 0;
   uint32 logResponderId = UINT32_MAX;
@@ -68,7 +106,7 @@ protected:
   bool songWindowClicked = false;
   uint32 addMeasureCount = 1;
   bool localGuiDisabled = false;
-  uint32 soloTrackId = kInvalidUint32;
+  InstrumentTrack soloTrack;
 
   void ConditionalEnableBegin(bool condition);
   void ConditionalEnableEnd();
@@ -83,18 +121,17 @@ protected:
   void HandleInput();
   void NotePlayedCallback(uint32 trackIndex, uint32 noteIndex);
   void ProcessPendingActions();
-  void SelectedGroupAction(std::function<void(uint32, uint32)> action);
+  void SelectedGroupAction(std::function<void(Song::InstrumentInstance*, uint32, uint32)> action);
   void NewInstrument();
   Instrument* LoadInstrument(std::string requiredInstrument);
   void SaveInstrument();
   void NewSong();
   void LoadSong();
   void SaveSong();
-  void RefreshSongLines();
   void AddSongTracks(const Song::InstrumentInstance* instrument);
   void ClearSongLines() {}
-  std::string GetNewInstrumentName(std::string instrumentNameBase);
-  std::string GetNewTrackName(std::string trackNameBase);
+  std::string GetUniqueInstrumentName(std::string instrumentNameBase);
+  std::string GetUniqueTrackName(Instrument* instrument, std::string trackNameBase);
 
 public:
   ComposerView(uint32 mainWindowHandle);
