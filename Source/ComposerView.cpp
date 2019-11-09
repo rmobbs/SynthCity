@@ -416,9 +416,9 @@ void ComposerView::RebuildSongTracksByInstrument(Song* song) {
 void ComposerView::OnSongTrackAdded(Song::InstrumentInstance* instrumentInstance, uint32 trackId) {
   auto songTrackByInstrumentInstance = songTracksByInstrumentInstance.try_emplace(instrumentInstance);
 
-  UniqueIdBuilder<64> uniqueIdBuilder("note:");
-  uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
-  uniqueIdBuilder.PushHex(trackId);
+  UniqueIdBuilder<64> noteIdBuilder("nt:");
+  noteIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+  noteIdBuilder.PushHex(trackId);
 
   std::vector<SongTrack::Note> notes(Sequencer::Get().GetSong()->GetNoteCount());
   const auto& line = instrumentInstance->lines.find(trackId);
@@ -430,15 +430,28 @@ void ComposerView::OnSongTrackAdded(Song::InstrumentInstance* instrumentInstance
 
   // Assign unique IDs
   for (size_t i = 0; i < notes.size(); ++i) {
-    uniqueIdBuilder.PushUnsigned(i);
-    notes[i].uniqueGuiId = uniqueIdBuilder();
-    uniqueIdBuilder.Pop();
+    noteIdBuilder.PushUnsigned(i);
+    notes[i].uniqueGuiId = noteIdBuilder();
+    noteIdBuilder.Pop();
   }
 
-  uniqueIdBuilder.Pop();
-  uniqueIdBuilder.Pop();
+  UniqueIdBuilder<64> hamburgerMenuIdBuilder("hm:");
+  hamburgerMenuIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+  hamburgerMenuIdBuilder.PushHex(trackId);
+  UniqueIdBuilder<64> propertiesPopIdBuilder("pr:");
+  propertiesPopIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+  propertiesPopIdBuilder.PushHex(trackId);
 
-  songTrackByInstrumentInstance.first->second.insert({ trackId, { trackId, notes } });
+  songTrackByInstrumentInstance.first->second.insert(
+    {
+      trackId,
+      { 
+        hamburgerMenuIdBuilder(),
+        propertiesPopIdBuilder(),
+        trackId,
+        notes
+      }
+    });
 }
 
 void ComposerView::OnSongTrackRemoved(Song::InstrumentInstance* instrumentInstance, uint32 trackId) {
@@ -539,12 +552,8 @@ void ComposerView::ProcessPendingActions() {
     // Measures added
     if (pendingAddMeasures != kInvalidUint32) {
       song->AddMeasures(pendingAddMeasures);
-
-      for (auto& tracksById : songTracksByInstrumentInstance) {
-        for (auto& track : tracksById.second) {
-          track.second.notes.resize(song->GetNoteCount());
-        }
-      }
+      // Ok, it's lazy, but it saves rewriting a bunch of code
+      RebuildSongTracksByInstrument(song);
     }
 
     // Beats per minute changed
@@ -927,7 +936,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
         auto trackTotalWidth = trackLabelWidth + kHamburgerMenuWidth + defaultItemSpacing.x;
 
         const auto& instrumentInstances = song->GetInstruments();
-        //std::vector<Song::InstrumentInstance*> instrumentInstances;
         for (const auto& instrumentInstance : instrumentInstances) {
           const auto instrument = instrumentInstance->instrument;
 
@@ -956,7 +964,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
           const auto& instrumentSongTracks = songTracksByInstrumentInstance.find(instrumentInstance);
           assert(instrumentSongTracks != songTracksByInstrumentInstance.end());
           const auto& songTracks = instrumentSongTracks->second;
-          //std::map<uint32, ComposerView::SongTrack> songTracks;
 
           for (const auto& songTrack : songTracks) {
             auto trackId = songTrack.first;
@@ -971,18 +978,16 @@ void ComposerView::Render(ImVec2 canvasSize) {
             SetTrackColors(track->GetColorScheme(), flashColor);
 
             // Hamburger menu
-            std::string trackHamburgers = std::string("TrackHamburgers") + std::to_string(trackId);
-            std::string trackProperties = std::string("TrackProperties") + std::to_string(trackId);
-            ImGui::PushID(trackHamburgers.c_str());
+            ImGui::PushID(songTrack.second.uniqueGuiIdHamburgerMenu.c_str());
             if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
               ImGui::PopID();
-              ImGui::OpenPopup(trackProperties.c_str());
+              ImGui::OpenPopup(songTrack.second.uniqueGuiIdPropertiesPop.c_str());
             }
             else {
               ImGui::PopID();
             }
             memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
-            if (ImGui::BeginPopup(trackProperties.c_str())) {
+            if (ImGui::BeginPopup(songTrack.second.uniqueGuiIdPropertiesPop.c_str())) {
               bool closePopup = false;
 
               bool mute = songTracks.find(trackId)->second.mute;

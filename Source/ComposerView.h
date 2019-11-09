@@ -89,6 +89,10 @@ protected:
       Song::Note* note = nullptr;
       std::string uniqueGuiId;
     };
+    
+    std::string uniqueGuiIdHamburgerMenu;
+    std::string uniqueGuiIdPropertiesPop;
+
     uint32 trackId = kInvalidUint32;
     std::vector<Note> notes;
     bool mute = false;
