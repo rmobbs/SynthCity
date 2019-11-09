@@ -78,6 +78,8 @@ protected:
   static Song* LoadSongMidi(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
   static Song* LoadSongJson(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
 
+  std::pair<bool, std::string> SerializeReadInstrument23(const ReadSerializer& serializer);
+  
 public:
   Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
   Song(const ReadSerializer& serializer, std::function<Instrument*(std::string)> instrumentLoader);

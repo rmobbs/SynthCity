@@ -1118,7 +1118,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             ImGui::NewLine();
 
             if (instrumentInstance != instrumentInstances.front()) {
-              // Delinate the instruments
+              // Delineate the instruments
               ImGui::InvisibleSeparator();
             }
 
@@ -1128,7 +1128,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
             const auto& instrumentSongTracks = songTracksByInstrumentInstance.find(instrumentInstance);
             assert(instrumentSongTracks != songTracksByInstrumentInstance.end());
             const auto& songTracks = instrumentSongTracks->second;
-            //std::map<uint32, ComposerView::SongTrack> songTracks;
             auto& selectedNotesByTrackId = selectedNotesByInstrument.try_emplace(instrumentInstance).first->second;
             auto& selectingNotesByTrackId = selectingNotesByInstrument.try_emplace(instrumentInstance).first->second;
 
