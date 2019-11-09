@@ -12,10 +12,6 @@ class Instrument;
 class Track;
 class Song {
 public:
-  static constexpr uint32 kDefaultNumMeasures = 4;
-  static constexpr uint32 kDefaultBeatsPerMeasure = 4;
-  static constexpr const char* kDefaultName = "Untitled";
-
   class Note {
   protected:
     uint32 beatIndex = kInvalidUint32;
@@ -23,7 +19,7 @@ public:
 
   public:
     Note() = default;
-    
+
     inline Note(uint32 beatIndex, uint32 gameIndex)
       : beatIndex(beatIndex)
       , gameIndex(gameIndex) {
@@ -43,7 +39,7 @@ public:
       this->gameIndex = gameIndex;
     }
   };
-  
+
   class InstrumentInstance {
   public:
     Instrument* instrument = nullptr;
@@ -61,7 +57,14 @@ public:
     void RemoveTrack(uint32 trackId);
   };
 
+  static constexpr uint32 kDefaultNumMeasures = 4;
+  static constexpr uint32 kDefaultBeatsPerMeasure = 4;
+  static constexpr const char* kDefaultName = "Untitled";
+
 protected:
+  static std::pair<void*, std::function<void(Song::InstrumentInstance*, uint32 trackId, void*)>> onTrackAdded;
+  static std::pair<void*, std::function<void(Song::InstrumentInstance*, uint32 trackId, void*)>> onTrackRemoved;
+
   uint32 tempo = Globals::kDefaultTempo;
   uint32 numMeasures = 0;
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
@@ -123,4 +126,11 @@ public:
   bool Save(std::string fileName);
 
   static Song* LoadSong(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
+
+  static void SetOnTrackAdded(std::function<void(Song::InstrumentInstance*, uint32 trackId, void* payload)> onTrackAddedFn, void* payload) {
+    onTrackAdded = std::make_pair(payload, onTrackAddedFn);
+  }
+  static void SetOnTrackRemoved(std::function<void(Song::InstrumentInstance*, uint32 trackId, void* payload)> onTrackRemovedFn, void* payload) {
+    onTrackRemoved = std::make_pair(payload, onTrackRemovedFn);
+  }
 };

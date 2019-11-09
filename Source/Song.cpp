@@ -22,6 +22,9 @@ static constexpr const char* kTrackIdTag = "TrackId";
 static constexpr uint32 kSongFileVersion = 2;
 static constexpr uint32 kDefaultNoteValue = 4;
 
+std::pair<void*, std::function<void(Song::InstrumentInstance*, uint32 trackId, void*)>> Song::onTrackAdded;
+std::pair<void*, std::function<void(Song::InstrumentInstance*, uint32 trackId, void*)>> Song::onTrackRemoved;
+
 Song::InstrumentInstance::~InstrumentInstance() {
   delete instrument;
   instrument = nullptr;
@@ -29,15 +32,27 @@ Song::InstrumentInstance::~InstrumentInstance() {
 
 void Song::InstrumentInstance::AddTrack(Track* newTrack) {
   instrument->AddTrack(newTrack);
-  assert(lines.find(newTrack->GetUniqueId()) == lines.end());
-  lines.insert({ newTrack->GetUniqueId(), std::list<Note>() });
+
+  auto trackId = newTrack->GetUniqueId();
+
+  assert(lines.find(trackId) == lines.end());
+  lines.insert({ trackId, std::list<Note>() });
+
+  if (onTrackAdded.second != nullptr) {
+    onTrackAdded.second(this, trackId, onTrackAdded.first);
+  }
 }
 
 void Song::InstrumentInstance::RemoveTrack(uint32 trackId) {
   instrument->RemoveTrackById(trackId);
+
   auto lineEntry = lines.find(trackId);
   assert(lineEntry != lines.end());
   lines.erase(lineEntry);
+
+  if (onTrackRemoved.second != nullptr) {
+    onTrackRemoved.second(this, trackId, onTrackRemoved.first);
+  }
 }
 
 Song::Note* Song::InstrumentInstance::AddNote(uint32 trackId, uint32 beatIndex) {
@@ -72,7 +87,6 @@ void Song::InstrumentInstance::RemoveNote(uint32 trackId, uint32 beatIndex) {
     }
   }
 }
-
 
 Song::Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
   : name(name)
@@ -463,6 +477,10 @@ const Song::InstrumentInstance& Song::AddInstrument(Instrument* newInstrument) {
   const auto& tracks = newInstrument->GetTracks();
   for (const auto& track : tracks) {
     instrumentInstance->lines.insert({ track.second->GetUniqueId(), std::list<Note>() });
+
+    if (onTrackAdded.second != nullptr) {
+      onTrackAdded.second(instrumentInstance, track.second->GetUniqueId(), onTrackAdded.first);
+    }
   }
 
   instrumentInstances.push_back(instrumentInstance);

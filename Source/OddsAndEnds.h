@@ -8,6 +8,7 @@
 #include <string>
 #include <set>
 #include <map>
+#include <stack>
 
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string& sourceString);
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string_view& sourceString);
@@ -86,3 +87,28 @@ template<typename K, typename V, typename T> inline bool mapped_set_contains(std
   }
   return false;
 }
+
+template <size_t BufferSize> class UniqueIdBuilder {
+protected:
+  char buffer[BufferSize] = { 0 };
+  std::stack<size_t> offsetStack;
+public:
+  inline UniqueIdBuilder() {
+    offsetStack.push(0);
+  }
+
+  inline void PushHex(size_t hexValue) {
+    offsetStack.push(offsetStack.top() + strlen(_itoa(hexValue, buffer + offsetStack.top(), 16)));
+  }
+  inline void PushUnsigned(size_t unsignedValue) {
+    offsetStack.push(offsetStack.top() + strlen(_itoa(unsignedValue, buffer + offsetStack.top(), 10)));
+  }
+  inline void Pop() {
+    offsetStack.pop();
+    buffer[offsetStack.top()] = 0;
+  }
+
+  const char* operator()() const {
+    return buffer;
+  }
+};

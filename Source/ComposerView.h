@@ -128,10 +128,11 @@ protected:
   void NewSong();
   void LoadSong();
   void SaveSong();
-  void AddSongTracks(const Song::InstrumentInstance* instrument);
-  void ClearSongLines() {}
   std::string GetUniqueInstrumentName(std::string instrumentNameBase);
   std::string GetUniqueTrackName(Instrument* instrument, std::string trackNameBase);
+  void OnSongTrackAdded(Song::InstrumentInstance* instrument, uint32 trackId);
+  void OnSongTrackRemoved(Song::InstrumentInstance* instrument, uint32 trackId);
+  void RebuildSongTracksByInstrument(Song* song);
 
 public:
   ComposerView(uint32 mainWindowHandle);
