@@ -85,8 +85,12 @@ protected:
   std::map<Song::InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectingNotesByInstrument;
 
   struct SongTrack {
+    struct Note {
+      Song::Note* note = nullptr;
+      std::string uniqueGuiId;
+    };
     uint32 trackId = kInvalidUint32;
-    std::vector<Song::Note*> notes;
+    std::vector<Note> notes;
     bool mute = false;
   };
   std::map<const Song::InstrumentInstance*, std::map<uint32, SongTrack>> songTracksByInstrumentInstance;

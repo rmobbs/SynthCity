@@ -208,26 +208,6 @@ Instrument* ComposerView::LoadInstrument(std::string requiredInstrument) {
   return instrument;
 }
 
-void ComposerView::RebuildSongTracksByInstrument(Song* song) {
-  songTracksByInstrumentInstance.clear();
-  if (song != nullptr) {
-    const auto& instrumentInstances = song->GetInstruments();
-    for (const auto& instrumentInstance : instrumentInstances) {
-      auto songTracks = songTracksByInstrumentInstance.insert({ instrumentInstance, {} });
-
-      for (const auto& trackNotes : instrumentInstance->lines) {
-        std::vector<Song::Note*> notes(song->GetNoteCount());
-        for (const auto& note : trackNotes.second) {
-          notes[note.GetBeatIndex()] = const_cast<Song::Note*>(&note);
-        }
-
-        songTracks.first->second.insert({ trackNotes.
-          first, { trackNotes.first, std::move(notes), false } });
-      }
-    }
-  }
-}
-
 void ComposerView::NewSong() {
   auto song = new Song(Song::kDefaultName, Globals::kDefaultTempo,
     Song::kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
@@ -366,7 +346,7 @@ void ComposerView::HandleInput() {
       if (songTracks != songTracksByInstrumentInstance.end()) {
         auto trackEntry = songTracks->second.find(trackId);
         if (trackEntry != songTracks->second.end()) {
-          trackEntry->second.notes[beatIndex] = nullptr;
+          trackEntry->second.notes[beatIndex].note = nullptr;
         }
       }
     });
@@ -411,7 +391,7 @@ void ComposerView::HandleInput() {
       if (songTracks != songTracksByInstrumentInstance.end()) {
         auto trackEntry = songTracks->second.find(trackId);
         if (trackEntry != songTracks->second.end()) {
-          trackEntry->second.notes[beatIndex]->SetGameIndex(newGameIndex);
+          trackEntry->second.notes[beatIndex].note->SetGameIndex(newGameIndex);
         }
       }
     });
@@ -420,15 +400,45 @@ void ComposerView::HandleInput() {
   hoveredNote = { };
 }
 
+void ComposerView::RebuildSongTracksByInstrument(Song* song) {
+  songTracksByInstrumentInstance.clear();
+
+  if (song != nullptr) {
+    const auto& instrumentInstances = song->GetInstruments();
+    for (const auto& instrumentInstance : instrumentInstances) {
+      for (const auto& trackNotes : instrumentInstance->lines) {
+        OnSongTrackAdded(instrumentInstance, trackNotes.first);
+      }
+    }
+  }
+}
+
 void ComposerView::OnSongTrackAdded(Song::InstrumentInstance* instrumentInstance, uint32 trackId) {
   auto songTrackByInstrumentInstance = songTracksByInstrumentInstance.try_emplace(instrumentInstance);
 
-  std::vector<Song::Note*> songNotes(Sequencer::Get().GetSong()->GetNoteCount());
+  UniqueIdBuilder<64> uniqueIdBuilder("note:");
+  uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+  uniqueIdBuilder.PushHex(trackId);
+
+  std::vector<SongTrack::Note> notes(Sequencer::Get().GetSong()->GetNoteCount());
   const auto& line = instrumentInstance->lines.find(trackId);
+
+  // Assign note pointers
   for (const auto& note : line->second) {
-    songNotes[note.GetBeatIndex()] = const_cast<Song::Note*>(&note);
+    notes[note.GetBeatIndex()].note = const_cast<Song::Note*>(&note);
   }
-  songTrackByInstrumentInstance.first->second.insert({ trackId, { trackId, songNotes } });
+
+  // Assign unique IDs
+  for (size_t i = 0; i < notes.size(); ++i) {
+    uniqueIdBuilder.PushUnsigned(i);
+    notes[i].uniqueGuiId = uniqueIdBuilder();
+    uniqueIdBuilder.Pop();
+  }
+
+  uniqueIdBuilder.Pop();
+  uniqueIdBuilder.Pop();
+
+  songTrackByInstrumentInstance.first->second.insert({ trackId, { trackId, notes } });
 }
 
 void ComposerView::OnSongTrackRemoved(Song::InstrumentInstance* instrumentInstance, uint32 trackId) {
@@ -522,7 +532,7 @@ void ComposerView::ProcessPendingActions() {
       assert(instrumentInstance != songTracksByInstrumentInstance.end());
       auto songTrackEntry = instrumentInstance->second.find(toggledNote.trackId);
       assert(songTrackEntry != instrumentInstance->second.end());
-      songTrackEntry->second.notes[toggledNote.beatIndex] = 
+      songTrackEntry->second.notes[toggledNote.beatIndex].note = 
         toggledNote.instrumentInstance->AddNote(toggledNote.trackId, toggledNote.beatIndex);
     }
 
@@ -634,7 +644,7 @@ void ComposerView::OnBeat(uint32 beatIndex) {
       auto track = songTracks.first->instrument->GetTrackById(trackInstance.first);
       assert(track != nullptr);
 
-      auto note = trackInstance.second.notes[beatIndex];
+      auto note = trackInstance.second.notes[beatIndex].note;
       if (note != nullptr) {
         sequencer.PlayPatch(track->GetPatch(), track->GetVolume());
       }
@@ -1117,16 +1127,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
             auto& selectedNotesByTrackId = selectedNotesByInstrument.try_emplace(instrumentInstance).first->second;
             auto& selectingNotesByTrackId = selectingNotesByInstrument.try_emplace(instrumentInstance).first->second;
 
-            char uniqueId[8 * 3 + 1] = { 0 };
-
-            UniqueIdBuilder<8 * 3 + 1> uniqueIdBuilder;
-
-            uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
-
             for (const auto& songTrack : songTracks) {
               ImGui::NewLine();
-
-              uniqueIdBuilder.PushHex(songTrack.first);
 
               // Notes (displayed at current beat zoom level)
               uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
@@ -1138,14 +1140,12 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 1.0f);
                 }
 
-                uniqueIdBuilder.PushUnsigned(beatIndex);
-
-                Song::Note* note = songTrack.second.notes[beatIndex];
+                auto& note = songTrack.second.notes[beatIndex];
 
                 // Draw empty or filled square radio button depending on whether or not it's enabled
                 auto buttonBegPos = ImGui::GetCursorPos();
                 auto buttonExtent = ImVec2(beatWidth, kKeyboardKeyHeight);
-                if (ImGui::SquareRadioButton(uniqueIdBuilder(), note != nullptr, buttonExtent.x, buttonExtent.y)) {
+                if (ImGui::SquareRadioButton(note.uniqueGuiId.c_str(), note.note != nullptr, buttonExtent.x, buttonExtent.y)) {
                   // Any click of a note, enabled or not, without SHIFT held down, clears group selection
                   if (!(InputState::Get().modState & KMOD_SHIFT)) {
                     // Don't just clear the main map as we have a reference to an entry
@@ -1155,7 +1155,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   }
 
                   // Clicking a disabled note enables it; clicking an enabled note selects it
-                  if (note != nullptr) {
+                  if (note.note != nullptr) {
                     mapped_set_toggle(selectedNotesByTrackId, songTrack.first, beatIndex);
                   }
                   else {
@@ -1170,13 +1170,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   hoveredNote = { instrumentInstance, songTrack.first, beatIndex };
                 }
 
-                if (note != nullptr) {
+                if (note.note != nullptr) {
                   // Draw filled note: TODO: Remove this, should draw it once above
                   // https://trello.com/c/Ll8dgleN
                   {
                     ImVec4 noteColor = kDefaultNoteColor;
-                    if (note->GetGameIndex() >= 0 && note->GetGameIndex() < _countof(kFretColors)) {
-                      noteColor = kFretColors[note->GetGameIndex()];
+                    if (note.note->GetGameIndex() >= 0 && note.note->GetGameIndex() < _countof(kFretColors)) {
+                      noteColor = kFretColors[note.note->GetGameIndex()];
                     }
                     ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
                     ImGui::FillRect(ImVec2(buttonExtent.x - 2.0f,
@@ -1205,10 +1205,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                       buttonExtent.y - 2.0f), ImGui::ColorConvertFloat4ToU32(kDragSelectColor));
                   }
                 }
-
-                uniqueIdBuilder.Pop();
               }
-              uniqueIdBuilder.Pop();
             }
           }
 

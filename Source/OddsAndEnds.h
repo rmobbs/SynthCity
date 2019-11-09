@@ -91,21 +91,27 @@ template<typename K, typename V, typename T> inline bool mapped_set_contains(std
 template <size_t BufferSize> class UniqueIdBuilder {
 protected:
   char buffer[BufferSize] = { 0 };
-  std::stack<size_t> offsetStack;
+  std::stack<size_t> offset;
 public:
-  inline UniqueIdBuilder() {
-    offsetStack.push(0);
+  inline UniqueIdBuilder(const char* prefix = nullptr) {
+    if (prefix != nullptr) {
+      strcpy(buffer, prefix);
+      offset.push(strlen(prefix));
+    }
+    else {
+      offset.push(0);
+    }
   }
 
   inline void PushHex(size_t hexValue) {
-    offsetStack.push(offsetStack.top() + strlen(_itoa(hexValue, buffer + offsetStack.top(), 16)));
+    offset.push(offset.top() + strlen(_itoa(hexValue, buffer + offset.top(), 16)));
   }
   inline void PushUnsigned(size_t unsignedValue) {
-    offsetStack.push(offsetStack.top() + strlen(_itoa(unsignedValue, buffer + offsetStack.top(), 10)));
+    offset.push(offset.top() + strlen(_itoa(unsignedValue, buffer + offset.top(), 10)));
   }
   inline void Pop() {
-    offsetStack.pop();
-    buffer[offsetStack.top()] = 0;
+    offset.pop();
+    buffer[offset.top()] = 0;
   }
 
   const char* operator()() const {
