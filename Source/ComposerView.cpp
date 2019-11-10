@@ -120,17 +120,15 @@ std::string ComposerView:: GetUniqueInstrumentName(std::string instrumentNameBas
 
   // Has to end sometime
   for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
-    const auto& instrumentInstances = Sequencer::Get().GetSong()->GetInstruments();
-
-    auto instrumentInstanceIter = instrumentInstances.begin();
-    while (instrumentInstanceIter != instrumentInstances.end()) {
-      if ((*instrumentInstanceIter)->instrument->GetName() == instrumentName) {
+    auto instrumentInstanceData = instrumentInstanceDataMap.begin();
+    while (instrumentInstanceData != instrumentInstanceDataMap.end()) {
+      if (instrumentInstanceData->second.instrumentInstance->instrument->GetName() == instrumentName) {
         break;
       }
-      ++instrumentInstanceIter;
+      ++instrumentInstanceData;
     }
 
-    if (instrumentInstanceIter == instrumentInstances.end()) {
+    if (instrumentInstanceData == instrumentInstanceDataMap.end()) {
       break;
     }
 
@@ -147,6 +145,26 @@ void ComposerView::NewInstrument() {
   auto instrument = new Instrument(GetUniqueInstrumentName(Instrument::kDefaultName));
   assert(instrument);
   Sequencer::Get().GetSong()->AddInstrument(instrument);
+}
+
+void ComposerView::SaveInstrument(Instrument* instrument) {
+  WCHAR szFile[FILENAME_MAX] = { 0 };
+  OPENFILENAME ofn = { 0 };
+
+  USES_CONVERSION;
+  std::string windowTitle("Save Instrument");
+  ofn.lpstrTitle = A2W(windowTitle.c_str());
+  ofn.hwndOwner = reinterpret_cast<HWND>(mainWindowHandle);
+  ofn.lStructSize = sizeof(ofn);
+  ofn.lpstrFile = szFile;
+  ofn.nMaxFile = sizeof(szFile) / sizeof(WCHAR);
+  ofn.lpstrFilter = _TEXT("JSON\0*.json\0");
+  ofn.nFilterIndex = 0;
+  ofn.Flags = OFN_OVERWRITEPROMPT;
+
+  if (GetSaveFileName(&ofn)) {
+    instrument->SaveInstrument(W2A(szFile));
+  }
 }
 
 Instrument* ComposerView::LoadInstrument(std::string requiredInstrument) {
@@ -215,7 +233,7 @@ void ComposerView::NewSong() {
   selectedNotesByInstrument.clear();
   selectingNotesByInstrument.clear();
   Sequencer::Get().SetSong(song);
-  RebuildSongTracksByInstrument(song);
+  RebuildInstrumentInstanceDataMap(song);
 }
 
 void ComposerView::LoadSong() {
@@ -244,7 +262,7 @@ void ComposerView::LoadSong() {
       selectedNotesByInstrument.clear();
       selectingNotesByInstrument.clear();
       Sequencer::Get().SetSong(song);
-      RebuildSongTracksByInstrument(song);
+      RebuildInstrumentInstanceDataMap(song);
     }
   }
 }
@@ -342,11 +360,11 @@ void ComposerView::HandleInput() {
       instrumentInstance->RemoveNote(trackId, beatIndex);
 
       // Clear any references to the note
-      auto songTracks = songTracksByInstrumentInstance.find(instrumentInstance);
-      if (songTracks != songTracksByInstrumentInstance.end()) {
-        auto trackEntry = songTracks->second.find(trackId);
-        if (trackEntry != songTracks->second.end()) {
-          trackEntry->second.notes[beatIndex].note = nullptr;
+      auto instrumentInstanceData = instrumentInstanceDataMap.find(instrumentInstance);
+      if (instrumentInstanceData != instrumentInstanceDataMap.end()) {
+        auto trackInstanceData = instrumentInstanceData->second.songTracks.find(trackId);
+        if (trackInstanceData != instrumentInstanceData->second.songTracks.end()) {
+          trackInstanceData->second.notes[beatIndex].note = nullptr;
         }
       }
     });
@@ -387,11 +405,11 @@ void ComposerView::HandleInput() {
 
   if (newGameIndex != -2) {
     SelectedGroupAction([=](Song::InstrumentInstance* instrumentInstance, uint32 trackId, uint32 beatIndex) {
-      auto songTracks = songTracksByInstrumentInstance.find(instrumentInstance);
-      if (songTracks != songTracksByInstrumentInstance.end()) {
-        auto trackEntry = songTracks->second.find(trackId);
-        if (trackEntry != songTracks->second.end()) {
-          trackEntry->second.notes[beatIndex].note->SetGameIndex(newGameIndex);
+      auto instrumentInstanceData = instrumentInstanceDataMap.find(instrumentInstance);
+      if (instrumentInstanceData != instrumentInstanceDataMap.end()) {
+        auto trackInstanceData = instrumentInstanceData->second.songTracks.find(trackId);
+        if (trackInstanceData != instrumentInstanceData->second.songTracks.end()) {
+          trackInstanceData->second.notes[beatIndex].note->SetGameIndex(newGameIndex);
         }
       }
     });
@@ -400,8 +418,8 @@ void ComposerView::HandleInput() {
   hoveredNote = { };
 }
 
-void ComposerView::RebuildSongTracksByInstrument(Song* song) {
-  songTracksByInstrumentInstance.clear();
+void ComposerView::RebuildInstrumentInstanceDataMap(Song* song) {
+  instrumentInstanceDataMap.clear();
 
   if (song != nullptr) {
     const auto& instrumentInstances = song->GetInstruments();
@@ -414,11 +432,28 @@ void ComposerView::RebuildSongTracksByInstrument(Song* song) {
 }
 
 void ComposerView::OnSongTrackAdded(Song::InstrumentInstance* instrumentInstance, uint32 trackId) {
-  auto songTrackByInstrumentInstance = songTracksByInstrumentInstance.try_emplace(instrumentInstance);
+  // Find/add instrument instance data
+  auto instrumentInstanceData = instrumentInstanceDataMap.find(instrumentInstance);
+  if (instrumentInstanceData == instrumentInstanceDataMap.end()) {
+    UniqueIdBuilder<64> instrumentNameIdBuilder("name:");
+    instrumentNameIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+    UniqueIdBuilder<64> instrumentHamburgerMenuIdBuilder("thm:");
+    instrumentHamburgerMenuIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+    UniqueIdBuilder<64> instrumentPropertiesPopIdBuilder("tpr:");
+    instrumentPropertiesPopIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
 
-  UniqueIdBuilder<64> noteIdBuilder("nt:");
-  noteIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
-  noteIdBuilder.PushHex(trackId);
+    instrumentInstanceData = instrumentInstanceDataMap.insert(
+      {
+        instrumentInstance,
+        {
+          instrumentInstance,
+          { },
+          instrumentNameIdBuilder(),
+          instrumentHamburgerMenuIdBuilder(),
+          instrumentPropertiesPopIdBuilder(),
+        }
+      }).first;
+  }
 
   std::vector<SongTrack::Note> notes(Sequencer::Get().GetSong()->GetNoteCount());
   const auto& line = instrumentInstance->lines.find(trackId);
@@ -428,26 +463,29 @@ void ComposerView::OnSongTrackAdded(Song::InstrumentInstance* instrumentInstance
     notes[note.GetBeatIndex()].note = const_cast<Song::Note*>(&note);
   }
 
-  // Assign unique IDs
+  // Assign unique note IDs
+  UniqueIdBuilder<64> noteIdBuilder("nt:");
+  noteIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+  noteIdBuilder.PushHex(trackId);
   for (size_t i = 0; i < notes.size(); ++i) {
     noteIdBuilder.PushUnsigned(i);
     notes[i].uniqueGuiId = noteIdBuilder();
     noteIdBuilder.Pop();
   }
 
-  UniqueIdBuilder<64> hamburgerMenuIdBuilder("hm:");
-  hamburgerMenuIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
-  hamburgerMenuIdBuilder.PushHex(trackId);
-  UniqueIdBuilder<64> propertiesPopIdBuilder("pr:");
-  propertiesPopIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
-  propertiesPopIdBuilder.PushHex(trackId);
+  UniqueIdBuilder<64> trackHamburgerMenuIdBuilder("thm:");
+  trackHamburgerMenuIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+  trackHamburgerMenuIdBuilder.PushHex(trackId);
+  UniqueIdBuilder<64> trackPropertiesPopIdBuilder("tpr:");
+  trackPropertiesPopIdBuilder.PushHex(reinterpret_cast<uint32>(instrumentInstance));
+  trackPropertiesPopIdBuilder.PushHex(trackId);
 
-  songTrackByInstrumentInstance.first->second.insert(
+  instrumentInstanceData->second.songTracks.insert(
     {
       trackId,
-      { 
-        hamburgerMenuIdBuilder(),
-        propertiesPopIdBuilder(),
+      {
+        trackHamburgerMenuIdBuilder(),
+        trackPropertiesPopIdBuilder(),
         trackId,
         notes
       }
@@ -455,8 +493,14 @@ void ComposerView::OnSongTrackAdded(Song::InstrumentInstance* instrumentInstance
 }
 
 void ComposerView::OnSongTrackRemoved(Song::InstrumentInstance* instrumentInstance, uint32 trackId) {
-  map2remove<SongTrack>(songTracksByInstrumentInstance,
-    pendingRemoveTrack.instrumentInstance, pendingRemoveTrack.trackId);
+  auto instrumentInstanceData = instrumentInstanceDataMap.find(instrumentInstance);
+  if (instrumentInstanceData == instrumentInstanceDataMap.end()) {
+    auto trackInstanceData = instrumentInstanceData->second.songTracks.find(trackId);
+    if (trackInstanceData != instrumentInstanceData->second.songTracks.end()) {
+      instrumentInstanceData->second.songTracks.erase(trackInstanceData);
+    }
+  }
+
   map2remove<std::set<uint32>>(selectedNotesByInstrument,
     pendingRemoveTrack.instrumentInstance, pendingRemoveTrack.trackId);
   map2remove<std::set<uint32>>(selectingNotesByInstrument,
@@ -485,17 +529,19 @@ void ComposerView::ProcessPendingActions() {
     }
 
     // Track mute state changed
-    if (pendingTrackMute.i != nullptr) {
-      auto songTracks = songTracksByInstrumentInstance.find(pendingTrackMute.i);
-      if (songTracks != songTracksByInstrumentInstance.end()) {
-        auto track = songTracks->second.find(pendingTrackMute.t);
-        if (track != songTracks->second.end()) {
-          track->second.mute = pendingTrackMute.m;
+    if (pendingMuteTrack.i != nullptr) {
+      auto instrumentInstanceData = instrumentInstanceDataMap.find(pendingMuteTrack.i);
+      assert(instrumentInstanceData != instrumentInstanceDataMap.end());
+      if (instrumentInstanceData != instrumentInstanceDataMap.end()) {
+        auto trackInstanceData = instrumentInstanceData->second.songTracks.find(pendingMuteTrack.t);
+        assert(trackInstanceData != instrumentInstanceData->second.songTracks.end());
+        if (trackInstanceData != instrumentInstanceData->second.songTracks.end()) {
+          trackInstanceData->second.mute = pendingMuteTrack.m;
         }
       }
     }
 
-  // Add voice
+    // Add voice
     if (pendingPlayTrack.instrumentInstance != nullptr) {
       auto track = pendingPlayTrack.instrumentInstance->instrument->GetTrackById(pendingPlayTrack.trackId);
       if (track != nullptr) {
@@ -514,7 +560,7 @@ void ComposerView::ProcessPendingActions() {
       assert(oldTrack != nullptr);
 
       auto newTrack = new Track(*oldTrack);
-          
+
       newTrack->SetName(GetUniqueTrackName(pendingCloneTrack.
         instrumentInstance->instrument, oldTrack->GetName()));
 
@@ -539,21 +585,50 @@ void ComposerView::ProcessPendingActions() {
       }
     }
 
+    // Move instrument up/down
+    if (pendingInstrumentMove.i != nullptr) {
+      song->MoveInstrument(pendingInstrumentMove.i, pendingInstrumentMove.d);
+    }
+
+    // Remove instrument instance
+    if (pendingRemoveInstrumentInstance != nullptr) {
+      // Might be nice to let the other voices continue, but a lot of things would be nice
+      bool wasPlaying = sequencer.IsPlaying();
+      if (wasPlaying) {
+        sequencer.PauseKill();
+      }
+
+      song->RemoveInstrument(pendingRemoveInstrumentInstance);
+
+      const auto& instrumentInstanceData = instrumentInstanceDataMap.find(pendingRemoveInstrumentInstance);
+      if (instrumentInstanceData != instrumentInstanceDataMap.end()) {
+        instrumentInstanceDataMap.erase(instrumentInstanceData);
+      }
+
+      if (wasPlaying) {
+        sequencer.Play();
+      }
+    }
+
     // Toggle a note on
     if (toggledNote.instrumentInstance != nullptr) {
-      auto instrumentInstance = songTracksByInstrumentInstance.find(toggledNote.instrumentInstance);
-      assert(instrumentInstance != songTracksByInstrumentInstance.end());
-      auto songTrackEntry = instrumentInstance->second.find(toggledNote.trackId);
-      assert(songTrackEntry != instrumentInstance->second.end());
-      songTrackEntry->second.notes[toggledNote.beatIndex].note = 
-        toggledNote.instrumentInstance->AddNote(toggledNote.trackId, toggledNote.beatIndex);
+      auto instrumentInstanceData = instrumentInstanceDataMap.find(toggledNote.instrumentInstance);
+      assert(instrumentInstanceData != instrumentInstanceDataMap.end());
+      if (instrumentInstanceData != instrumentInstanceDataMap.end()) {
+        auto trackInstanceData = instrumentInstanceData->second.songTracks.find(toggledNote.trackId);
+        assert(trackInstanceData != instrumentInstanceData->second.songTracks.end());
+        if (trackInstanceData != instrumentInstanceData->second.songTracks.end()) {
+          trackInstanceData->second.notes[toggledNote.beatIndex].note =
+            toggledNote.instrumentInstance->AddNote(toggledNote.trackId, toggledNote.beatIndex);
+        }
+      }
     }
 
     // Measures added
     if (pendingAddMeasures != kInvalidUint32) {
       song->AddMeasures(pendingAddMeasures);
       // Ok, it's lazy, but it saves rewriting a bunch of code
-      RebuildSongTracksByInstrument(song);
+      RebuildInstrumentInstanceDataMap(song);
     }
 
     // Beats per minute changed
@@ -577,11 +652,9 @@ void ComposerView::ProcessPendingActions() {
     }
   }
 
-#if 0
-  if (pendingSaveInstrument) {
-    SaveInstrument();
+  if (pendingSaveInstrument != nullptr) {
+    SaveInstrument(pendingSaveInstrument->instrument);
   }
-#endif
 
   if (pendingNewSong) {
     selectedNotesByInstrument.clear();
@@ -601,18 +674,20 @@ void ComposerView::ProcessPendingActions() {
   pendingSubdivision = kInvalidUint32;
   pendingTempo = kInvalidUint32;
   pendingTrackVolume = { nullptr, kInvalidUint32, 0.0f };
-  pendingTrackMute = { nullptr, kInvalidUint32, false };
+  pendingMuteTrack = { nullptr, kInvalidUint32, false };
   pendingPlayTrack = { };
   pendingCloneTrack = { };
   pendingRemoveTrack = { };
   pendingAddMeasures = kInvalidUint32;
   pendingNewInstrument = false;
   pendingLoadInstrument = false;
-  pendingSaveInstrument = false;
+  pendingSaveInstrument = nullptr;
   pendingNewSong = false;
   pendingLoadSong = false;
   pendingSaveSong = false;
   toggledNote = { };
+  pendingInstrumentMove = { nullptr, 0 };
+  pendingRemoveInstrumentInstance = nullptr;
 }
 
 void ComposerView::OnBeat(uint32 beatIndex) {
@@ -635,25 +710,25 @@ void ComposerView::OnBeat(uint32 beatIndex) {
     }
   }
 
-  for (const auto& songTracks : songTracksByInstrumentInstance) {
-    InstrumentTrack instrumentTrack = { const_cast<Song::InstrumentInstance*>(songTracks.first), kInvalidUint32 };
+  for (const auto& instrumentInstanceData : instrumentInstanceDataMap) {
+    InstrumentTrack instrumentTrack = { const_cast<Song::InstrumentInstance*>(instrumentInstanceData.first), kInvalidUint32 };
 
-    for (const auto& trackInstance : songTracks.second) {
+    for (const auto& trackInstanceData : instrumentInstanceData.second.songTracks) {
       // If muted ...
-      if (trackInstance.second.mute) {
+      if (trackInstanceData.second.mute) {
         continue;
       }
       
       // If not the solo track ...
-      instrumentTrack.trackId = trackInstance.first;
+      instrumentTrack.trackId = trackInstanceData.first;
       if (soloTrack.instrumentInstance != nullptr && soloTrack != instrumentTrack) {
         continue;
       }
 
-      auto track = songTracks.first->instrument->GetTrackById(trackInstance.first);
+      auto track = instrumentInstanceData.first->instrument->GetTrackById(trackInstanceData.first);
       assert(track != nullptr);
 
-      auto note = trackInstance.second.notes[beatIndex].note;
+      auto note = trackInstanceData.second.notes[beatIndex].note;
       if (note != nullptr) {
         sequencer.PlayPatch(track->GetPatch(), track->GetVolume());
       }
@@ -806,32 +881,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
     if (song != nullptr) {
 #if 0
-      auto instrument = song->GetInstrument();
-
-      if (ImGui::BeginMenu("Instrument")) {
-        if (ImGui::MenuItem("New Instrument")) {
-          pendingNewInstrument = true;
-        }
-        if (ImGui::MenuItem("Load Instrument")) {
-          pendingLoadInstrument = true;
-        }
-
-        ConditionalEnableBegin(instrument != nullptr);
-
-        if (ImGui::MenuItem("Save Instrument")) {
-          pendingSaveInstrument = true;
-        }
-
-        if (ImGui::MenuItem("Add Track")) {
-          pendingDialog = new DialogTrack("Add Track", instrument, -1,
-            new Track(GetUniqueTrackName(kDefaultNewTrackName)), stopButtonIconTexture);
-        }
-
-        ConditionalEnableEnd();
-
-        ImGui::EndMenu();
-      }
-
       ConditionalEnableBegin(instrument != nullptr);
       if (ImGui::BeginMenu("Game")) {
         if (ImGui::MenuItem("Preview")) {
@@ -926,6 +975,9 @@ void ComposerView::Render(ImVec2 canvasSize) {
       ImVec2 scrollingCanvasSize(sequencerCanvasSize.x - Globals::kScrollBarWidth,
         sequencerCanvasSize.y - kSequencerWindowToolbarHeight);
 
+      ImVec4 defaultColors[ImGuiCol_COUNT];
+      memcpy(defaultColors, imGuiStyle.Colors, sizeof(defaultColors));
+
       // Vertical scrolling region for tracks and song lines
       ImGui::BeginChild("##ScrollingRegion",
         scrollingCanvasSize,
@@ -935,8 +987,10 @@ void ComposerView::Render(ImVec2 canvasSize) {
         auto trackLabelWidth = imGuiFont->CalcTextSizeA(imGuiFont->FontSize, FLT_MAX, 0.0f, kTrackNameFormat).x;
         auto trackTotalWidth = trackLabelWidth + kHamburgerMenuWidth + defaultItemSpacing.x;
 
+        // Use the song's instrument list so we always render in the correct order
         const auto& instrumentInstances = song->GetInstruments();
         for (const auto& instrumentInstance : instrumentInstances) {
+          const auto& instrumentInstanceData = instrumentInstanceDataMap.find(instrumentInstance);
           const auto instrument = instrumentInstance->instrument;
 
           if (instrumentInstance != instrumentInstances.front()) {
@@ -948,58 +1002,110 @@ void ComposerView::Render(ImVec2 canvasSize) {
             ImGui::NewLine();
           }
 
+          imGuiStyle.ItemSpacing.x = 0.0f;
+
+          // Instrument hamburger menu
+          ImGui::PushID(instrumentInstanceData->second.uniqueGuiIdHamburgerMenu.c_str());
+          if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
+            ImGui::PopID();
+            ImGui::OpenPopup(instrumentInstanceData->second.uniqueGuiIdPropertiesPop.c_str());
+          }
+          else {
+            ImGui::PopID();
+          }
+          ImGui::SameLine();
+
+          memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
+
+          if (ImGui::BeginPopup(instrumentInstanceData->second.uniqueGuiIdPropertiesPop.c_str())) {
+            bool closePopup = false;
+
+            if (ImGui::MenuItem("Move Up")) {
+              pendingInstrumentMove = { instrumentInstanceData->first, -1 };
+              closePopup = true;
+            }
+
+            if (ImGui::MenuItem("Move Down")) {
+              pendingInstrumentMove = { instrumentInstanceData->first, +1 };
+              closePopup = true;
+            }
+
+            if (ImGui::MenuItem("Add Track")) {
+              pendingDialog = new DialogTrack("Add Track", instrument, -1,
+                new Track(GetUniqueTrackName(instrumentInstance->instrument, kDefaultNewTrackName)), stopButtonIconTexture);
+            }
+
+            if (ImGui::MenuItem("Save")) {
+              pendingSaveInstrument = instrumentInstanceData->first;
+              closePopup = true;
+            }
+
+            if (ImGui::MenuItem("Remove")) {
+              pendingRemoveInstrumentInstance = instrumentInstanceData->first;
+              closePopup = true;
+            }
+
+            if (ImGui::MenuItem("Properties...")) {
+              /*
+              pendingDialog = new DialogTrack("Edit Track",
+                instrument, trackId, new Track(*track), stopButtonIconTexture);
+              */
+              closePopup = true;
+            }
+
+            if (closePopup) {
+              ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+          }
+
           imGuiStyle.FramePadding.y = imGuiStyle.ItemSpacing.y * 0.5f;
           imGuiStyle.ItemSpacing.y = 0.0f;
           char newInstrumentName[256] = { 0 };
           strcpy(newInstrumentName, instrument->GetName().c_str());
-          ImGui::PushItemWidth(trackLabelWidth + kHamburgerMenuWidth);
-          if (ImGui::InputText("", newInstrumentName, _countof(newInstrumentName) - 1)) {
+          ImGui::PushID(instrumentInstanceData->second.uniqueGuiIdName.c_str());
+          if (ImGui::InputTextEx("", nullptr, newInstrumentName,
+            _countof(newInstrumentName) - 1, ImVec2(trackLabelWidth, kKeyboardKeyHeight), 0)) {
             instrument->SetName(std::string(newInstrumentName));
           }
-          ImGui::PopItemWidth();
+          ImGui::PopID();
+
           imGuiStyle.ItemSpacing = defaultItemSpacing;
           imGuiStyle.FramePadding = defaultFramePadding;
 
           // Tracks
-          const auto& instrumentSongTracks = songTracksByInstrumentInstance.find(instrumentInstance);
-          assert(instrumentSongTracks != songTracksByInstrumentInstance.end());
-          const auto& songTracks = instrumentSongTracks->second;
-
-          for (const auto& songTrack : songTracks) {
-            auto trackId = songTrack.first;
+          for (const auto& trackInstanceData : instrumentInstanceData->second.songTracks) {
+            auto trackId = trackInstanceData.first;
 
             auto track = instrument->GetTrackById(trackId);
             assert(track != nullptr);
-
-            ImVec4 defaultColors[ImGuiCol_COUNT];
-            memcpy(defaultColors, imGuiStyle.Colors, sizeof(defaultColors));
 
             uint32 flashColor = kPlayTrackFlashColor;
             SetTrackColors(track->GetColorScheme(), flashColor);
 
             // Hamburger menu
-            ImGui::PushID(songTrack.second.uniqueGuiIdHamburgerMenu.c_str());
+            ImGui::PushID(trackInstanceData.second.uniqueGuiIdHamburgerMenu.c_str());
             if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
               ImGui::PopID();
-              ImGui::OpenPopup(songTrack.second.uniqueGuiIdPropertiesPop.c_str());
+              ImGui::OpenPopup(trackInstanceData.second.uniqueGuiIdPropertiesPop.c_str());
             }
             else {
               ImGui::PopID();
             }
             memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
-            if (ImGui::BeginPopup(songTrack.second.uniqueGuiIdPropertiesPop.c_str())) {
+            if (ImGui::BeginPopup(trackInstanceData.second.uniqueGuiIdPropertiesPop.c_str())) {
               bool closePopup = false;
 
-              bool mute = songTracks.find(trackId)->second.mute;
+              bool mute = instrumentInstanceData->second.songTracks.find(trackId)->second.mute;
               if (ImGui::Checkbox("Mute", &mute)) {
-                pendingTrackMute = { instrumentInstance, trackId, mute };
+                pendingMuteTrack = { instrumentInstanceData->first, trackId, mute };
               }
               ImGui::SameLine();
-              bool solo = soloTrack.instrumentInstance == instrumentInstance && soloTrack.trackId == trackId;
+              bool solo = soloTrack.instrumentInstance == instrumentInstanceData->first && soloTrack.trackId == trackId;
               if (ImGui::Checkbox("Solo", &solo)) {
                 if (solo) {
-                  pendingSoloTrack = { instrumentInstance, trackId };
-                  pendingTrackMute = { instrumentInstance, trackId, false };
+                  pendingSoloTrack = { instrumentInstanceData->first, trackId };
+                  pendingMuteTrack = { instrumentInstanceData->first, trackId, false };
                 }
                 else {
                   pendingSoloTrack = { };
@@ -1007,15 +1113,15 @@ void ComposerView::Render(ImVec2 canvasSize) {
               }
               float volume = track->GetVolume();
               if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
-                pendingTrackVolume = { instrumentInstance, trackId, volume };
+                pendingTrackVolume = { instrumentInstanceData->first, trackId, volume };
               }
               if (ImGui::Button("Duplicate")) {
-                pendingCloneTrack = { instrumentInstance, trackId };
+                pendingCloneTrack = { instrumentInstanceData->first, trackId };
                 closePopup = true;
               }
               ImGui::SameLine();
               if (ImGui::Button("Delete")) {
-                pendingRemoveTrack = { instrumentInstance, trackId };
+                pendingRemoveTrack = { instrumentInstanceData->first, trackId };
                 closePopup = true;
               }
               ImGui::SameLine();
@@ -1049,7 +1155,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             auto trackButtonBegCursor = ImGui::GetCursorPos();
             if (ImGui::Button(track->GetName().
               c_str(), ImVec2(trackLabelWidth, kKeyboardKeyHeight))) {
-              pendingPlayTrack = { instrumentInstance, trackId };
+              pendingPlayTrack = { instrumentInstanceData->first, trackId };
             }
             auto trackButtonEndCursor = ImGui::GetCursorPos();
 
@@ -1097,54 +1203,51 @@ void ComposerView::Render(ImVec2 canvasSize) {
         {
           songWindowHovered = ImGui::IsWindowHovered();
 
+          imGuiStyle.ItemSpacing.x = 0.0f;
+
           // Measure numbers
           auto measureNumberPos = ImGui::GetCursorPos();
           auto beatLineBegY = 0.0f;
+          auto oldCursorPos = ImGui::GetCursorPos();
           for (size_t m = 0; m < song->GetNumMeasures(); ++m) {
             ImGui::SetCursorPos(measureNumberPos);
             ImGui::Text(std::to_string(m + 1).c_str());
             beatLineBegY = ImGui::GetCursorPosY();
             measureNumberPos.x += kFullBeatWidth * song->GetBeatsPerMeasure();
           }
+          ImGui::SetCursorPos(oldCursorPos);
+
+          ImGui::NewLine();
 
           auto beatWidth = kFullBeatWidth / sequencer.GetSubdivision();
 
+          // Use the song's instrument list so we always render in the correct order
+          const auto& instrumentInstances = song->GetInstruments();
           for (const auto& instrumentInstance : instrumentInstances) {
+            const auto& instrumentInstanceData = instrumentInstanceDataMap.find(instrumentInstance);
             const auto instrument = instrumentInstance->instrument;
 
-            // Leave vertical space for the instrument name
-            imGuiStyle.ItemSpacing = defaultItemSpacing;
-
-            ImGui::NewLine();
-
-            if (instrumentInstance != instrumentInstances.front()) {
-              // Delineate the instruments
-              ImGui::InvisibleSeparator();
-            }
-
-            imGuiStyle.ItemSpacing.x = 0.0f;
             imGuiStyle.ItemSpacing.y = 0.0f;
 
-            const auto& instrumentSongTracks = songTracksByInstrumentInstance.find(instrumentInstance);
-            assert(instrumentSongTracks != songTracksByInstrumentInstance.end());
-            const auto& songTracks = instrumentSongTracks->second;
-            auto& selectedNotesByTrackId = selectedNotesByInstrument.try_emplace(instrumentInstance).first->second;
-            auto& selectingNotesByTrackId = selectingNotesByInstrument.try_emplace(instrumentInstance).first->second;
+            float spacing = kKeyboardKeyHeight;
+            if (instrumentInstance != instrumentInstances.front()) {
+              spacing += defaultItemSpacing.y;
+            }
+            ImGui::NewLine(spacing);
 
-            for (const auto& songTrack : songTracks) {
-              ImGui::NewLine();
+            auto& selectedNotesByTrackId = selectedNotesByInstrument.try_emplace(instrumentInstanceData->second.instrumentInstance).first->second;
+            auto& selectingNotesByTrackId = selectingNotesByInstrument.try_emplace(instrumentInstanceData->second.instrumentInstance).first->second;
 
+            for (const auto& trackInstanceData : instrumentInstanceData->second.songTracks) {
               // Notes (displayed at current beat zoom level)
               uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
               for (size_t beatIndex = 0; beatIndex < song->GetNoteCount(); beatIndex += beatStep) {
-                ImGui::SameLine();
-
                 // Bump the first square by 1 to the right so we can draw a 2-pixel beat line
                 if (!beatIndex) {
                   ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 1.0f);
                 }
 
-                auto& note = songTrack.second.notes[beatIndex];
+                auto& note = trackInstanceData.second.notes[beatIndex];
 
                 // Draw empty or filled square radio button depending on whether or not it's enabled
                 auto buttonBegPos = ImGui::GetCursorPos();
@@ -1160,18 +1263,18 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                   // Clicking a disabled note enables it; clicking an enabled note selects it
                   if (note.note != nullptr) {
-                    mapped_set_toggle(selectedNotesByTrackId, songTrack.first, beatIndex);
+                    mapped_set_toggle(selectedNotesByTrackId, trackInstanceData.first, beatIndex);
                   }
                   else {
-                    toggledNote = { instrumentInstance, songTrack.first, beatIndex };
+                    toggledNote = { instrumentInstanceData->first, trackInstanceData.first, beatIndex };
                     if (!(InputState::Get().modState & KMOD_SHIFT)) {
-                      mapped_set_toggle(selectedNotesByTrackId, songTrack.first, beatIndex);
+                      mapped_set_toggle(selectedNotesByTrackId, trackInstanceData.first, beatIndex);
                     }
                   }
                 }
 
                 if (ImGui::IsItemHovered()) {
-                  hoveredNote = { instrumentInstance, songTrack.first, beatIndex };
+                  hoveredNote = { instrumentInstanceData->first, trackInstanceData.first, beatIndex };
                 }
 
                 if (note.note != nullptr) {
@@ -1194,29 +1297,29 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                     if (dragBox.x <= noteBox.z && noteBox.x <= dragBox.z &&
                       dragBox.w >= noteBox.y && noteBox.w >= dragBox.y) {
-                      mapped_set_add(selectingNotesByTrackId, songTrack.first, beatIndex);
+                      mapped_set_add(selectingNotesByTrackId, trackInstanceData.first, beatIndex);
                     }
                     else {
-                      mapped_set_remove(selectingNotesByTrackId, songTrack.first, beatIndex);
+                      mapped_set_remove(selectingNotesByTrackId, trackInstanceData.first, beatIndex);
                     }
                   }
 
                   // Draw selection box around note if selected or selecting
-                  if (mapped_set_contains(selectedNotesByTrackId, songTrack.first, beatIndex) ||
-                      mapped_set_contains(selectingNotesByTrackId, songTrack.first, beatIndex)) {
+                  if (mapped_set_contains(selectedNotesByTrackId, trackInstanceData.first, beatIndex) ||
+                      mapped_set_contains(selectingNotesByTrackId, trackInstanceData.first, beatIndex)) {
                     ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
                     ImGui::DrawRect(ImVec2(buttonExtent.x - 2.0f,
                       buttonExtent.y - 2.0f), ImGui::ColorConvertFloat4ToU32(kDragSelectColor));
                   }
                 }
+                ImGui::SameLine();
               }
+              ImGui::NewLine();
             }
           }
 
           ImGui::SetCursorPosY(songCanvasSize.y);
           auto beatLineEndY = ImGui::GetCursorPosY();
-
-          imGuiStyle.ItemSpacing = defaultItemSpacing;
 
           // Draw the beat demarcation lines
           float cursorPosX = 0.0f;

@@ -509,6 +509,47 @@ const Song::InstrumentInstance& Song::AddInstrument(Instrument* newInstrument) {
   return *instrumentInstance;
 }
 
+void Song::MoveInstrument(InstrumentInstance* instrumentInstance, int32 direction) {
+  auto instrumentInstanceIter = std::find(instrumentInstances.
+    begin(), instrumentInstances.end(), instrumentInstance);
+  assert(instrumentInstanceIter != instrumentInstances.end());
+
+  switch (direction) {
+    case -1: {
+      // Up
+      auto prevInstrumentInstanceIter = instrumentInstances.end();
+      if (instrumentInstanceIter != instrumentInstances.begin()) {
+        prevInstrumentInstanceIter = std::prev(instrumentInstanceIter);
+      }
+      instrumentInstances.erase(instrumentInstanceIter);
+      instrumentInstances.insert(prevInstrumentInstanceIter, instrumentInstance);
+      break;
+    }
+    case +1: {
+      // Down
+      auto nextInstrumentInstanceIter = std::next(instrumentInstanceIter);
+      if (nextInstrumentInstanceIter != instrumentInstances.end()) {
+        ++nextInstrumentInstanceIter;
+      }
+      else {
+        nextInstrumentInstanceIter = instrumentInstances.begin();
+      }
+      instrumentInstances.erase(instrumentInstanceIter);
+      instrumentInstances.insert(nextInstrumentInstanceIter, instrumentInstance);
+      break;
+    }
+  }
+}
+
+void Song::RemoveInstrument(InstrumentInstance* instrumentInstance) {
+  auto instrumentInstanceIter = std::find(instrumentInstances.
+    begin(), instrumentInstances.end(), instrumentInstance);
+  if (instrumentInstanceIter != instrumentInstances.end()) {
+    delete (*instrumentInstanceIter);
+    instrumentInstances.erase(instrumentInstanceIter);
+  }
+}
+
 bool Song::Save(std::string fileName) {
   ensure_fileext(fileName, Globals::kJsonTag);
 

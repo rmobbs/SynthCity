@@ -59,5 +59,19 @@ namespace ImGui {
       return;
     window->DC.CursorPos.y += 1.0f + GImGui->Style.ItemSpacing.y;
   }
+
+  void ImGui::NewLine(float lineSize)
+  {
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+      return;
+
+    ImGuiContext& g = *GImGui;
+    const ImGuiLayoutType backup_layout_type = window->DC.LayoutType;
+    window->DC.LayoutType = ImGuiLayoutType_Vertical;
+    ItemSize(ImVec2(0.0f, lineSize));
+    window->DC.LayoutType = backup_layout_type;
+  }
+
 };
 

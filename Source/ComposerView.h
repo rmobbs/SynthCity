@@ -65,31 +65,12 @@ protected:
     }
   };
 
-  bool wasPlaying = false;
-
-  InstrumentTrack pendingPlayTrack;
-  InstrumentTrack pendingSoloTrack;
-  InstrumentTrack pendingCloneTrack;
-  InstrumentTrack pendingRemoveTrack;
-  int32 pendingSubdivision = kInvalidUint32;
-  uint32 pendingTempo = kInvalidUint32;
-  uint32 pendingAddMeasures = kInvalidUint32;
-  bool pendingNewInstrument = false;
-  bool pendingLoadInstrument = false;
-  bool pendingSaveInstrument = false;
-  bool pendingNewSong = false;
-  bool pendingLoadSong = false;
-  bool pendingSaveSong = false;
-
-  std::map<Song::InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectedNotesByInstrument;
-  std::map<Song::InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectingNotesByInstrument;
-
   struct SongTrack {
     struct Note {
       Song::Note* note = nullptr;
       std::string uniqueGuiId;
     };
-    
+
     std::string uniqueGuiIdHamburgerMenu;
     std::string uniqueGuiIdPropertiesPop;
 
@@ -97,12 +78,43 @@ protected:
     std::vector<Note> notes;
     bool mute = false;
   };
-  std::map<const Song::InstrumentInstance*, std::map<uint32, SongTrack>> songTracksByInstrumentInstance;
+
+  struct InstrumentInstanceData {
+    Song::InstrumentInstance* instrumentInstance = nullptr;
+    std::map<uint32, SongTrack> songTracks;
+    std::string uniqueGuiIdName;
+    std::string uniqueGuiIdHamburgerMenu;
+    std::string uniqueGuiIdPropertiesPop;
+  };
+
+  bool wasPlaying = false;
+
+  InstrumentTrack pendingPlayTrack;
+  InstrumentTrack pendingSoloTrack;
+  InstrumentTrack pendingCloneTrack;
+  InstrumentTrack pendingRemoveTrack;
+  struct { Song::InstrumentInstance* i; int32 d; } pendingInstrumentMove = { nullptr, 0 };
+  Song::InstrumentInstance* pendingRemoveInstrumentInstance = nullptr;
+  int32 pendingSubdivision = kInvalidUint32;
+  uint32 pendingTempo = kInvalidUint32;
+  uint32 pendingAddMeasures = kInvalidUint32;
+  bool pendingNewInstrument = false;
+  bool pendingLoadInstrument = false;
+  Song::InstrumentInstance* pendingSaveInstrument = nullptr;
+  bool pendingNewSong = false;
+  bool pendingLoadSong = false;
+  bool pendingSaveSong = false;
+
+  std::map<Song::InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectedNotesByInstrument;
+  std::map<Song::InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectingNotesByInstrument;
+
+  std::map<Song::InstrumentInstance*, InstrumentInstanceData> instrumentInstanceDataMap;
+  std::list<InstrumentInstanceData*> orderedInstrumentInstanceData;
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   InstrumentTrackBeat toggledNote;
   InstrumentTrackBeat hoveredNote;
   struct { Song::InstrumentInstance* i; uint32 t; float v; } pendingTrackVolume = { nullptr, kInvalidUint32, 0.0f };
-  struct { Song::InstrumentInstance* i; uint32 t; bool m; } pendingTrackMute = { nullptr, kInvalidUint32, false };
+  struct { Song::InstrumentInstance* i; uint32 t; bool m; } pendingMuteTrack = { nullptr, kInvalidUint32, false };
   uint32 stopButtonIconTexture = 0;
   uint32 pauseButtonIconTexture = 0;
   uint32 logResponderId = UINT32_MAX;
@@ -132,7 +144,7 @@ protected:
   void SelectedGroupAction(std::function<void(Song::InstrumentInstance*, uint32, uint32)> action);
   void NewInstrument();
   Instrument* LoadInstrument(std::string requiredInstrument);
-  void SaveInstrument();
+  void SaveInstrument(Instrument* instrument);
   void NewSong();
   void LoadSong();
   void SaveSong();
@@ -140,7 +152,7 @@ protected:
   std::string GetUniqueTrackName(Instrument* instrument, std::string trackNameBase);
   void OnSongTrackAdded(Song::InstrumentInstance* instrument, uint32 trackId);
   void OnSongTrackRemoved(Song::InstrumentInstance* instrument, uint32 trackId);
-  void RebuildSongTracksByInstrument(Song* song);
+  void RebuildInstrumentInstanceDataMap(Song* song);
 
 public:
   ComposerView(uint32 mainWindowHandle);

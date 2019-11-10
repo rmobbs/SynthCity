@@ -8,4 +8,5 @@ namespace ImGui {
   bool SquareRadioButton(const char* label, bool active, float w, float h);
   bool IsEditing();
   void InvisibleSeparator();
+  void NewLine(float lineSize);
 }

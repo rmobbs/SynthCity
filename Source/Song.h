@@ -71,7 +71,7 @@ protected:
   uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string name;
 
-  std::vector<InstrumentInstance*> instrumentInstances;
+  std::list<InstrumentInstance*> instrumentInstances;
 
   std::function<Instrument*(std::string)> instrumentLoader;
 
@@ -88,7 +88,7 @@ public:
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
 
-  inline const std::vector<InstrumentInstance*>& GetInstruments() const {
+  inline const std::list<InstrumentInstance*>& GetInstruments() const {
     return instrumentInstances;
   }
 
@@ -125,6 +125,8 @@ public:
 
   void AddMeasures(uint32 numMeasures);
   const InstrumentInstance& AddInstrument(Instrument* newInstrument);
+  void MoveInstrument(InstrumentInstance* instrumentInstance, int32 direction);
+  void RemoveInstrument(InstrumentInstance* instrumentInstance);
   bool Save(std::string fileName);
 
   static Song* LoadSong(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
