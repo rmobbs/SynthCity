@@ -6,6 +6,7 @@
 #include "GameGlobals.h"
 #include "GameInput.h"
 #include "Song.h"
+#include "InstrumentInstance.h"
 
 #include <list>
 #include <array>
@@ -37,8 +38,8 @@ protected:
 
   struct LineState {
     Track* track = nullptr;
-    std::list<Song::Note>::const_iterator cur;
-    std::list<Song::Note>::const_iterator end;
+    std::list<Note>::const_iterator cur;
+    std::list<Note>::const_iterator end;
   };
   std::vector<LineState> autoNotes;
   SpriteRenderable* readyPlacard = nullptr;

@@ -1,4 +1,5 @@
 #include "Instrument.h"
+#include "InstrumentInstance.h"
 #include "Logging.h"
 #include "SerializeImpl.h"
 #include "SoundFactory.h"
@@ -15,6 +16,9 @@ static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
 static constexpr uint32 kInstrumentFileVersion = 2;
 static constexpr const char* kNextUniqueIdTag("nextid");
+
+/* static */
+std::function<Instrument*(std::string)> Instrument::instrumentLoader;
 
 Instrument::Instrument(std::string instrumentName)
   : name(instrumentName) {
@@ -33,6 +37,64 @@ Instrument::~Instrument() {
     delete track.second;
   }
   tracksById.clear();
+
+  for (const auto& instance : instances) {
+    delete instance;
+  }
+  instances.clear();
+}
+
+void Instrument::SetName(const std::string& name) {
+  this->name = name;
+}
+
+Track* Instrument::GetTrackById(uint32 trackId) {
+  auto trackById = tracksById.find(trackId);
+  if (trackById != tracksById.end()) {
+    return trackById->second;
+  }
+  return nullptr;
+}
+
+void Instrument::AddTrack(Track* track) {
+  auto trackId = track->GetUniqueId();
+  if (trackId == kInvalidUint32) {
+    trackId = nextTrackId++;
+  }
+  assert(tracksById.find(trackId) == tracksById.end());
+  tracksById[trackId] = track;
+  track->SetUniqueId(trackId);
+
+  for (auto& instance : instances) {
+    instance->lines.insert({ trackId, {} });
+    instance->songTracks.insert({ trackId, {} });
+  }
+}
+
+void Instrument::ReplaceTrackById(uint32 trackId, Track* newTrack) {
+  auto trackEntry = tracksById.find(trackId);
+  assert(trackEntry != tracksById.end());
+  if (trackEntry != tracksById.end()) {
+    delete trackEntry->second;
+
+    // TODO: see if modifying the iterator works
+    tracksById[trackId] = newTrack;
+    newTrack->SetUniqueId(trackId);
+  }
+}
+
+void Instrument::RemoveTrackById(uint32 trackId) {
+  auto trackEntry = tracksById.find(trackId);
+  assert(trackEntry != tracksById.end());
+  if (trackEntry != tracksById.end()) {
+    delete trackEntry->second;
+    tracksById.erase(trackEntry);
+  }
+}
+
+InstrumentInstance* Instrument::Instance() {
+  instances.push_back(new InstrumentInstance(this));
+  return instances.back();
 }
 
 std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& serializer) {
@@ -149,7 +211,7 @@ bool Instrument::SaveInstrument(std::string fileName) {
 }
 
 /* static */
-Instrument* Instrument::LoadInstrument(std::string fileName) {
+Instrument* Instrument::LoadInstrumentFile(std::string fileName) {
   MCLOG(Info, "Loading instrument from file \'%s\'", fileName.c_str());
 
   std::ifstream ifs(fileName);
@@ -191,46 +253,16 @@ Instrument* Instrument::LoadInstrument(std::string fileName) {
   return newInstrument;
 }
 
-void Instrument::SetName(const std::string& name) {
-  this->name = name;
-}
-
-Track* Instrument::GetTrackById(uint32 trackId) {
-  auto trackById = tracksById.find(trackId);
-  if (trackById != tracksById.end()) {
-    return trackById->second;
+/* static */
+Instrument* Instrument::LoadInstrumentName(std::string name) {
+  if (instrumentLoader != nullptr) {
+    return instrumentLoader(name);
   }
   return nullptr;
 }
 
-void Instrument::AddTrack(Track* track) {
-  auto trackId = track->GetUniqueId();
-  if (trackId == kInvalidUint32) {
-    trackId = nextTrackId++;
-  }
-  assert(tracksById.find(trackId) == tracksById.end());
-  tracksById[trackId] = track;
-  track->SetUniqueId(trackId);
-}
-
-void Instrument::ReplaceTrackById(uint32 trackId, Track* newTrack) {
-  auto trackEntry = tracksById.find(trackId);
-  assert(trackEntry != tracksById.end());
-  if (trackEntry != tracksById.end()) {
-    delete trackEntry->second;
-
-    // TODO: see if modifying the iterator works
-    tracksById[trackId] = newTrack;
-    newTrack->SetUniqueId(trackId);
-  }
-}
-
-void Instrument::RemoveTrackById(uint32 trackId) {
-  auto trackEntry = tracksById.find(trackId);
-  assert(trackEntry != tracksById.end());
-  if (trackEntry != tracksById.end()) {
-    delete trackEntry->second;
-    tracksById.erase(trackEntry);
-  }
+/* static */
+void Instrument::SetLoadCallback(const std::function<Instrument*(std::string)>& loadCallback) {
+  instrumentLoader = loadCallback;
 }
 
