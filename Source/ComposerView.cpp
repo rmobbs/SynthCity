@@ -491,7 +491,8 @@ void ComposerView::ProcessPendingActions() {
 
     // Toggle a note on
     if (pendingToggleNoteInstance.instance != nullptr) {
-      pendingToggleNoteInstance.instance->AddNote(pendingToggleNoteInstance.trackId, pendingToggleNoteInstance.data);
+      pendingToggleNoteInstance.instance->
+        AddNote(pendingToggleNoteInstance.trackId, pendingToggleNoteInstance.data, -1);
     }
 
     // Measures added
@@ -584,22 +585,22 @@ void ComposerView::OnBeat(uint32 beatIndex) {
       const_cast<InstrumentInstance*>(instrumentInstanceData), 0, -1 
     };
 
-    for (const auto& trackInstanceData : instrumentInstanceData->songTracks) {
+    for (const auto& trackInstance : instrumentInstanceData->trackInstances) {
       // If muted ...
-      if (trackInstanceData.second.mute) {
+      if (trackInstance.second.mute) {
         continue;
       }
       
       // If not the solo track ...
-      instrumentInstanceTrack.trackId = trackInstanceData.first;
+      instrumentInstanceTrack.trackId = trackInstance.first;
       if (soloTrackInstance.instance != nullptr && soloTrackInstance != instrumentInstanceTrack) {
         continue;
       }
 
-      auto track = instrumentInstanceData->instrument->GetTrackById(trackInstanceData.first);
+      auto track = instrumentInstanceData->instrument->GetTrackById(trackInstance.first);
       assert(track != nullptr);
 
-      auto note = trackInstanceData.second.notes[beatIndex].note;
+      auto note = trackInstance.second.noteVector[beatIndex].note;
       if (note != nullptr) {
         sequencer.PlayPatch(track->GetPatch(), track->GetVolume());
       }
@@ -941,8 +942,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
           imGuiStyle.FramePadding = defaultFramePadding;
 
           // Tracks
-          for (const auto& trackInstanceData : instrumentInstance->songTracks) {
-            auto trackId = trackInstanceData.first;
+          for (const auto& trackInstance : instrumentInstance->trackInstances) {
+            auto trackId = trackInstance.first;
 
             auto track = instrument->GetTrackById(trackId);
             assert(track != nullptr);
@@ -951,19 +952,19 @@ void ComposerView::Render(ImVec2 canvasSize) {
             SetTrackColors(track->GetColorScheme(), flashColor);
 
             // Hamburger menu
-            ImGui::PushID(trackInstanceData.second.uniqueGuiIdHamburgerMenu.c_str());
+            ImGui::PushID(trackInstance.second.uniqueGuiIdHamburgerMenu.c_str());
             if (ImGui::Button("=", ImVec2(kHamburgerMenuWidth, kKeyboardKeyHeight))) {
               ImGui::PopID();
-              ImGui::OpenPopup(trackInstanceData.second.uniqueGuiIdPropertiesPop.c_str());
+              ImGui::OpenPopup(trackInstance.second.uniqueGuiIdPropertiesPop.c_str());
             }
             else {
               ImGui::PopID();
             }
             memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
-            if (ImGui::BeginPopup(trackInstanceData.second.uniqueGuiIdPropertiesPop.c_str())) {
+            if (ImGui::BeginPopup(trackInstance.second.uniqueGuiIdPropertiesPop.c_str())) {
               bool closePopup = false;
 
-              bool mute = instrumentInstance->songTracks.find(trackId)->second.mute;
+              bool mute = trackInstance.second.mute;
               if (ImGui::Checkbox("Mute", &mute)) {
                 pendingMuteTrackInstance = { instrumentInstance, trackId, mute };
               }
@@ -1104,7 +1105,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             auto& selectedNotesByTrackId = selectedNotesByInstrument.try_emplace(instrumentInstance).first->second;
             auto& selectingNotesByTrackId = selectingNotesByInstrument.try_emplace(instrumentInstance).first->second;
 
-            for (auto& trackInstanceData : instrumentInstance->songTracks) {
+            for (auto& trackInstance : instrumentInstance->trackInstances) {
               // Notes (displayed at current beat zoom level)
               uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
               for (size_t beatIndex = 0; beatIndex < song->GetNoteCount(); beatIndex += beatStep) {
@@ -1113,7 +1114,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 1.0f);
                 }
 
-                auto& note = trackInstanceData.second.notes[beatIndex];
+                auto& note = trackInstance.second.noteVector[beatIndex];
 
                 // Draw empty or filled square radio button depending on whether or not it's enabled
                 auto buttonBegPos = ImGui::GetCursorPos();
@@ -1129,18 +1130,18 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                   // Clicking a disabled note enables it; clicking an enabled note selects it
                   if (note.note != nullptr) {
-                    mapped_set_toggle(selectedNotesByTrackId, trackInstanceData.first, beatIndex);
+                    mapped_set_toggle(selectedNotesByTrackId, trackInstance.first, beatIndex);
                   }
                   else {
-                    pendingToggleNoteInstance = { instrumentInstance, trackInstanceData.first, beatIndex };
+                    pendingToggleNoteInstance = { instrumentInstance, trackInstance.first, beatIndex };
                     if (!(InputState::Get().modState & KMOD_SHIFT)) {
-                      mapped_set_toggle(selectedNotesByTrackId, trackInstanceData.first, beatIndex);
+                      mapped_set_toggle(selectedNotesByTrackId, trackInstance.first, beatIndex);
                     }
                   }
                 }
 
                 if (ImGui::IsItemHovered()) {
-                  hoveredNoteInstance = { instrumentInstance, trackInstanceData.first, beatIndex };
+                  hoveredNoteInstance = { instrumentInstance, trackInstance.first, beatIndex };
                 }
 
                 if (note.note != nullptr) {
@@ -1162,16 +1163,16 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
                     if (dragBox.x <= noteBox.z && noteBox.x <= dragBox.z &&
                       dragBox.w >= noteBox.y && noteBox.w >= dragBox.y) {
-                      mapped_set_add(selectingNotesByTrackId, trackInstanceData.first, beatIndex);
+                      mapped_set_add(selectingNotesByTrackId, trackInstance.first, beatIndex);
                     }
                     else {
-                      mapped_set_remove(selectingNotesByTrackId, trackInstanceData.first, beatIndex);
+                      mapped_set_remove(selectingNotesByTrackId, trackInstance.first, beatIndex);
                     }
                   }
 
                   // Draw selection box around note if selected or selecting
-                  if (mapped_set_contains(selectedNotesByTrackId, trackInstanceData.first, beatIndex) ||
-                      mapped_set_contains(selectingNotesByTrackId, trackInstanceData.first, beatIndex)) {
+                  if (mapped_set_contains(selectedNotesByTrackId, trackInstance.first, beatIndex) ||
+                      mapped_set_contains(selectingNotesByTrackId, trackInstance.first, beatIndex)) {
                     ImGui::SetCursorPos(ImVec2(buttonBegPos.x + 1.0f, buttonBegPos.y + 1.0f));
                     ImGui::DrawRect(ImVec2(buttonExtent.x - 2.0f,
                       buttonExtent.y - 2.0f), ImGui::ColorConvertFloat4ToU32(kDragSelectColor));

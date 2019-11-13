@@ -4,6 +4,16 @@
 
 #include <assert.h>
 
+TrackInstance::TrackInstance(uint32 trackId) {
+  UniqueIdBuilder<64> trackHamburgerMenuIdBuilder("thm:");
+  trackHamburgerMenuIdBuilder.PushHex(reinterpret_cast<uint32>(this));
+  uniqueGuiIdHamburgerMenu = trackHamburgerMenuIdBuilder();
+
+  UniqueIdBuilder<64> trackPropertiesPopIdBuilder("tpr:");
+  trackPropertiesPopIdBuilder.PushHex(reinterpret_cast<uint32>(this));
+  uniqueGuiIdPropertiesPop = trackPropertiesPopIdBuilder();
+}
+
 InstrumentInstance::InstrumentInstance(Instrument* instrument) :
   instrument(instrument) {
   // Generate GUI IDs for instrument
@@ -21,24 +31,7 @@ InstrumentInstance::InstrumentInstance(Instrument* instrument) :
 
   // Create tracks
   for (const auto& track : instrument->GetTracks()) {
-    lines.insert({ track.first, {} });
-
-    UniqueIdBuilder<64> trackHamburgerMenuIdBuilder("thm:");
-    trackHamburgerMenuIdBuilder.PushHex(reinterpret_cast<uint32>(track.second));
-    trackHamburgerMenuIdBuilder.PushHex(track.first);
-    UniqueIdBuilder<64> trackPropertiesPopIdBuilder("tpr:");
-    trackPropertiesPopIdBuilder.PushHex(reinterpret_cast<uint32>(track.second));
-    trackPropertiesPopIdBuilder.PushHex(track.first);
-
-    songTracks.insert({ track.first,
-      {
-        trackHamburgerMenuIdBuilder(),
-        trackPropertiesPopIdBuilder(),
-        track.first,
-      { },
-      false,
-      }
-      });
+    trackInstances.insert({ track.first, { track.first } });
   }
 }
 
@@ -46,55 +39,76 @@ InstrumentInstance::~InstrumentInstance() {
 
 }
 
-Note* InstrumentInstance::AddNote(uint32 trackId, uint32 beatIndex) {
-  auto lineEntry = lines.find(trackId);
-  assert(lineEntry != lines.end());
-  if (lineEntry != lines.end()) {
-    auto lineIter = lineEntry->second.begin();
-    while (lineIter != lineEntry->second.end()) {
-      if (lineIter->GetBeatIndex() > beatIndex) {
-        return &(*lineEntry->second.insert(lineIter, Note(beatIndex, -1)));
-        break;
-      }
-      ++lineIter;
-    }
+Note* InstrumentInstance::AddNote(uint32 trackId, uint32 beatIndex, int32 gameIndex) {
+  Note* note = nullptr;
 
-    if (lineIter == lineEntry->second.end()) {
-      return &(*lineEntry->second.insert(lineIter, Note(beatIndex, -1)));
+  auto trackInstance = trackInstances.find(trackId);
+  assert(trackInstance != trackInstances.end());
+  auto lineIter = trackInstance->second.noteList.begin();
+  while (lineIter != trackInstance->second.noteList.end()) {
+    if (lineIter->GetBeatIndex() > beatIndex) {
+      note = &(*trackInstance->second.noteList.insert(lineIter, Note(beatIndex, gameIndex)));
+      break;
     }
+    ++lineIter;
   }
+
+  if (lineIter == trackInstance->second.noteList.end()) {
+    note = &(*trackInstance->second.noteList.insert(lineIter, Note(beatIndex, gameIndex)));
+  }
+
+  assert(note != nullptr);
+
+  EnsureTrackNotes(trackInstance->second, trackId, beatIndex + 1);
+
+  if (trackInstance->second.noteVector.size() <= beatIndex) {
+    trackInstance->second.noteVector.resize(beatIndex + 1);
+  }
+  trackInstance->second.noteVector[beatIndex].note = note;
+
   return nullptr;
 }
 
 void InstrumentInstance::RemoveNote(uint32 trackId, uint32 beatIndex) {
-  {
-    auto lineEntry = lines.find(trackId);
-    assert(lineEntry != lines.end());
-    if (lineEntry != lines.end()) {
-      for (auto lineIter = lineEntry->second.begin(); lineIter != lineEntry->second.end(); ++lineIter) {
-        if (lineIter->GetBeatIndex() == beatIndex) {
-          lineEntry->second.erase(lineIter);
-          break;
-        }
-      }
+  auto trackInstance = trackInstances.find(trackId);
+  assert(trackInstance != trackInstances.end());
+  for (auto lineIter = trackInstance->second.noteList.begin(); lineIter != trackInstance->second.noteList.end(); ++lineIter) {
+    if (lineIter->GetBeatIndex() == beatIndex) {
+      trackInstance->second.noteList.erase(lineIter);
+      break;
     }
   }
-  {
-    auto lineEntry = songTracks.find(trackId);
-    if (lineEntry != songTracks.end()) {
-      lineEntry->second.notes[beatIndex].note = nullptr;
-    }
+  trackInstance->second.noteVector[beatIndex].note = nullptr;
+}
+
+void InstrumentInstance::EnsureTrackNotes(TrackInstance& trackInstance, uint32 trackId, uint32 noteCount) {
+  UniqueIdBuilder<64> uniqueIdBuilder("nt:");
+  uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(this));
+  uniqueIdBuilder.PushUnsigned(trackId);
+
+  auto noteIndex = trackInstance.noteVector.size();
+  while (noteIndex < noteCount) {
+    uniqueIdBuilder.PushUnsigned(noteIndex);
+    trackInstance.noteVector.push_back({ nullptr, uniqueIdBuilder() });
+    uniqueIdBuilder.Pop();
+    ++noteIndex;
+  }
+}
+
+void InstrumentInstance::EnsureNotes(uint32 noteCount) {
+  for (auto& trackInstance : trackInstances) {
+    EnsureTrackNotes(trackInstance.second, trackInstance.first, noteCount);
   }
 }
 
 void InstrumentInstance::SetNoteGameIndex(uint32 trackId, uint32 beatIndex, int32 gameIndex) {
-  auto track = songTracks.find(trackId);
-  assert(track != songTracks.end());
-  track->second.notes[beatIndex].note->SetGameIndex(gameIndex);
+  auto trackInstance = trackInstances.find(trackId);
+  assert(trackInstance != trackInstances.end());
+  trackInstance->second.noteVector[beatIndex].note->SetGameIndex(gameIndex);
 }
 
 void InstrumentInstance::SetTrackMute(uint32 trackId, bool mute) {
-  auto track = songTracks.find(trackId);
-  assert(track != songTracks.end());
-  track->second.mute = mute;
+  auto trackInstance = trackInstances.find(trackId);
+  assert(trackInstance != trackInstances.end());
+  trackInstance->second.mute = mute;
 }

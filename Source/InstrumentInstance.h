@@ -35,7 +35,8 @@ public:
   }
 };
 
-struct SongTrack {
+class TrackInstance {
+public:
   struct GuiNote {
     Note* note = nullptr;
     std::string uniqueGuiId;
@@ -44,16 +45,24 @@ struct SongTrack {
   std::string uniqueGuiIdHamburgerMenu;
   std::string uniqueGuiIdPropertiesPop;
 
-  uint32 trackId = kInvalidUint32;
-  std::vector<GuiNote> notes;
+  // Sparse list of notes
+  std::list<Note> noteList;
+
+  // Beat cells and unique GUI IDs
+  std::vector<GuiNote> noteVector;
+
   bool mute = false;
+
+  TrackInstance(uint32 trackId);
 };
 
 class InstrumentInstance {
+private:
+  void EnsureTrackNotes(TrackInstance& trackInstance, uint32 trackId, uint32 noteCount);
+
 public:
   Instrument* instrument = nullptr;
-  std::map<uint32, std::list<Note>> lines;
-  std::map<uint32, SongTrack> songTracks;
+  std::map<uint32, TrackInstance> trackInstances;
   std::string uniqueGuiIdName;
   std::string uniqueGuiIdHamburgerMenu;
   std::string uniqueGuiIdPropertiesPop;
@@ -61,8 +70,9 @@ public:
   InstrumentInstance(Instrument* instrument);
   ~InstrumentInstance();
 
-  Note* AddNote(uint32 trackId, uint32 beatIndex);
+  Note* AddNote(uint32 trackId, uint32 beatIndex, int32 gameIndex);
   void RemoveNote(uint32 trackId, uint32 beatIndex);
+  void EnsureNotes(uint32 noteCount);
   void SetNoteGameIndex(uint32 trackId, uint32 beatIndex, int32 gameIndex);
   void SetTrackMute(uint32 trackId, bool mute);
 };

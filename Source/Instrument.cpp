@@ -66,8 +66,7 @@ void Instrument::AddTrack(Track* track) {
   track->SetUniqueId(trackId);
 
   for (auto& instance : instances) {
-    instance->lines.insert({ trackId, {} });
-    instance->songTracks.insert({ trackId, {} });
+    instance->trackInstances.insert({ trackId, { trackId } });
   }
 }
 
