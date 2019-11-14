@@ -1,11 +1,12 @@
 #include "InstrumentInstance.h"
 #include "Instrument.h"
 #include "OddsAndEnds.h"
-
+#include "Sequencer.h"
+#include "Song.h"
 #include <assert.h>
 
 TrackInstance::GuiNote::GuiNote() {
-  auto nextUniqueNoteId = Instrument::NextUniqueNoteId();
+  auto nextUniqueNoteId = Sequencer::Get().GetSong()->NextUniqueNoteId();
 
   UniqueIdBuilder<64> noteUniqueIdBuilder("tnt:");
   noteUniqueIdBuilder.PushUnsigned(nextUniqueNoteId);
@@ -13,7 +14,7 @@ TrackInstance::GuiNote::GuiNote() {
 }
 
 TrackInstance::TrackInstance(uint32 trackId) {
-  auto nextUniqueTrackId = Instrument::NextUniqueTrackId();
+  auto nextUniqueTrackId = Sequencer::Get().GetSong()->NextUniqueTrackId();
 
   UniqueIdBuilder<64> uniqueIdBuilder("thm:");
   uniqueIdBuilder.PushUnsigned(nextUniqueTrackId);
@@ -30,7 +31,7 @@ TrackInstance::TrackInstance(uint32 trackId) {
 
 InstrumentInstance::InstrumentInstance(Instrument* instrument) :
   instrument(instrument) {
-  auto nextUniqueInstrumentInstanceId = Instrument::NextUniqueInstrumentInstanceId();
+  auto nextUniqueInstrumentInstanceId = Sequencer::Get().GetSong()->NextUniqueInstrumentInstanceId();
 
   // Generate GUI IDs for instrument
   UniqueIdBuilder<64> uniqueIdBuilder("inm:");

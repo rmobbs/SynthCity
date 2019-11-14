@@ -70,6 +70,7 @@ public:
   std::string uniqueGuiIdName;
   std::string uniqueGuiIdHamburgerMenu;
   std::string uniqueGuiIdPropertiesPop;
+  std::string name;
 
   InstrumentInstance(Instrument* instrument);
   ~InstrumentInstance();
@@ -79,4 +80,12 @@ public:
   void EnsureNotes(uint32 noteCount);
   void SetNoteGameIndex(uint32 trackId, uint32 beatIndex, int32 gameIndex);
   void SetTrackMute(uint32 trackId, bool mute);
+
+  inline void SetName(std::string newName) {
+    name = newName;
+  }
+
+  inline std::string GetName() const {
+    return name;
+  }
 };

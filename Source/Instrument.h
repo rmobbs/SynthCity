@@ -11,24 +11,15 @@ class Instrument {
 public:
   static constexpr const char* kDefaultName = "My Instrument";
 private:
-  static std::function<Instrument*(std::string)> instrumentLoader;
-
   std::map<uint32, Track*> tracksById;
   std::string name;
   std::string fileName;
   uint32 nextTrackId = 0;
   std::vector<InstrumentInstance*> instrumentInstances;
 
-  static std::map<std::string, Instrument*> instrumentsByPath;
-  static uint32 nextUniqueTrackId;
-  static uint32 nextUniqueNoteId;
-  static uint32 nextUniqueInstrumentId;
-  static uint32 nextUniqueInstrumentInstanceId;
-
-  // To force using LoadInstrument and CreateInstrument
+public:
   Instrument();
   Instrument(std::string instrumentName);
-public:
   Instrument(const ReadSerializer& r);
   ~Instrument();
 
@@ -44,16 +35,6 @@ public:
   inline const std::map<uint32, Track*>& GetTracks() const {
     return tracksById;
   }
-
-  static Instrument* CreateInstrument();
-  static Instrument* LoadInstrumentFile(std::string fileName);
-  static Instrument* LoadInstrumentName(std::string name);
-  static void SetLoadCallback(const std::function<Instrument*(std::string)>& loadCallback);
-  static void FlushInstruments();
-  static uint32 NextUniqueTrackId();
-  static uint32 NextUniqueNoteId();
-  static uint32 NextUniqueInstrumentId();
-  static uint32 NextUniqueInstrumentInstanceId();
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);

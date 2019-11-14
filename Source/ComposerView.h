@@ -120,6 +120,7 @@ protected:
   void LoadSong();
   void SaveSong();
   std::string GetUniqueInstrumentName(std::string instrumentNameBase);
+  std::string GetUniqueInstrumentInstanceName(std::string instrumentInstanceNameBase);
   std::string GetUniqueTrackName(Instrument* instrument, std::string trackNameBase);
 
 public:

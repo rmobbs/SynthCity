@@ -140,13 +140,41 @@ std::string ComposerView:: GetUniqueInstrumentName(std::string instrumentNameBas
   return instrumentName;
 }
 
+std::string ComposerView:: GetUniqueInstrumentInstanceName(std::string instrumentInstanceNameBase) {
+  // Pick an available name
+  std::string instrumentInstanceName = instrumentInstanceNameBase;
+
+  // Has to end sometime
+  const auto& instrumentInstanceDataMap = Sequencer::Get().GetSong()->GetInstrumentInstances();
+  for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
+    auto instrumentInstanceData = instrumentInstanceDataMap.begin();
+    while (instrumentInstanceData != instrumentInstanceDataMap.end()) {
+      if ((*instrumentInstanceData)->GetName() == instrumentInstanceName) {
+        break;
+      }
+      ++instrumentInstanceData;
+    }
+
+    if (instrumentInstanceData == instrumentInstanceDataMap.end()) {
+      break;
+    }
+
+    instrumentInstanceName = std::string(instrumentInstanceNameBase) +
+      std::string(" [") + std::to_string(nameSuffix) + std::string("]");
+  }
+
+  return instrumentInstanceName;
+}
+
 void ComposerView::NewInstrument() {
   Sequencer::Get().StopKill();
 
-  auto instrument = Instrument::CreateInstrument();
+  auto instrument = Sequencer::Get().GetSong()->CreateInstrument();
   assert(instrument);
   instrument->SetName(GetUniqueInstrumentName(Instrument::kDefaultName));
-  Sequencer::Get().GetSong()->AddInstrumentInstance(instrument);
+  auto instrumentInstance = instrument->Instance();
+  instrumentInstance->SetName(GetUniqueInstrumentInstanceName(instrument->GetName()));
+  Sequencer::Get().GetSong()->AddInstrumentInstance(instrumentInstance);
 }
 
 void ComposerView::SaveInstrument(Instrument* instrument) {
@@ -192,7 +220,7 @@ Instrument* ComposerView::LoadInstrument(std::string requiredInstrument) {
 
   while (instrument == nullptr) {
     if (GetOpenFileName(&ofn)) {
-      instrument = Instrument::LoadInstrumentFile(std::string(W2A(szFile)));
+      instrument = Sequencer::Get().GetSong()->LoadInstrumentFile(std::string(W2A(szFile)));
       if (instrument) {
         if (!requiredInstrument.empty() && instrument->GetName() != requiredInstrument) {
           delete instrument;
@@ -521,7 +549,9 @@ void ComposerView::ProcessPendingActions() {
     auto instrument = LoadInstrument({});
     if (instrument != nullptr) {
       Sequencer::Get().StopKill();
-      song->AddInstrumentInstance(instrument);
+      auto instrumentInstance = instrument->Instance();
+      instrumentInstance->SetName(GetUniqueInstrumentInstanceName(instrument->GetName()));
+      song->AddInstrumentInstance(instrumentInstance);
     }
   }
 
@@ -648,7 +678,7 @@ ComposerView::ComposerView(uint32 mainWindowHandle)
     outputWindowState.AddLog(logLine);
   });
 
-  Instrument::SetLoadCallback([=](std::string requiredInstrumentName) {
+  Song::SetLoadCallback([=](std::string requiredInstrumentName) {
     return LoadInstrument(requiredInstrumentName);
   });
 
@@ -930,7 +960,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
           imGuiStyle.FramePadding.y = imGuiStyle.ItemSpacing.y * 0.5f;
           imGuiStyle.ItemSpacing.y = 0.0f;
           char newInstrumentName[256] = { 0 };
-          strcpy(newInstrumentName, instrument->GetName().c_str());
+          strcpy(newInstrumentName, instrumentInstance->GetName().c_str());
           ImGui::PushID(instrumentInstance->uniqueGuiIdName.c_str());
           if (ImGui::InputTextEx("", nullptr, newInstrumentName,
             _countof(newInstrumentName) - 1, ImVec2(trackLabelWidth, kKeyboardKeyHeight), 0)) {
