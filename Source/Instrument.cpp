@@ -23,6 +23,11 @@ std::map<std::string, Instrument*> Instrument::instrumentsByPath;
 uint32 Instrument::nextUniqueTrackId = 0;
 uint32 Instrument::nextUniqueNoteId = 0;
 uint32 Instrument::nextUniqueInstrumentId = 0;
+uint32 Instrument::nextUniqueInstrumentInstanceId = 0;
+
+Instrument::Instrument() {
+
+}
 
 Instrument::Instrument(std::string instrumentName)
   : name(instrumentName) {
@@ -281,6 +286,14 @@ Instrument* Instrument::LoadInstrumentFile(std::string fileName) {
 }
 
 /* static */
+Instrument* Instrument::CreateInstrument() {
+  auto newInstrument = new Instrument;
+  instrumentsByPath.emplace(std::string("nopath:") +
+    std::to_string(NextUniqueInstrumentId()), newInstrument);
+  return newInstrument;
+}
+
+/* static */
 Instrument* Instrument::LoadInstrumentName(std::string name) {
   if (instrumentLoader != nullptr) {
     return instrumentLoader(name);
@@ -301,6 +314,7 @@ void Instrument::FlushInstruments() {
   nextUniqueTrackId = 0;
   nextUniqueNoteId = 0;
   nextUniqueInstrumentId = 0;
+  nextUniqueInstrumentInstanceId = 0;
 }
 
 /* static */
@@ -316,4 +330,9 @@ uint32 Instrument::NextUniqueNoteId() {
 /* static */
 uint32 Instrument::NextUniqueInstrumentId() {
   return nextUniqueInstrumentId++;
+}
+
+/* static */
+uint32 Instrument::NextUniqueInstrumentInstanceId() {
+  return nextUniqueInstrumentInstanceId++;
 }

@@ -143,8 +143,9 @@ std::string ComposerView:: GetUniqueInstrumentName(std::string instrumentNameBas
 void ComposerView::NewInstrument() {
   Sequencer::Get().StopKill();
 
-  auto instrument = new Instrument(GetUniqueInstrumentName(Instrument::kDefaultName));
+  auto instrument = Instrument::CreateInstrument();
   assert(instrument);
+  instrument->SetName(GetUniqueInstrumentName(Instrument::kDefaultName));
   Sequencer::Get().GetSong()->AddInstrumentInstance(instrument);
 }
 

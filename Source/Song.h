@@ -24,7 +24,6 @@ protected:
   uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string name;
 
-  std::list<Instrument*> instruments;
   std::list<InstrumentInstance*> instrumentInstances;
 
   static Song* LoadSongMidi(std::string fileName);

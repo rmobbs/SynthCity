@@ -23,9 +23,13 @@ private:
   static uint32 nextUniqueTrackId;
   static uint32 nextUniqueNoteId;
   static uint32 nextUniqueInstrumentId;
+  static uint32 nextUniqueInstrumentInstanceId;
+
+  // To force using LoadInstrument and CreateInstrument
+  Instrument();
+  Instrument(std::string instrumentName);
 public:
   Instrument(const ReadSerializer& r);
-  Instrument(std::string instrumentName);
   ~Instrument();
 
   std::string GetName(void) const {
@@ -41,6 +45,7 @@ public:
     return tracksById;
   }
 
+  static Instrument* CreateInstrument();
   static Instrument* LoadInstrumentFile(std::string fileName);
   static Instrument* LoadInstrumentName(std::string name);
   static void SetLoadCallback(const std::function<Instrument*(std::string)>& loadCallback);
@@ -48,6 +53,7 @@ public:
   static uint32 NextUniqueTrackId();
   static uint32 NextUniqueNoteId();
   static uint32 NextUniqueInstrumentId();
+  static uint32 NextUniqueInstrumentInstanceId();
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);

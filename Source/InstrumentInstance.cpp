@@ -30,19 +30,19 @@ TrackInstance::TrackInstance(uint32 trackId) {
 
 InstrumentInstance::InstrumentInstance(Instrument* instrument) :
   instrument(instrument) {
-  auto nextUniqueInstrumentId = Instrument::NextUniqueInstrumentId();
+  auto nextUniqueInstrumentInstanceId = Instrument::NextUniqueInstrumentInstanceId();
 
   // Generate GUI IDs for instrument
   UniqueIdBuilder<64> uniqueIdBuilder("inm:");
-  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentId);
+  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentInstanceId);
   uniqueGuiIdName = uniqueIdBuilder();
 
   uniqueIdBuilder = { "ihm:" };
-  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentId);
+  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentInstanceId);
   uniqueGuiIdHamburgerMenu = uniqueIdBuilder();
 
   uniqueIdBuilder = { "ipr:" };
-  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentId);
+  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentInstanceId);
   uniqueGuiIdPropertiesPop = uniqueIdBuilder();
 
   // Create tracks

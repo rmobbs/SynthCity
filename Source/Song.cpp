@@ -54,7 +54,6 @@ void Song::AddMeasures(uint32 numMeasures) {
 
 const InstrumentInstance* Song::AddInstrumentInstance(Instrument* newInstrument) {
   assert(newInstrument != nullptr);
-  instruments.push_back(newInstrument);
   instrumentInstances.push_back(newInstrument->Instance());
   instrumentInstances.back()->EnsureNotes(GetNoteCount());
   return instrumentInstances.back();
