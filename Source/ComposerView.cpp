@@ -752,8 +752,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
     }
 
     if (song != nullptr) {
-#if 0
-      ConditionalEnableBegin(instrument != nullptr);
+      ConditionalEnableBegin(song->GetInstrumentInstances().size() > 0);
       if (ImGui::BeginMenu("Game")) {
         if (ImGui::MenuItem("Preview")) {
           sequencer.Stop();
@@ -763,7 +762,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
         ImGui::EndMenu();
       }
       ConditionalEnableEnd();
-#endif
     }
     ImGui::EndMainMenuBar();
   }

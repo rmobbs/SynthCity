@@ -338,27 +338,29 @@ void GamePreviewView::OnBeat(uint32 beatIndex) {
 }
 
 void GamePreviewView::Show() {
-#if 0
   // Gotta catch 'em all
   auto& sequencer = Sequencer::Get();
   auto song = sequencer.GetSong();
-  auto instrument = song->GetInstrument();
 
-  // Pre-spawn and position note sprites on gameplay lines
   uint32 numFallingNotes = 0;
-  const auto& lines = song->GetBarLines();
-  for (const auto& line : lines) {
-    for (const auto& note : line.second) {
-      auto gameIndex = note.GetGameIndex();
-      if (gameIndex < GameGlobals::kNumGameplayLines) {
-        auto fallingNote = fallingNoteFreeList.Borrow(static_cast<float>(kReadyBeats + kCountdownBeats) +
-          static_cast<float>(note.GetBeatIndex()) /
-          static_cast<float>(song->GetMinNoteValue()), gameIndex);
-        fallingNote->SetTrack(instrument->GetTrackById(line.first));
-        fallingNote->SetExtents(fallingNoteExtent);
-        fallingNote->AddTexture(fallingNoteTextureId);
-        fallingNotes[gameIndex].push_back(fallingNote);
-        ++numFallingNotes;
+
+  const auto& instrumentInstances = song->GetInstrumentInstances();
+  for (const auto& instrumentInstance : instrumentInstances) {
+    // Pre-spawn and position note sprites on gameplay lines
+    const auto& trackInstances = instrumentInstance->trackInstances;
+    for (const auto& trackInstance : trackInstances) {
+      for (const auto& note : trackInstance.second.noteList) {
+        auto gameIndex = note.GetGameIndex();
+        if (gameIndex < GameGlobals::kNumGameplayLines) {
+          auto fallingNote = fallingNoteFreeList.Borrow(static_cast<float>(kReadyBeats + kCountdownBeats) +
+            static_cast<float>(note.GetBeatIndex()) /
+            static_cast<float>(song->GetMinNoteValue()), gameIndex);
+          fallingNote->SetTrack(instrumentInstance->instrument->GetTrackById(trackInstance.first));
+          fallingNote->SetExtents(fallingNoteExtent);
+          fallingNote->AddTexture(fallingNoteTextureId);
+          fallingNotes[gameIndex].push_back(fallingNote);
+          ++numFallingNotes;
+        }
       }
     }
   }
@@ -371,8 +373,15 @@ void GamePreviewView::Show() {
   }
 
   // Setup our autoplay
-  for (auto& line : lines) {
-    autoNotes.push_back({ instrument->GetTrackById(line.first), line.second.begin(), line.second.end() });
+  for (const auto& instrumentInstance : instrumentInstances) {
+    const auto& trackInstances = instrumentInstance->trackInstances;
+    for (const auto& trackInstance : trackInstances) {
+      autoNotes.push_back(
+        { instrumentInstance->instrument->GetTrackById(trackInstance.first),
+          trackInstance.second.noteList.begin(),
+          trackInstance.second.noteList.end()
+        });
+    }
   }
 
   // Used in the beat callback, which is min beat
@@ -383,7 +392,6 @@ void GamePreviewView::Show() {
   mode = Mode::Ready;
 
   sequencer.Play();
-#endif
 }
 
 void GamePreviewView::Hide() {
