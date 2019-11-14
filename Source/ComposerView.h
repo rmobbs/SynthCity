@@ -71,6 +71,7 @@ protected:
   InstrumentInstanceTrackData<float> pendingVolumeTrackInstance;
   InstrumentInstanceTrackData<bool> pendingMuteTrackInstance;
 
+  InstrumentInstance* pendingCreateInstrumentInstance = nullptr;
   InstrumentInstance* pendingRemoveInstrumentInstance = nullptr;
   InstrumentInstance* pendingSaveInstrument = nullptr;
 

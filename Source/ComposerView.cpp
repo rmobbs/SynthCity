@@ -46,7 +46,7 @@ static constexpr float kOutputWindowWindowScreenHeightPercentage = 0.35f;
 static constexpr float kSequencerWindowToolbarHeight = 74.0f;
 static constexpr float kHamburgerMenuWidth(20.0f);
 static constexpr const char* kDefaultNewTrackName("NewTrack");
-static constexpr const char* kTrackNameFormat("XXXXXXXXXXXXXXXX");
+static constexpr const char* kTrackNameFormat("XXXXXXXXXXXXXXXXXXXXXXXX");
 static constexpr const char* kModeStrings[] = {
   "Normal",
   "Markup",
@@ -506,6 +506,13 @@ void ComposerView::ProcessPendingActions() {
       song->MoveInstrumentInstance(pendingMoveInstrumentInstance.instance, pendingMoveInstrumentInstance.data);
     }
 
+    // Create instrument instance
+    if (pendingCreateInstrumentInstance != nullptr) {
+      auto instrumentInstance = pendingCreateInstrumentInstance->instrument->Instance();
+      instrumentInstance->SetName(GetUniqueInstrumentInstanceName(pendingCreateInstrumentInstance->instrument->GetName()));
+      song->AddInstrumentInstance(instrumentInstance);
+    }
+
     // Remove instrument instance
     if (pendingRemoveInstrumentInstance != nullptr) {
       // Might be nice to let the other voices continue, but a lot of things would be nice
@@ -590,6 +597,7 @@ void ComposerView::ProcessPendingActions() {
   pendingSaveSong = false;
   pendingToggleNoteInstance = { };
   pendingMoveInstrumentInstance = { };
+  pendingCreateInstrumentInstance = nullptr;
   pendingRemoveInstrumentInstance = nullptr;
 }
 
@@ -920,31 +928,43 @@ void ComposerView::Render(ImVec2 canvasSize) {
           if (ImGui::BeginPopup(instrumentInstance->uniqueGuiIdPropertiesPop.c_str())) {
             bool closePopup = false;
 
-            if (ImGui::MenuItem("Move Up")) {
-              pendingMoveInstrumentInstance = { instrumentInstance, 0, -1 };
-              closePopup = true;
+            if (ImGui::BeginMenu("Instrument")) {
+              if (ImGui::MenuItem("Add Track")) {
+                pendingDialog = new DialogTrack("Add Track", instrument, -1,
+                  new Track(GetUniqueTrackName(instrumentInstance->instrument, kDefaultNewTrackName)), stopButtonIconTexture);
+              }
+
+              if (ImGui::MenuItem("Save")) {
+                pendingSaveInstrument = instrumentInstance;
+                closePopup = true;
+              }
+
+              ImGui::EndMenu();
             }
 
-            if (ImGui::MenuItem("Move Down")) {
-              pendingMoveInstrumentInstance = { instrumentInstance, 0, +1 };
-              closePopup = true;
-            }
+            if (ImGui::BeginMenu("Instance")) {
+              if (ImGui::MenuItem("Move Up")) {
+                pendingMoveInstrumentInstance = { instrumentInstance, 0, -1 };
+                closePopup = true;
+              }
 
-            if (ImGui::MenuItem("Add Track")) {
-              pendingDialog = new DialogTrack("Add Track", instrument, -1,
-                new Track(GetUniqueTrackName(instrumentInstance->instrument, kDefaultNewTrackName)), stopButtonIconTexture);
-            }
+              if (ImGui::MenuItem("Move Down")) {
+                pendingMoveInstrumentInstance = { instrumentInstance, 0, +1 };
+                closePopup = true;
+              }
 
-            if (ImGui::MenuItem("Save Instrument")) {
-              pendingSaveInstrument = instrumentInstance;
-              closePopup = true;
-            }
+              if (ImGui::MenuItem("Create")) {
+                pendingCreateInstrumentInstance = instrumentInstance;
+                closePopup = true;
+              }
 
-            if (ImGui::MenuItem("Remove Instance")) {
-              pendingRemoveInstrumentInstance = instrumentInstance;
-              closePopup = true;
-            }
+              if (ImGui::MenuItem("Remove")) {
+                pendingRemoveInstrumentInstance = instrumentInstance;
+                closePopup = true;
+              }
 
+              ImGui::EndMenu();
+            }
 #if 0
             if (ImGui::MenuItem("Properties...")) {
               closePopup = true;
