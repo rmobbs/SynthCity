@@ -506,7 +506,7 @@ std::pair<bool, std::string> Song::SerializeWrite(const WriteSerializer& seriali
 
     // Instrument name
     w.Key(Globals::kNameTag);
-    w.String(instrumentInstance->instrument->GetName().c_str());
+    w.String(instrumentInstance->GetName().c_str());
 
     // Instrument path
     std::string serializeFileName(instrumentInstance->instrument->GetFileName());
