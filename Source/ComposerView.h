@@ -83,8 +83,8 @@ protected:
   bool pendingLoadSong = false;
   bool pendingSaveSong = false;
 
-  std::map<InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectedNotesByInstrument;
-  std::map<InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectingNotesByInstrument;
+  std::map<InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectedNotesByInstrumentInstance;
+  std::map<InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectingNotesByInstrumentInstance;
 
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   uint32 stopButtonIconTexture = 0;

@@ -37,13 +37,17 @@ public:
 
 class TrackInstance {
 public:
-  struct GuiNote {
+  class GuiNote {
+  public:
     Note* note = nullptr;
     std::string uniqueGuiId;
+
+    GuiNote();
   };
 
   std::string uniqueGuiIdHamburgerMenu;
   std::string uniqueGuiIdPropertiesPop;
+  std::string uniqueGuiIdTrackButton;
 
   // Sparse list of notes
   std::list<Note> noteList;

@@ -4,29 +4,45 @@
 
 #include <assert.h>
 
-TrackInstance::TrackInstance(uint32 trackId) {
-  UniqueIdBuilder<64> trackHamburgerMenuIdBuilder("thm:");
-  trackHamburgerMenuIdBuilder.PushHex(reinterpret_cast<uint32>(this));
-  uniqueGuiIdHamburgerMenu = trackHamburgerMenuIdBuilder();
+TrackInstance::GuiNote::GuiNote() {
+  auto nextUniqueNoteId = Instrument::NextUniqueNoteId();
 
-  UniqueIdBuilder<64> trackPropertiesPopIdBuilder("tpr:");
-  trackPropertiesPopIdBuilder.PushHex(reinterpret_cast<uint32>(this));
-  uniqueGuiIdPropertiesPop = trackPropertiesPopIdBuilder();
+  UniqueIdBuilder<64> noteUniqueIdBuilder("tnt:");
+  noteUniqueIdBuilder.PushUnsigned(nextUniqueNoteId);
+  uniqueGuiId = noteUniqueIdBuilder();
+}
+
+TrackInstance::TrackInstance(uint32 trackId) {
+  auto nextUniqueTrackId = Instrument::NextUniqueTrackId();
+
+  UniqueIdBuilder<64> uniqueIdBuilder("thm:");
+  uniqueIdBuilder.PushUnsigned(nextUniqueTrackId);
+  uniqueGuiIdHamburgerMenu = uniqueIdBuilder();
+
+  uniqueIdBuilder = { "tpr:" };
+  uniqueIdBuilder.PushUnsigned(nextUniqueTrackId);
+  uniqueGuiIdPropertiesPop = uniqueIdBuilder();
+
+  uniqueIdBuilder = { "tbt:" };
+  uniqueIdBuilder.PushUnsigned(nextUniqueTrackId);
+  uniqueGuiIdTrackButton = uniqueIdBuilder();
 }
 
 InstrumentInstance::InstrumentInstance(Instrument* instrument) :
   instrument(instrument) {
+  auto nextUniqueInstrumentId = Instrument::NextUniqueInstrumentId();
+
   // Generate GUI IDs for instrument
-  UniqueIdBuilder<64> uniqueIdBuilder("name:");
-  uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(this));
+  UniqueIdBuilder<64> uniqueIdBuilder("inm:");
+  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentId);
   uniqueGuiIdName = uniqueIdBuilder();
 
-  uniqueIdBuilder = { "thm:" };
-  uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(this));
+  uniqueIdBuilder = { "ihm:" };
+  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentId);
   uniqueGuiIdHamburgerMenu = uniqueIdBuilder();
 
-  uniqueIdBuilder = { "tpr:" };
-  uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(this));
+  uniqueIdBuilder = { "ipr:" };
+  uniqueIdBuilder.PushUnsigned(nextUniqueInstrumentId);
   uniqueGuiIdPropertiesPop = uniqueIdBuilder();
 
   // Create tracks
@@ -82,16 +98,8 @@ void InstrumentInstance::RemoveNote(uint32 trackId, uint32 beatIndex) {
 }
 
 void InstrumentInstance::EnsureTrackNotes(TrackInstance& trackInstance, uint32 trackId, uint32 noteCount) {
-  UniqueIdBuilder<64> uniqueIdBuilder("nt:");
-  uniqueIdBuilder.PushHex(reinterpret_cast<uint32>(this));
-  uniqueIdBuilder.PushUnsigned(trackId);
-
-  auto noteIndex = trackInstance.noteVector.size();
-  while (noteIndex < noteCount) {
-    uniqueIdBuilder.PushUnsigned(noteIndex);
-    trackInstance.noteVector.push_back({ nullptr, uniqueIdBuilder() });
-    uniqueIdBuilder.Pop();
-    ++noteIndex;
+  if (trackInstance.noteVector.size() < noteCount) {
+    trackInstance.noteVector.resize(noteCount);
   }
 }
 

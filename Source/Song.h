@@ -76,9 +76,9 @@ public:
   }
 
   void AddMeasures(uint32 numMeasures);
-  const InstrumentInstance* AddInstrument(Instrument* newInstrument);
-  void MoveInstrument(InstrumentInstance* instrumentInstance, int32 direction);
-  void RemoveInstrument(InstrumentInstance* instrumentInstance);
+  const InstrumentInstance* AddInstrumentInstance(Instrument* newInstrument);
+  void MoveInstrumentInstance(InstrumentInstance* instrumentInstance, int32 direction);
+  void RemoveInstrumentInstance(InstrumentInstance* instrumentInstance);
   bool Save(std::string fileName);
 
   static Song* LoadSong(std::string fileName);

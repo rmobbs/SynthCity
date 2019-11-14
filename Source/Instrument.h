@@ -17,7 +17,12 @@ private:
   std::string name;
   std::string fileName;
   uint32 nextTrackId = 0;
-  std::vector<InstrumentInstance*> instances;
+  std::vector<InstrumentInstance*> instrumentInstances;
+
+  static std::map<std::string, Instrument*> instrumentsByPath;
+  static uint32 nextUniqueTrackId;
+  static uint32 nextUniqueNoteId;
+  static uint32 nextUniqueInstrumentId;
 public:
   Instrument(const ReadSerializer& r);
   Instrument(std::string instrumentName);
@@ -39,6 +44,10 @@ public:
   static Instrument* LoadInstrumentFile(std::string fileName);
   static Instrument* LoadInstrumentName(std::string name);
   static void SetLoadCallback(const std::function<Instrument*(std::string)>& loadCallback);
+  static void FlushInstruments();
+  static uint32 NextUniqueTrackId();
+  static uint32 NextUniqueNoteId();
+  static uint32 NextUniqueInstrumentId();
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
@@ -49,5 +58,6 @@ public:
   void RemoveTrackById(uint32 trackId);
   Track* GetTrackById(uint32 trackId);
   InstrumentInstance* Instance();
+  void RemoveInstance(InstrumentInstance* instrumentInstance);
 };
 

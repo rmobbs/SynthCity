@@ -101,6 +101,9 @@ bool DialogTrack::Render() {
       }
       else {
         instrument->AddTrack(track);
+
+        // Force-update the instances
+        Sequencer::Get().GetSong()->AddMeasures(0);
       }
       track = nullptr;
     }

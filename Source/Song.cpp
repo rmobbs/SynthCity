@@ -40,11 +40,7 @@ Song::Song(const ReadSerializer& serializer) {
 }
 
 Song::~Song() {
-  for (const auto& instrument : instruments) {
-    delete instrument;
-  }
-  instruments.clear();
-
+  Instrument::FlushInstruments();
   instrumentInstances.clear();
 }
 
@@ -56,7 +52,7 @@ void Song::AddMeasures(uint32 numMeasures) {
   }
 }
 
-const InstrumentInstance* Song::AddInstrument(Instrument* newInstrument) {
+const InstrumentInstance* Song::AddInstrumentInstance(Instrument* newInstrument) {
   assert(newInstrument != nullptr);
   instruments.push_back(newInstrument);
   instrumentInstances.push_back(newInstrument->Instance());
@@ -64,7 +60,7 @@ const InstrumentInstance* Song::AddInstrument(Instrument* newInstrument) {
   return instrumentInstances.back();
 }
 
-void Song::MoveInstrument(InstrumentInstance* instrumentInstance, int32 direction) {
+void Song::MoveInstrumentInstance(InstrumentInstance* instrumentInstance, int32 direction) {
   auto instrumentInstanceIter = std::find(instrumentInstances.
     begin(), instrumentInstances.end(), instrumentInstance);
   assert(instrumentInstanceIter != instrumentInstances.end());
@@ -96,12 +92,13 @@ void Song::MoveInstrument(InstrumentInstance* instrumentInstance, int32 directio
   }
 }
 
-void Song::RemoveInstrument(InstrumentInstance* instrumentInstance) {
+void Song::RemoveInstrumentInstance(InstrumentInstance* instrumentInstance) {
   auto instrumentInstanceIter = std::find(instrumentInstances.
     begin(), instrumentInstances.end(), instrumentInstance);
   assert(instrumentInstanceIter != instrumentInstances.end());
-  delete (*instrumentInstanceIter);
   instrumentInstances.erase(instrumentInstanceIter);
+
+  instrumentInstance->instrument->RemoveInstance(instrumentInstance);
 }
 
 std::pair<bool, std::string> Song::SerializeReadInstrument23(const ReadSerializer& serializer) {
@@ -127,7 +124,7 @@ std::pair<bool, std::string> Song::SerializeReadInstrument23(const ReadSerialize
       return std::make_pair(false, "Unable to load required instrument to load song");
     }
   }
-  AddInstrument(instrument);
+  AddInstrumentInstance(instrument);
 
   // Read tracks (can have none)
   if (i.HasMember(kTracksTag) && i[kTracksTag].IsArray()) {
@@ -223,7 +220,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
         return std::make_pair(false, "Unable to load required instrument to load song");
       }
 
-      AddInstrument(instrument);
+      AddInstrumentInstance(instrument);
 
       MCLOG(Warn, "Song is version 1 and this will be deprecated. Please re-save.");
       break;

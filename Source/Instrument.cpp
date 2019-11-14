@@ -19,6 +19,10 @@ static constexpr const char* kNextUniqueIdTag("nextid");
 
 /* static */
 std::function<Instrument*(std::string)> Instrument::instrumentLoader;
+std::map<std::string, Instrument*> Instrument::instrumentsByPath;
+uint32 Instrument::nextUniqueTrackId = 0;
+uint32 Instrument::nextUniqueNoteId = 0;
+uint32 Instrument::nextUniqueInstrumentId = 0;
 
 Instrument::Instrument(std::string instrumentName)
   : name(instrumentName) {
@@ -38,10 +42,10 @@ Instrument::~Instrument() {
   }
   tracksById.clear();
 
-  for (const auto& instance : instances) {
+  for (const auto& instance : instrumentInstances) {
     delete instance;
   }
-  instances.clear();
+  instrumentInstances.clear();
 }
 
 void Instrument::SetName(const std::string& name) {
@@ -65,7 +69,7 @@ void Instrument::AddTrack(Track* track) {
   tracksById[trackId] = track;
   track->SetUniqueId(trackId);
 
-  for (auto& instance : instances) {
+  for (auto& instance : instrumentInstances) {
     instance->trackInstances.insert({ trackId, { trackId } });
   }
 }
@@ -88,12 +92,26 @@ void Instrument::RemoveTrackById(uint32 trackId) {
   if (trackEntry != tracksById.end()) {
     delete trackEntry->second;
     tracksById.erase(trackEntry);
+
+    for (auto& instance : instrumentInstances) {
+      auto trackInstance = instance->trackInstances.find(trackId);
+      if (trackInstance != instance->trackInstances.end()) {
+        instance->trackInstances.erase(trackInstance);
+      }
+    }
   }
 }
 
 InstrumentInstance* Instrument::Instance() {
-  instances.push_back(new InstrumentInstance(this));
-  return instances.back();
+  instrumentInstances.push_back(new InstrumentInstance(this));
+  return instrumentInstances.back();
+}
+
+void Instrument::RemoveInstance(InstrumentInstance* instrumentInstance) {
+  auto instrumentInstanceIter = std::find(instrumentInstances.begin(), instrumentInstances.end(), instrumentInstance);
+  assert(instrumentInstanceIter != instrumentInstances.end());
+  instrumentInstances.erase(instrumentInstanceIter);
+  delete instrumentInstance;
 }
 
 std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& serializer) {
@@ -211,6 +229,15 @@ bool Instrument::SaveInstrument(std::string fileName) {
 
 /* static */
 Instrument* Instrument::LoadInstrumentFile(std::string fileName) {
+  std::string absoluteFileName = std::filesystem::absolute(fileName).generic_string();
+  std::replace(absoluteFileName.begin(), absoluteFileName.end(), '/', '\\');
+
+  // See if it's already loaded
+  auto loadedInstrument = instrumentsByPath.find(absoluteFileName);
+  if (loadedInstrument != instrumentsByPath.end()) {
+    return loadedInstrument->second;
+  }
+
   MCLOG(Info, "Loading instrument from file \'%s\'", fileName.c_str());
 
   std::ifstream ifs(fileName);
@@ -237,12 +264,13 @@ Instrument* Instrument::LoadInstrumentFile(std::string fileName) {
   }
 
   auto curpath = std::filesystem::current_path();
+  Instrument* newInstrument = nullptr;
 
   // Path needs to be relative to the instrument to load its WAV files
   std::filesystem::current_path(std::filesystem::absolute(fileName).parent_path());
-  Instrument* newInstrument = nullptr;
   try {
     newInstrument = new Instrument({ document, fileName });
+    instrumentsByPath.insert({ absoluteFileName, newInstrument });
   }
   catch (std::runtime_error& rte) {
     MCLOG(Error, "Failed to serialize instrument: %s", rte.what());
@@ -265,3 +293,27 @@ void Instrument::SetLoadCallback(const std::function<Instrument*(std::string)>& 
   instrumentLoader = loadCallback;
 }
 
+/* static */
+void Instrument::FlushInstruments() {
+  for (const auto& instrument : instrumentsByPath) {
+    delete instrument.second;
+  }
+  nextUniqueTrackId = 0;
+  nextUniqueNoteId = 0;
+  nextUniqueInstrumentId = 0;
+}
+
+/* static */
+uint32 Instrument::NextUniqueTrackId() {
+  return nextUniqueTrackId++;
+}
+
+/* static */
+uint32 Instrument::NextUniqueNoteId() {
+  return nextUniqueNoteId++;
+}
+
+/* static */
+uint32 Instrument::NextUniqueInstrumentId() {
+  return nextUniqueInstrumentId++;
+}

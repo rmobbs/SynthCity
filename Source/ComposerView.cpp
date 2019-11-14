@@ -145,7 +145,7 @@ void ComposerView::NewInstrument() {
 
   auto instrument = new Instrument(GetUniqueInstrumentName(Instrument::kDefaultName));
   assert(instrument);
-  Sequencer::Get().GetSong()->AddInstrument(instrument);
+  Sequencer::Get().GetSong()->AddInstrumentInstance(instrument);
 }
 
 void ComposerView::SaveInstrument(Instrument* instrument) {
@@ -231,8 +231,8 @@ void ComposerView::NewSong() {
   auto song = new Song(Song::kDefaultName, Globals::kDefaultTempo,
     Song::kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
 
-  selectedNotesByInstrument.clear();
-  selectingNotesByInstrument.clear();
+  selectedNotesByInstrumentInstance.clear();
+  selectingNotesByInstrumentInstance.clear();
   Sequencer::Get().SetSong(song);
 }
 
@@ -257,8 +257,8 @@ void ComposerView::LoadSong() {
     auto song = Song::LoadSong(W2A(szFile));
 
     if (song != nullptr) {
-      selectedNotesByInstrument.clear();
-      selectingNotesByInstrument.clear();
+      selectedNotesByInstrumentInstance.clear();
+      selectingNotesByInstrumentInstance.clear();
       Sequencer::Get().SetSong(song);
     }
   }
@@ -336,7 +336,7 @@ void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
 }
 
 void ComposerView::SelectedGroupAction(std::function<void(InstrumentInstance*, uint32, uint32)> action) {
-  for (const auto& instrumentInstance : selectedNotesByInstrument) {
+  for (const auto& instrumentInstance : selectedNotesByInstrumentInstance) {
     for (const auto& trackId : instrumentInstance.second) {
       for (const auto& note : trackId.second) {
         action(instrumentInstance.first, trackId.first, note);
@@ -357,11 +357,11 @@ void ComposerView::HandleInput() {
       instrumentInstance->RemoveNote(trackId, beatIndex);
     });
 
-    selectedNotesByInstrument.clear();
+    selectedNotesByInstrumentInstance.clear();
   }
 
   if (inputState.pressed[SDLK_ESCAPE]) {
-    selectedNotesByInstrument.clear();
+    selectedNotesByInstrumentInstance.clear();
   }
 
   if (inputState.pressed[SDLK_SPACE]) {
@@ -450,6 +450,9 @@ void ComposerView::ProcessPendingActions() {
 
       // Add track to instrument instance
       pendingCloneTrack.instrument->AddTrack(newTrack);
+
+      // Force-update the instances
+      Sequencer::Get().GetSong()->AddMeasures(0);
     }
 
     // Track removed via dialog previous frame
@@ -471,7 +474,7 @@ void ComposerView::ProcessPendingActions() {
 
     // Move instrument up/down
     if (pendingMoveInstrumentInstance.instance != nullptr) {
-      song->MoveInstrument(pendingMoveInstrumentInstance.instance, pendingMoveInstrumentInstance.data);
+      song->MoveInstrumentInstance(pendingMoveInstrumentInstance.instance, pendingMoveInstrumentInstance.data);
     }
 
     // Remove instrument instance
@@ -482,7 +485,7 @@ void ComposerView::ProcessPendingActions() {
         sequencer.PauseKill();
       }
 
-      song->RemoveInstrument(pendingRemoveInstrumentInstance);
+      song->RemoveInstrumentInstance(pendingRemoveInstrumentInstance);
 
       if (wasPlaying) {
         sequencer.Play();
@@ -508,16 +511,16 @@ void ComposerView::ProcessPendingActions() {
   }
 
   if (pendingNewInstrument) {
-    selectedNotesByInstrument.clear();
+    selectedNotesByInstrumentInstance.clear();
     NewInstrument();
   }
 
   if (pendingLoadInstrument) {
-    selectedNotesByInstrument.clear();
+    selectedNotesByInstrumentInstance.clear();
     auto instrument = LoadInstrument({});
     if (instrument != nullptr) {
       Sequencer::Get().StopKill();
-      song->AddInstrument(instrument);
+      song->AddInstrumentInstance(instrument);
     }
   }
 
@@ -526,12 +529,12 @@ void ComposerView::ProcessPendingActions() {
   }
 
   if (pendingNewSong) {
-    selectedNotesByInstrument.clear();
+    selectedNotesByInstrumentInstance.clear();
     NewSong();
   }
 
   if (pendingLoadSong) {
-    selectedNotesByInstrument.clear();
+    selectedNotesByInstrumentInstance.clear();
     LoadSong();
   }
 
@@ -903,23 +906,21 @@ void ComposerView::Render(ImVec2 canvasSize) {
                 new Track(GetUniqueTrackName(instrumentInstance->instrument, kDefaultNewTrackName)), stopButtonIconTexture);
             }
 
-            if (ImGui::MenuItem("Save")) {
+            if (ImGui::MenuItem("Save Instrument")) {
               pendingSaveInstrument = instrumentInstance;
               closePopup = true;
             }
 
-            if (ImGui::MenuItem("Remove")) {
+            if (ImGui::MenuItem("Remove Instance")) {
               pendingRemoveInstrumentInstance = instrumentInstance;
               closePopup = true;
             }
 
+#if 0
             if (ImGui::MenuItem("Properties...")) {
-              /*
-              pendingDialog = new DialogTrack("Edit Track",
-                instrument, trackId, new Track(*track), stopButtonIconTexture);
-              */
               closePopup = true;
             }
+#endif
 
             if (closePopup) {
               ImGui::CloseCurrentPopup();
@@ -1021,10 +1022,13 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
             // Track button
             auto trackButtonBegCursor = ImGui::GetCursorPos();
+            ImGui::PushID(trackInstance.second.uniqueGuiIdTrackButton.c_str());
             if (ImGui::Button(track->GetName().
               c_str(), ImVec2(trackLabelWidth, kKeyboardKeyHeight))) {
               pendingPlayTrack = { instrumentInstance->instrument, trackId };
             }
+            ImGui::PopID();
+
             auto trackButtonEndCursor = ImGui::GetCursorPos();
 
             imGuiStyle.ItemSpacing = defaultItemSpacing;
@@ -1102,8 +1106,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
             }
             ImGui::NewLine(spacing);
 
-            auto& selectedNotesByTrackId = selectedNotesByInstrument.try_emplace(instrumentInstance).first->second;
-            auto& selectingNotesByTrackId = selectingNotesByInstrument.try_emplace(instrumentInstance).first->second;
+            auto& selectedNotesByTrackId = selectedNotesByInstrumentInstance.try_emplace(instrumentInstance).first->second;
+            auto& selectingNotesByTrackId = selectingNotesByInstrumentInstance.try_emplace(instrumentInstance).first->second;
 
             for (auto& trackInstance : instrumentInstance->trackInstances) {
               // Notes (displayed at current beat zoom level)
@@ -1123,7 +1127,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   // Any click of a note, enabled or not, without SHIFT held down, clears group selection
                   if (!(InputState::Get().modState & KMOD_SHIFT)) {
                     // Don't just clear the main map as we have a reference to an entry
-                    for (auto& instrumentSelectedNotes : selectedNotesByInstrument) {
+                    for (auto& instrumentSelectedNotes : selectedNotesByInstrumentInstance) {
                       instrumentSelectedNotes.second.clear();
                     }
                   }
@@ -1221,7 +1225,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
             if (ImGui::IsMouseClicked(0) && songWindowHovered) {
               // Don't clear notes if they are attempting to add to the set
               if (!(InputState::Get().modState & KMOD_SHIFT)) {
-                selectedNotesByInstrument.clear();
+                selectedNotesByInstrumentInstance.clear();
               }
 
               songWindowClicked = true;
@@ -1236,8 +1240,8 @@ void ComposerView::Render(ImVec2 canvasSize) {
             // On mouse release
             if (ImGui::IsMouseReleased(0)) {
               // Merge selecting notes into selected notes
-              for (auto& instrumentSelectingNotes : selectingNotesByInstrument) {
-                auto instrumentSelectedNotes = selectedNotesByInstrument.find(instrumentSelectingNotes.first);
+              for (auto& instrumentSelectingNotes : selectingNotesByInstrumentInstance) {
+                auto instrumentSelectedNotes = selectedNotesByInstrumentInstance.find(instrumentSelectingNotes.first);
 
                 for (auto& trackSelectingNotes : instrumentSelectingNotes.second) {
                   auto trackSelectedNotes = instrumentSelectedNotes->second.find(trackSelectingNotes.first);
@@ -1249,7 +1253,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
                   }
                 }
               }
-              selectingNotesByInstrument.clear();
+              selectingNotesByInstrumentInstance.clear();
 
               songWindowClicked = false;
 
