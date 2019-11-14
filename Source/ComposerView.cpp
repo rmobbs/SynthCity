@@ -984,7 +984,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
           ImGui::PushID(instrumentInstance->uniqueGuiIdName.c_str());
           if (ImGui::InputTextEx("", nullptr, newInstrumentName,
             _countof(newInstrumentName) - 1, ImVec2(trackLabelWidth, kKeyboardKeyHeight), 0)) {
-            instrument->SetName(std::string(newInstrumentName));
+            instrumentInstance->SetName(std::string(newInstrumentName));
           }
           ImGui::PopID();
 
