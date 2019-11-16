@@ -70,6 +70,11 @@ bool DialogTrack::Render() {
 
     imGuiStyle.ItemSpacing = oldItemSpacing;
 
+    float volume = track->GetVolume();
+    if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
+      track->SetVolume(volume);
+    }
+
     track->GetPatch()->RenderDialog();
 
     ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetItemsLineHeightWithSpacing() * 1.2f);

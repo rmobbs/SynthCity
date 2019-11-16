@@ -76,7 +76,7 @@ ComposerView::ComposerView(HashedController<View>* viewController)
   InitResources();
 
   tabController.Register(new SongTab(this));
-  tabController.Register(new InstrumentTab);
+  tabController.Register(new InstrumentTab(this));
   tabController.SetCurrent<SongTab>();
 }
 
@@ -95,6 +95,31 @@ ComposerView::~ComposerView() {
 void ComposerView::DoLockedActions() {
   tabController.GetCurrent()->DoLockedActions();
 }
+
+// TODO: Better implementation of custom track color schemes
+// https://trello.com/c/VX59Thk1
+void ComposerView::SetTrackColors(std::string colorScheme, uint32& flashColor) {
+
+  if (colorScheme.length()) {
+    auto& imGuiStyle = ImGui::GetStyle();
+
+    std::transform(colorScheme.begin(), colorScheme.end(), colorScheme.begin(), ::tolower);
+
+    if (colorScheme == "piano:white") {
+      imGuiStyle.Colors[ImGuiCol_Button] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
+      imGuiStyle.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.4f, 0.4f, 0.4f, 0.5f);
+      imGuiStyle.Colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+      flashColor = 0x00666680;
+    }
+    if (colorScheme == "piano:black") {
+      imGuiStyle.Colors[ImGuiCol_Button] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+      imGuiStyle.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.7f, 0.7f, 0.7f, 0.5f);
+      imGuiStyle.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+      flashColor = 0x00838380;
+    }
+  }
+}
+
 
 void ComposerView::OnBeat(uint32 beatIndex) {
   auto& sequencer = Sequencer::Get();

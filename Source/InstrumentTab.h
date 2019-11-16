@@ -7,6 +7,7 @@
 #include <set>
 
 class Dialog;
+class ComposerView;
 class InstrumentTab : public View {
 protected:
   std::set<Instrument*> newInstruments;
@@ -36,6 +37,8 @@ protected:
   bool pendingLoadInstrument = false;
   Instrument* pendingSaveInstrument = nullptr;
 
+  ComposerView* composerView = nullptr;
+
   Dialog* pendingDialog = nullptr;
   Dialog* activeDialog = nullptr;
   Dialog* finishDialog = nullptr;
@@ -49,7 +52,7 @@ protected:
   std::string GetUniqueInstrumentName(std::string instrumentNameBase);
   std::string GetUniqueTrackName(Instrument* instrument, std::string trackNameBase);
 public:
-  InstrumentTab();
+  InstrumentTab(ComposerView* composerView);
   ~InstrumentTab();
 
   void Show() override;

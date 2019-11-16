@@ -193,30 +193,6 @@ void SongTab::SaveSong() {
   }
 }
 
-// TODO: Better implementation of custom track color schemes
-// https://trello.com/c/VX59Thk1
-void SongTab::SetTrackColors(std::string colorScheme, uint32& flashColor) {
-
-  if (colorScheme.length()) {
-    auto& imGuiStyle = ImGui::GetStyle();
-
-    std::transform(colorScheme.begin(), colorScheme.end(), colorScheme.begin(), ::tolower);
-
-    if (colorScheme == "piano:white") {
-      imGuiStyle.Colors[ImGuiCol_Button] = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
-      imGuiStyle.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.4f, 0.4f, 0.4f, 0.5f);
-      imGuiStyle.Colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-      flashColor = 0x00666680;
-    }
-    if (colorScheme == "piano:black") {
-      imGuiStyle.Colors[ImGuiCol_Button] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-      imGuiStyle.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.7f, 0.7f, 0.7f, 0.5f);
-      imGuiStyle.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-      flashColor = 0x00838380;
-    }
-  }
-}
-
 void SongTab::SelectedGroupAction(std::function<void(InstrumentInstance*, uint32, uint32)> action) {
   for (const auto& instrumentInstance : selectedNotesByInstrumentInstance) {
     for (const auto& trackId : instrumentInstance.second) {
@@ -619,7 +595,7 @@ void SongTab::Render(ImVec2 canvasSize) {
           assert(track != nullptr);
 
           uint32 flashColor = Globals::kPlayTrackFlashColor;
-          SetTrackColors(track->GetColorScheme(), flashColor);
+          composerView->SetTrackColors(track->GetColorScheme(), flashColor);
 
           bool isSoloTrack = std::make_pair(instrumentInstance, static_cast<int32>(trackId)) == soloTrackInstance;
 
@@ -666,7 +642,7 @@ void SongTab::Render(ImVec2 canvasSize) {
           ImGui::SameLine();
 
           flashColor = Globals::kPlayTrackFlashColor;
-          SetTrackColors(track->GetColorScheme(), flashColor);
+          composerView->SetTrackColors(track->GetColorScheme(), flashColor);
 
           // Track button
           auto trackButtonBegCursor = ImGui::GetCursorPos();

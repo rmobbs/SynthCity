@@ -64,7 +64,6 @@ public:
   std::map<int, double> playingTrackFlashTimes[2];
 
   void InitResources();
-  void SetTrackColors(std::string colorScheme, uint32& flashColor);
   void HandleInput();
   void SelectedGroupAction(std::function<void(InstrumentInstance*, uint32, uint32)> action);
   void NewSong();

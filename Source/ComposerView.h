@@ -64,6 +64,8 @@ public:
   void OnBeat(uint32 beatIndex) override;
   void DoLockedActions() override;
 
+  void SetTrackColors(std::string colorScheme, uint32& flashColor);
+
   inline void SetSoloTrackInstance(InstrumentInstance* instrumentInstance, int32 trackId) {
     soloTrackInstance = { instrumentInstance, trackId };
   }

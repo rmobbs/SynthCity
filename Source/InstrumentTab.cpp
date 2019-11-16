@@ -5,6 +5,7 @@
 #include "Song.h"
 #include "OddsAndEnds.h"
 #include "DialogTrack.h"
+#include "ComposerView.h"
 
 #include "SDL.h"
 #include "GL/glew.h"
@@ -23,8 +24,9 @@
 
 static constexpr float kInstrumentLabelWidth = 200.0f;
 
-InstrumentTab::InstrumentTab() 
-: View("Instrument", nullptr) {
+InstrumentTab::InstrumentTab(ComposerView* composerView)
+  : View("Instrument", nullptr)
+  , composerView(composerView) {
 
 }
 
@@ -432,7 +434,12 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
             if (c != e) {
               shouldContinue |= true;
 
+              auto t = i->GetTrackById(c->second.trackId);
+
               imGuiStyle.ItemSpacing.x = 0.0f;
+
+              uint32 flashColor = Globals::kPlayTrackFlashColor;
+              composerView->SetTrackColors(t->GetColorScheme(), flashColor);
 
               // Track hamburger menu
               ImGui::PushID(c->second.uniqueGuiIdHamburgerMenu.c_str());
@@ -443,14 +450,13 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
               else {
                 ImGui::PopID();
               }
+              memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
 
               ImGui::SameLine();
 
               imGuiStyle.ItemSpacing.x = defaultItemSpacing.x;
 
               memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
-
-              auto t = i->GetTrackById(c->second.trackId);
 
               imGuiStyle.ItemSpacing.y = defaultItemSpacing.y;
               if (ImGui::BeginPopup(c->second.uniqueGuiIdPropertiesPop.c_str())) {
@@ -481,14 +487,19 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
 
               char newTrackName[256] = { 0 };
 
+              composerView->SetTrackColors(t->GetColorScheme(), flashColor);
+
               strcpy(newTrackName, t->GetName().c_str());
               ImGui::PushID(c->second.uniqueGuiIdTrackButton.c_str());
-              if (ImGui::InputTextEx("", nullptr, newTrackName,
-                _countof(newTrackName) - 1, ImVec2(-1, Globals::kKeyboardKeyHeight), 0)) {
-                t->SetName(std::string(newTrackName));
+              ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
+              if (ImGui::Button(t->GetName().c_str(), ImVec2(-1, Globals::kKeyboardKeyHeight))) {
+                pendingPlayTrack = { i, c->second.trackId };
               }
-
+              ImGui::PopStyleVar();
               ImGui::PopID();
+
+              imGuiStyle.ItemSpacing = defaultItemSpacing;
+              memcpy(imGuiStyle.Colors, defaultColors, sizeof(defaultColors));
               ++c;
             }
             ImGui::NextColumn();
