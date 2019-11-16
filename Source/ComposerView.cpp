@@ -100,14 +100,15 @@ void ComposerView::OnBeat(uint32 beatIndex) {
   auto& sequencer = Sequencer::Get();
   auto song = sequencer.GetSong();
 
-  // Might want to move these back to the sequencer
-  if (tabController.Get<SongTab>()->IsMetronomeOn()) {
-    sequencer.PlayMetronome((beatIndex %
-      (song->GetMinNoteValue() * song->GetBeatsPerMeasure())) == 0);
+  if (isMetronomeOn) {
+    auto mod = beatIndex % song->GetMinNoteValue();
+    if (!mod) {
+      sequencer.PlayMetronome((beatIndex / song->GetMinNoteValue()) % song->GetBeatsPerMeasure() == 0);
+    }
   }
 
   if (beatIndex >= song->GetNoteCount()) {
-    if (tabController.Get<SongTab>()->IsLooping()) {
+    if (isLooping) {
       sequencer.Loop();
       beatIndex = 0;
     }

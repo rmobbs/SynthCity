@@ -1020,20 +1020,20 @@ void SongTab::Render(ImVec2 canvasSize) {
       // Loop
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
-      bool localIsLooping = isLooping;
+      bool localIsLooping = composerView->IsLooping();
       if (ImGui::Checkbox("Loop", &localIsLooping)) {
         // @Atomic
-        isLooping = localIsLooping;
+        composerView->SetLooping(localIsLooping);
       }
       ImGui::PopItemWidth();
 
       // Metronome
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
-      bool localIsMetronomeOn = isMetronomeOn;
+      bool localIsMetronomeOn = composerView->IsMetronomeOn();
       if (ImGui::Checkbox("Metronome", &localIsMetronomeOn)) {
         // @Atomic
-        isMetronomeOn = localIsMetronomeOn;
+        composerView->SetMetronomeOn(localIsMetronomeOn);
       }
       ImGui::PopItemWidth();
 

@@ -63,9 +63,6 @@ public:
 
   std::map<int, double> playingTrackFlashTimes[2];
 
-  std::atomic<bool> isMetronomeOn = false;
-  std::atomic<bool> isLooping = false;
-
   void InitResources();
   void SetTrackColors(std::string colorScheme, uint32& flashColor);
   void HandleInput();
@@ -83,12 +80,4 @@ public:
   void DoMainMenuBar() override;
   void Render(ImVec2 canvasSize) override;
   void DoLockedActions() override;
-
-  inline bool IsMetronomeOn() const {
-    return isMetronomeOn;
-  }
-
-  inline bool IsLooping() const {
-    return isLooping;
-  }
 };
