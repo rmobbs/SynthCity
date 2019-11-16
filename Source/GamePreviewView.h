@@ -7,6 +7,7 @@
 #include "GameInput.h"
 #include "Song.h"
 #include "InstrumentInstance.h"
+#include "Sequencer.h"
 
 #include <list>
 #include <array>
@@ -14,7 +15,7 @@
 class SpriteRenderable;
 class NoteSprite;
 class Track;
-class GamePreviewView : public View {
+class GamePreviewView : public View, public Sequencer::Listener {
 protected:
   enum class Mode {
     Ready,
@@ -29,7 +30,6 @@ protected:
   };
   Mode mode = Mode::Ready;
   ImGuiRenderable renderable;
-  uint32 mainWindowHandle = UINT32_MAX;
   std::vector<SpriteRenderable*> staticSprites;
   std::vector<SpriteRenderable*> fretSprites;
   std::array<Track*, GameGlobals::kNumGameplayLines> lineTracks = { nullptr };
@@ -66,7 +66,7 @@ protected:
   void HandleInput();
   uint32 LoadTexture(const std::string& textureName, uint32* outWidth = nullptr, uint32* outHeight = nullptr);
 public:
-  GamePreviewView(uint32 mainWindowHandle);
+  GamePreviewView(HashedController<View>* viewController);
   ~GamePreviewView();
 
   void Show() override;

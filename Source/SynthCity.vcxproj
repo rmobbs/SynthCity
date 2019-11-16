@@ -201,8 +201,11 @@
     <ClInclude Include="GameGlobals.h" />
     <ClInclude Include="GameInput.h" />
     <ClInclude Include="GamePreviewView.h" />
+    <ClInclude Include="HashedController.h" />
     <ClInclude Include="ImGuiExtensions.h" />
+    <ClInclude Include="InstrumentBank.h" />
     <ClInclude Include="InstrumentInstance.h" />
+    <ClInclude Include="InstrumentTab.h" />
     <ClInclude Include="Patch.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessAttackSustainDecay.h" />
@@ -210,6 +213,7 @@
     <ClInclude Include="ProcessFactory.h" />
     <ClInclude Include="SineSynthSound.h" />
     <ClInclude Include="Song.h" />
+    <ClInclude Include="SongTab.h" />
     <ClInclude Include="Track.h" />
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="EnumIterator.h" />
@@ -250,7 +254,9 @@
     <ClCompile Include="Globals.cpp" />
     <ClCompile Include="ImGuiExtensions.cpp" />
     <ClCompile Include="InputState.cpp" />
+    <ClCompile Include="InstrumentBank.cpp" />
     <ClCompile Include="InstrumentInstance.cpp" />
+    <ClCompile Include="InstrumentTab.cpp" />
     <ClCompile Include="Patch.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessAttackSustainDecay.cpp" />
@@ -258,6 +264,7 @@
     <ClCompile Include="ProcessFactory.cpp" />
     <ClCompile Include="SineSynthSound.cpp" />
     <ClCompile Include="Song.cpp" />
+    <ClCompile Include="SongTab.cpp" />
     <ClCompile Include="Track.cpp" />
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="GlobalRenderData.cpp" />

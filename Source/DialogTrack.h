@@ -15,12 +15,13 @@ protected:
   int32 playingVoiceId = -1;
   Instrument* instrument = nullptr;
   Track* track = nullptr;
-  uint32 stopButtonTexture = 0xFFFFFFFF;
+  bool wasPlaying = false;
 public:
-  DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track, uint32 stopButtonTexture);
+  DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track);
   ~DialogTrack();
 
   void Open() override;
   bool Render() override;
+  void Close() override;
 };
 

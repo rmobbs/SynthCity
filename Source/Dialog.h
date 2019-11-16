@@ -12,6 +12,9 @@ public:
 
   virtual void Open();
   virtual bool Render();
+  virtual void Close() {
+
+  }
 
   inline bool ExitedOk() const {
     return exitedOk;

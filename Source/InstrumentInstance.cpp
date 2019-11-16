@@ -14,6 +14,8 @@ TrackInstance::GuiNote::GuiNote() {
 }
 
 TrackInstance::TrackInstance(uint32 trackId) {
+  this->trackId = trackId;
+
   auto nextUniqueTrackId = Sequencer::Get().GetSong()->NextUniqueTrackId();
 
   UniqueIdBuilder<64> uniqueIdBuilder("thm:");

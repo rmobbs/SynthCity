@@ -180,6 +180,18 @@
     <ClInclude Include="InstrumentInstance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="InstrumentTab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InstrumentBank.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HashedController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SongTab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SynthCity.cpp">
@@ -303,6 +315,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InstrumentInstance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InstrumentTab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SongTab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InstrumentBank.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

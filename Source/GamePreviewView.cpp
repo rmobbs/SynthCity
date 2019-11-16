@@ -134,8 +134,8 @@ public:
 
 FreeList<NoteSprite, float, uint32> fallingNoteFreeList;
 
-GamePreviewView::GamePreviewView(uint32 mainWindowHandle)
-  : mainWindowHandle(mainWindowHandle)
+GamePreviewView::GamePreviewView(HashedController<View>* viewController)
+  : View({}, viewController)
   , gameInput({ 'a', 's', 'd', 'f' }) {
   InitResources();
 }
@@ -340,6 +340,9 @@ void GamePreviewView::OnBeat(uint32 beatIndex) {
 void GamePreviewView::Show() {
   // Gotta catch 'em all
   auto& sequencer = Sequencer::Get();
+
+  sequencer.SetListener(this);
+
   auto song = sequencer.GetSong();
 
   uint32 numFallingNotes = 0;
@@ -410,7 +413,7 @@ void GamePreviewView::HandleInput() {
   auto& inputState = InputState::Get();
 
   if (inputState.pressed[SDLK_ESCAPE]) {
-    View::SetCurrentView<ComposerView>();
+    viewController->SetCurrent<ComposerView>();
   }
 }
 

@@ -344,9 +344,8 @@ uint32 Sequencer::NextFrame()
 
   currBeat = nextBeat++;
 
-  auto view = View::GetCurrentView();
-  if (view != nullptr) {
-    view->OnBeat(currBeat);
+  if (listener != nullptr) {
+    listener->OnBeat(currBeat);
   }
 
   return interval;
@@ -452,6 +451,12 @@ void Sequencer::AudioCallback(uint8 *stream, int32 length) {
     stream += chunk * sizeof(int16) * 2;
     frames -= chunk;
   }
+}
+
+void Sequencer::SetListener(Listener* newListener) {
+  AudioGlobals::LockAudio();
+  listener = newListener;
+  AudioGlobals::UnlockAudio();
 }
 
 void Sequencer::StopAllVoices() {

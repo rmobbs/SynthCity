@@ -24,11 +24,8 @@ protected:
   uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string name;
 
-  std::map<std::string, Instrument*> instrumentsByPath;
-
   static uint32 nextUniqueTrackId;
   static uint32 nextUniqueNoteId;
-  static uint32 nextUniqueInstrumentId;
   static uint32 nextUniqueInstrumentInstanceId;
 
   std::list<InstrumentInstance*> instrumentInstances;
@@ -38,8 +35,6 @@ protected:
 
   std::pair<bool, std::string> SerializeReadInstrument23(const ReadSerializer& serializer);
   
-  static std::function<Instrument*(std::string)> instrumentLoader;
-
 public:
   Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
   Song(const ReadSerializer& serializer);
@@ -88,15 +83,10 @@ public:
   void MoveInstrumentInstance(InstrumentInstance* instrumentInstance, int32 direction);
   void RemoveInstrumentInstance(InstrumentInstance* instrumentInstance);
   bool Save(std::string fileName);
-  Instrument* CreateInstrument();
-  Instrument* LoadInstrumentFile(std::string fileName);
-  Instrument* LoadInstrumentName(std::string name);
 
   static uint32 NextUniqueTrackId();
   static uint32 NextUniqueNoteId();
-  static uint32 NextUniqueInstrumentId();
   static uint32 NextUniqueInstrumentInstanceId();
 
   static Song* LoadSong(std::string fileName);
-  static void SetLoadCallback(const std::function<Instrument*(std::string)>& loadCallback);
 };

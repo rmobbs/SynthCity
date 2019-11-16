@@ -56,6 +56,7 @@ public:
   std::vector<GuiNote> noteVector;
 
   bool mute = false;
+  uint32 trackId = kInvalidUint32;
 
   TrackInstance(uint32 trackId);
 };

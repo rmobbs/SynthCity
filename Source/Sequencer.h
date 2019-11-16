@@ -26,6 +26,13 @@ public:
   static constexpr uint32 kDefaultInterval = 1000;
   static constexpr float kDefaultMasterVolume = 0.7f;
 
+  class Listener {
+    public:
+      virtual void OnBeat(uint32 beatIndex) {
+
+      }
+  };
+
   // Loaded MIDI is passed to the host; they interact with the user to determine what
   // parameters will be used to convert that MIDI to our song format
   struct MidiConversionParams {
@@ -42,6 +49,7 @@ private:
   uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
   Song* song = nullptr;
+  Listener* listener = nullptr;
   std::vector<Patch*> reservedPatches;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
   int32 ticksPerFrame = 0;
@@ -132,6 +140,8 @@ public:
 
    Sequencer();
   ~Sequencer();
+
+  void SetListener(Listener* newListener);
 
   static bool InitSingleton();
   static bool TermSingleton();
