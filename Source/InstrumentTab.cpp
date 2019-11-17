@@ -31,6 +31,7 @@ InstrumentTab::InstrumentTab(ComposerView* composerView)
 }
 
 InstrumentTab::~InstrumentTab() {
+  // Delete any instruments we haven't saved yet
   for (auto& newInstrument : newInstruments) {
     delete newInstrument;
   }
@@ -50,23 +51,33 @@ void InstrumentTab::Hide() {
 
 }
 
-std::string InstrumentTab:: GetUniqueInstrumentName(std::string instrumentNameBase) {
+std::string InstrumentTab::GetUniqueInstrumentName(std::string instrumentNameBase) {
   // Pick an available name
   std::string instrumentName = instrumentNameBase;
 
   // Has to end sometime
-  const auto& instruments = InstrumentBank::Get().GetInstruments();
+  const auto& savedInstruments = InstrumentBank::Get().GetInstruments();
   for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
-    auto instrumentIter = instruments.begin();
-    while (instrumentIter != instruments.end()) {
-      if (instrumentIter->second->GetName() == instrumentName) {
+    auto savedInstrumentIter = savedInstruments.begin();
+    while (savedInstrumentIter != savedInstruments.end()) {
+      if (savedInstrumentIter->second->GetName() == instrumentName) {
         break;
       }
-      ++instrumentIter;
+      ++savedInstrumentIter;
     }
 
-    if (instrumentIter == instruments.end()) {
-      break;
+    if (savedInstrumentIter == savedInstruments.end()) {
+      auto newInstrumentIter = newInstruments.begin();
+      while (newInstrumentIter != newInstruments.end()) {
+        if ((*newInstrumentIter)->GetName() == instrumentName) {
+          break;
+        }
+        ++newInstrumentIter;
+      }
+
+      if (newInstrumentIter == newInstruments.end()) {
+        break;
+      }
     }
 
     instrumentName = std::string(instrumentNameBase) +
@@ -208,8 +219,13 @@ void InstrumentTab::DoLockedActions() {
   }
 
   if (pendingSaveInstrument != nullptr) {
-    if (SaveInstrument(pendingSaveInstrument)) {
-      newInstruments.erase(pendingSaveInstrument);
+    pendingSaveInstrument->Save();
+  }
+
+  if (pendingSaveAsInstrument != nullptr) {
+    if (SaveInstrument(pendingSaveAsInstrument)) {
+      assert(newInstruments.find(pendingSaveAsInstrument) != newInstruments.end());
+      newInstruments.erase(pendingSaveAsInstrument);
     }
   }
 
@@ -221,6 +237,7 @@ void InstrumentTab::DoLockedActions() {
   pendingNewInstrument = false;
   pendingLoadInstrument = false;
   pendingSaveInstrument = nullptr;
+  pendingSaveAsInstrument = nullptr;
 }
 
 void InstrumentTab::ConditionalEnableBegin(bool condition) {
@@ -241,10 +258,10 @@ void InstrumentTab::ConditionalEnableEnd() {
 
 void InstrumentTab::DoMainMenuBar() {
   if (ImGui::BeginMenu("Instrument")) {
-    if (ImGui::MenuItem("New Instrument")) {
+    if (ImGui::MenuItem("New")) {
       pendingNewInstrument = true;
     }
-    if (ImGui::MenuItem("Load Instrument")) {
+    if (ImGui::MenuItem("Load")) {
       pendingLoadInstrument = true;
     }
     ImGui::EndMenu();
@@ -386,8 +403,14 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
                 Globals::kDefaultNewTrackName)));
           }
 
+          ConditionalEnableBegin(!instrumentInstanceIter.first->second->instrument->GetFileName().empty());
           if (ImGui::MenuItem("Save")) {
             pendingSaveInstrument = instrumentInstanceIter.first->second->instrument;
+          }
+          ConditionalEnableEnd();
+
+          if (ImGui::MenuItem("Save As")) {
+            pendingSaveAsInstrument = instrumentInstanceIter.first->second->instrument;
           }
 
           ConditionalEnableBegin(openInstruments.find(instrumentInstanceIter.
@@ -405,7 +428,7 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
         imGuiStyle.ItemSpacing.y = 0.0f;
 
         // Visual cue for unsaved instruments
-        if (newInstruments.find(instrumentInstanceIter.first->second->instrument) != newInstruments.end()) {
+        if (instrumentInstanceIter.first->second->instrument->GetFileName().empty()) {
           imGuiStyle.Colors[ImGuiCol_Text] = kUnsavedInstrumentColor;
         }
         char newInstrumentName[256] = { 0 };

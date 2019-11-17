@@ -36,6 +36,7 @@ protected:
   bool pendingNewInstrument = false;
   bool pendingLoadInstrument = false;
   Instrument* pendingSaveInstrument = nullptr;
+  Instrument* pendingSaveAsInstrument = nullptr;
 
   ComposerView* composerView = nullptr;
 

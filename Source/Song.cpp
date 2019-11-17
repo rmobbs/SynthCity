@@ -392,6 +392,8 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
     instrumentInstance->EnsureNotes(GetNoteCount());
   }
 
+  fileName = serializer.fileName;
+
   return std::make_pair(true, "");
 }
 
@@ -486,7 +488,16 @@ std::pair<bool, std::string> Song::SerializeWrite(const WriteSerializer& seriali
   w.EndArray();
   w.EndObject();
 
+  fileName = serializer.fileName;
+
   return std::make_pair(true, "");
+}
+
+bool Song::Save() {
+  if (fileName.empty()) {
+    return false;
+  }
+  return Save(fileName);
 }
 
 bool Song::Save(std::string fileName) {
@@ -497,7 +508,7 @@ bool Song::Save(std::string fileName) {
   rapidjson::StringBuffer sb;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
 
-  auto result = SerializeWrite({ w, std::filesystem::path(fileName).parent_path() });
+  auto result = SerializeWrite({ w, std::filesystem::path(fileName).parent_path(), fileName });
   if (!result.first) {
     MCLOG(Error, "Unable to save song: %s", result.second.c_str());
     return false;

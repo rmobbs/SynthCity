@@ -11,7 +11,7 @@
 #include "imgui_internal.h"
 
 static constexpr float kMinDialogWidth(600.0f);
-static constexpr float kMinDialogHeight(600.0f);
+static constexpr float kMinDialogHeight(650.0f);
 
 DialogTrack::DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track)
   : title(title)
@@ -112,7 +112,10 @@ void DialogTrack::Close() {
       instrument->AddTrack(track);
 
       // Force-update the instances
-      Sequencer::Get().GetSong()->AddMeasures(0);
+      auto song = Sequencer::Get().GetSong();
+      if (song != nullptr) {
+        song->AddMeasures(0);
+      }
     }
   }
   else {

@@ -23,6 +23,7 @@ protected:
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
   uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string name;
+  std::string fileName;
 
   static uint32 nextUniqueTrackId;
   static uint32 nextUniqueNoteId;
@@ -55,6 +56,10 @@ public:
     this->name = name;
   }
 
+  inline std::string GetFileName() const {
+    return fileName;
+  }
+
   // Get rid of this, songs should not specify min note value
   // https://trello.com/c/WoH4c9LD
   uint32 GetNoteCount() const {
@@ -83,6 +88,7 @@ public:
   void MoveInstrumentInstance(InstrumentInstance* instrumentInstance, int32 direction);
   void RemoveInstrumentInstance(InstrumentInstance* instrumentInstance);
   bool Save(std::string fileName);
+  bool Save();
 
   static uint32 NextUniqueTrackId();
   static uint32 NextUniqueNoteId();

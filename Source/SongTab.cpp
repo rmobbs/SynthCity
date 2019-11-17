@@ -335,6 +335,14 @@ void SongTab::DoLockedActions() {
       song->SetTempo(pendingTempo);
       sequencer.UpdateInterval();
     }
+
+    if (pendingSaveSong) {
+      song->Save();
+    }
+
+    if (pendingSaveAsSong) {
+      SaveSong();
+    }
   }
 
   if (pendingAddInstrument) {
@@ -358,10 +366,6 @@ void SongTab::DoLockedActions() {
     LoadSong();
   }
 
-  if (pendingSaveSong) {
-    SaveSong();
-  }
-
   // Reset all pendings
   pendingSubdivision = kInvalidUint32;
   pendingTempo = kInvalidUint32;
@@ -372,6 +376,7 @@ void SongTab::DoLockedActions() {
   pendingNewSong = false;
   pendingLoadSong = false;
   pendingSaveSong = false;
+  pendingSaveAsSong = false;
   pendingToggleNoteInstance = { };
   pendingMoveInstrumentInstance = { };
   pendingSoloTrackInstance = { };
@@ -401,17 +406,22 @@ void SongTab::DoMainMenuBar() {
   auto song = sequencer.GetSong();
 
   if (ImGui::BeginMenu("Song")) {
-    if (ImGui::MenuItem("New Song")) {
+    if (ImGui::MenuItem("New")) {
       pendingNewSong = true;
     }
-    if (ImGui::MenuItem("Load Song")) {
+    if (ImGui::MenuItem("Load")) {
       pendingLoadSong = true;
     }
 
-    ConditionalEnableBegin(song != nullptr);
-
-    if (ImGui::MenuItem("Save Song")) {
+    ConditionalEnableBegin(song != nullptr && !song->GetFileName().empty());
+    if (ImGui::MenuItem("Save")) {
       pendingSaveSong = true;
+    }
+    ConditionalEnableEnd();
+
+    ConditionalEnableBegin(song != nullptr);
+    if (ImGui::MenuItem("Save As")) {
+      pendingSaveAsSong = true;
     }
 
     if (ImGui::MenuItem("Add Instrument")) {

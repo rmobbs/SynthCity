@@ -43,6 +43,7 @@ public:
   bool pendingNewSong = false;
   bool pendingLoadSong = false;
   bool pendingSaveSong = false;
+  bool pendingSaveAsSong = false;
 
   std::map<InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectedNotesByInstrumentInstance;
   std::map<InstrumentInstance*, std::map<uint32, std::set<uint32>>> selectingNotesByInstrumentInstance;

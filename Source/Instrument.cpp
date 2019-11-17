@@ -114,8 +114,6 @@ void Instrument::RemoveInstance(InstrumentInstance* instrumentInstance) {
 std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& serializer) {
   auto& d = serializer.d;
 
-  fileName = serializer.fileName;
-
   // Version
   if (!d.HasMember(Globals::kVersionTag) || !d[Globals::kVersionTag].IsUint()) {
     return std::make_pair(false, "Missing/invalid version tag in instrument file");
@@ -166,6 +164,8 @@ std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& ser
     nextTrackId = tracksById.size();
   }
 
+  fileName = serializer.fileName;
+
   return std::make_pair<bool, std::string>(true, {});
 }
 
@@ -198,7 +198,16 @@ std::pair<bool, std::string> Instrument::SerializeWrite(const WriteSerializer& s
   w.EndArray();
   w.EndObject();
 
+  fileName = serializer.fileName;
+
   return std::make_pair<bool, std::string>(true, {});
+}
+
+bool Instrument::Save() {
+  if (fileName.empty()) {
+    return false;
+  }
+  return SaveInstrument(fileName);
 }
 
 bool Instrument::SaveInstrument(std::string fileName) {
@@ -213,7 +222,7 @@ bool Instrument::SaveInstrument(std::string fileName) {
   rapidjson::StringBuffer sb;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> w(sb);
 
-  auto result = SerializeWrite({ w, std::filesystem::path(fileName).parent_path() });
+  auto result = SerializeWrite({ w, std::filesystem::path(fileName).parent_path(), fileName });
   if (result.first) {
     std::string outputString(sb.GetString());
     ofs.write(outputString.c_str(), outputString.length());

@@ -41,6 +41,7 @@ public:
 
   void AddTrack(Track* track);
   bool SaveInstrument(std::string fileName);
+  bool Save();
   void ReplaceTrackById(uint32 trackId, Track* track);
   void RemoveTrackById(uint32 trackId);
   Track* GetTrackById(uint32 trackId);
