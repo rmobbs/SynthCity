@@ -9,73 +9,43 @@
 #include <functional>
 
 class Instrument;
+class InstrumentInstance;
+
 class Song {
 public:
   static constexpr uint32 kDefaultNumMeasures = 4;
   static constexpr uint32 kDefaultBeatsPerMeasure = 4;
   static constexpr const char* kDefaultName = "Untitled";
 
-  class Note {
-  protected:
-    uint32 beatIndex = kInvalidUint32;
-    uint32 gameIndex = kInvalidUint32;
-
-  public:
-    Note() = default;
-    
-    inline Note(uint32 beatIndex, uint32 gameIndex)
-      : beatIndex(beatIndex)
-      , gameIndex(gameIndex) {
-    }
-
-    inline uint32 GetBeatIndex() const {
-      return beatIndex;
-    }
-    inline void SetBeatIndex(uint32 beatIndex) {
-      this->beatIndex = beatIndex;
-    }
-
-    inline uint32 GetGameIndex() const {
-      return gameIndex;
-    }
-    inline void SetGameIndex(uint32 gameIndex) {
-      this->gameIndex = gameIndex;
-    }
-  };
-  
 protected:
   uint32 tempo = Globals::kDefaultTempo;
   uint32 numMeasures = 0;
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
   uint32 minNoteValue = Globals::kDefaultMinNote;
   std::string name;
+  std::string fileName;
 
-  // TODO: Permit songs to reference multiple instruments
-  // https://trello.com/c/8iaMDKmY
-  Instrument* instrument = nullptr;
+  static uint32 nextUniqueTrackId;
+  static uint32 nextUniqueNoteId;
+  static uint32 nextUniqueInstrumentInstanceId;
 
-  std::map<uint32, std::list<Note>> lines;
-  std::function<Instrument*(std::string)> instrumentLoader;
+  std::list<InstrumentInstance*> instrumentInstances;
 
-  static Song* LoadSongMidi(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
-  static Song* LoadSongJson(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
+  static Song* LoadSongMidi(std::string fileName);
+  static Song* LoadSongJson(std::string fileName);
 
+  std::pair<bool, std::string> SerializeReadInstrument23(const ReadSerializer& serializer);
+  
 public:
   Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
-  Song(const ReadSerializer& serializer, std::function<Instrument*(std::string)> instrumentLoader);
+  Song(const ReadSerializer& serializer);
   ~Song();
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
 
-  std::string GetInstrumentName() const;
-
-  inline Instrument* GetInstrument() const {
-    return instrument;
-  }
-
-  inline const std::map<uint32, std::list<Note>>& GetBarLines() const {
-    return lines;
+  inline const std::list<InstrumentInstance*>& GetInstrumentInstances() const {
+    return instrumentInstances;
   }
 
   inline std::string GetName() const {
@@ -86,13 +56,14 @@ public:
     this->name = name;
   }
 
+  inline std::string GetFileName() const {
+    return fileName;
+  }
+
   // Get rid of this, songs should not specify min note value
   // https://trello.com/c/WoH4c9LD
   uint32 GetNoteCount() const {
     return numMeasures * beatsPerMeasure * minNoteValue;
-  }
-  uint32 GetLineCount() const {
-    return lines.size();
   }
   uint32 GetBeatsPerMeasure() const {
     return beatsPerMeasure;
@@ -113,11 +84,15 @@ public:
   }
 
   void AddMeasures(uint32 numMeasures);
-  Note* AddNote(uint32 trackId, uint32 beatIndex);
-  void RemoveNote(uint32 trackId, uint32 beatIndex);
-  void SetInstrument(Instrument* newInstrument);
+  void AddInstrumentInstance(InstrumentInstance* instrumentInstance);
+  void MoveInstrumentInstance(InstrumentInstance* instrumentInstance, int32 direction);
+  void RemoveInstrumentInstance(InstrumentInstance* instrumentInstance);
   bool Save(std::string fileName);
-  void UpdateLines();
+  bool Save();
 
-  static Song* LoadSong(std::string fileName, std::function<Instrument*(std::string)> instrumentLoader);
+  static uint32 NextUniqueTrackId();
+  static uint32 NextUniqueNoteId();
+  static uint32 NextUniqueInstrumentInstanceId();
+
+  static Song* LoadSong(std::string fileName);
 };

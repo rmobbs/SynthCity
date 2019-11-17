@@ -8,6 +8,7 @@
 #include <string>
 #include <set>
 #include <map>
+#include <stack>
 
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string& sourceString);
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string_view& sourceString);
@@ -52,13 +53,6 @@ inline bool check_fileext(std::string fileName, std::string_view fileTag) {
     fileTag.length(), fileTag.length(), fileTag) == 0;
 }
 
-template<typename K, typename V> inline void map_remove(std::map<K, V>& theMap, const K& theKey) {
-  auto mapEntry = theMap.find(theKey);
-  if (mapEntry != theMap.end()) {
-    theMap.erase(mapEntry);
-  }
-}
-
 template<typename K, typename V, typename T> inline void mapped_set_toggle(std::map<K, std::set<V>>& theMap, const K& theKey, const T& theValue) {
   auto mapEntry = theMap.find(theKey);
   if (mapEntry != theMap.end()) {
@@ -93,3 +87,34 @@ template<typename K, typename V, typename T> inline bool mapped_set_contains(std
   }
   return false;
 }
+
+template <size_t BufferSize> class UniqueIdBuilder {
+protected:
+  char buffer[BufferSize] = { 0 };
+  std::stack<size_t> offset;
+public:
+  inline UniqueIdBuilder(const char* prefix = nullptr) {
+    if (prefix != nullptr) {
+      strcpy(buffer, prefix);
+      offset.push(strlen(prefix));
+    }
+    else {
+      offset.push(0);
+    }
+  }
+
+  inline void PushHex(size_t hexValue) {
+    offset.push(offset.top() + strlen(_itoa(hexValue, buffer + offset.top(), 16)));
+  }
+  inline void PushUnsigned(size_t unsignedValue) {
+    offset.push(offset.top() + strlen(_itoa(unsignedValue, buffer + offset.top(), 10)));
+  }
+  inline void Pop() {
+    offset.pop();
+    buffer[offset.top()] = 0;
+  }
+
+  const char* operator()() const {
+    return buffer;
+  }
+};

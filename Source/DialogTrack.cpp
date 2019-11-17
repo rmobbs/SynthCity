@@ -11,14 +11,13 @@
 #include "imgui_internal.h"
 
 static constexpr float kMinDialogWidth(600.0f);
-static constexpr float kMinDialogHeight(600.0f);
+static constexpr float kMinDialogHeight(650.0f);
 
-DialogTrack::DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track, uint32 stopButtonTexture)
+DialogTrack::DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track)
   : title(title)
   , instrument(instrument)
   , replaceTrackId(replaceTrackId)
-  , track(track)
-  , stopButtonTexture(stopButtonTexture) {
+  , track(track) {
 
 }
 
@@ -28,6 +27,8 @@ DialogTrack::~DialogTrack() {
 }
 
 void DialogTrack::Open() {
+  wasPlaying = Sequencer::Get().IsPlaying();
+  Sequencer::Get().PauseKill();
   ImGui::OpenPopup(title.c_str());
 }
 
@@ -60,7 +61,7 @@ bool DialogTrack::Render() {
 
     ImGui::SameLine();
 
-    if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(stopButtonTexture), ImVec2(14, 14))) {
+    if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(Globals::stopButtonTexture), ImVec2(14, 14))) {
       if (playingVoiceId != -1) {
         Sequencer::Get().StopVoice(playingVoiceId);
         playingVoiceId = -1;
@@ -68,6 +69,11 @@ bool DialogTrack::Render() {
     }
 
     imGuiStyle.ItemSpacing = oldItemSpacing;
+
+    float volume = track->GetVolume();
+    if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
+      track->SetVolume(volume);
+    }
 
     track->GetPatch()->RenderDialog();
 
@@ -89,22 +95,38 @@ bool DialogTrack::Render() {
     ImGui::EndPopup();
   }
 
-  if (!isOpen) {
-    if (playingVoiceId != -1) {
-      Sequencer::Get().StopVoice(playingVoiceId);
-      playingVoiceId = -1;
-    }
+  return isOpen;
+}
 
-    if (exitedOk) {
-      if (replaceTrackId != kInvalidUint32) {
-        instrument->ReplaceTrackById(replaceTrackId, track);
+void DialogTrack::Close() {
+  if (playingVoiceId != -1) {
+    Sequencer::Get().StopVoice(playingVoiceId);
+    playingVoiceId = -1;
+  }
+
+  if (exitedOk) {
+    if (replaceTrackId != kInvalidUint32) {
+      instrument->ReplaceTrackById(replaceTrackId, track);
+    }
+    else {
+      instrument->AddTrack(track);
+
+      // Force-update the instances
+      auto song = Sequencer::Get().GetSong();
+      if (song != nullptr) {
+        song->AddMeasures(0);
       }
-      else {
-        instrument->AddTrack(track);
-      }
-      track = nullptr;
     }
   }
-  return isOpen;
+  else {
+    delete track;
+  }
+
+  track = nullptr;
+
+  if (wasPlaying) {
+    Sequencer::Get().Play();
+    wasPlaying = false;
+  }
 }
 

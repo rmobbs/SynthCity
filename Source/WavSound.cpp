@@ -127,29 +127,30 @@ void WavSound::RenderDialog() {
 }
 
 bool WavSound::SerializeWrite(const WriteSerializer& serializer) {
-  auto& w = serializer.w;
+  if (wavData != nullptr) {
+    auto& w = serializer.w;
 
-  std::string serializeFileName(wavData->fileName);
+    std::string serializeFileName(wavData->fileName);
 
-  if (serializer.rootPath.generic_string().length()) {
-    std::string newFileName = std::filesystem::relative(serializeFileName, serializer.rootPath).generic_string();
-    if (newFileName.length() > 0) {
-      serializeFileName = newFileName;
+    if (serializer.rootPath.generic_string().length()) {
+      std::string newFileName = std::filesystem::relative(serializeFileName, serializer.rootPath).generic_string();
+      if (newFileName.length() > 0) {
+        serializeFileName = newFileName;
 
-      // Everything should work with the incorrect (on Windows) forward-slash paths
-      // returned from std::filesystem functions, but for consistency we'll convert
-      // the result to Windows-style backslashes
-      std::replace(serializeFileName.begin(), serializeFileName.end(), '/', '\\');
+        // Everything should work with the incorrect (on Windows) forward-slash paths
+        // returned from std::filesystem functions, but for consistency we'll convert
+        // the result to Windows-style backslashes
+        std::replace(serializeFileName.begin(), serializeFileName.end(), '/', '\\');
+      }
+      else {
+        MCLOG(Warn, "Instrument will reference absolute path for sound \'%s\'", serializeFileName.c_str());
+      }
     }
-    else {
-      MCLOG(Warn, "Instrument will reference absolute path for sound \'%s\'", serializeFileName.c_str());
-    }
+
+    // File tag:string
+    w.Key(kFileNameTag);
+    w.String(serializeFileName.c_str());
   }
-
-  // File tag:string
-  w.Key(kFileNameTag);
-  w.String(serializeFileName.c_str());
-
   return true;
 }
 

@@ -19,11 +19,14 @@
 #include "GamePreviewView.h"
 #include "InputState.h"
 #include "Globals.h"
+#include "InstrumentBank.h"
 #include "WavBank.h"
 #include "Process.h"
 #include "SoundFactory.h"
 #include "ProcessFactory.h"
+#include "HashedController.h"
 
+#include "soil.h"
 
 #include "SDL_syswm.h"
 #include <windows.h>
@@ -47,6 +50,8 @@ static LONGLONG counterStart = 0;
 static LONGLONG counterCurr = 0;
 
 static GLuint fontTextureId;
+
+static HashedController<View> viewController;
 
 InputState::MouseButton SdlMouseButtonToInputMouseButton(uint8 sdlMouseButton) {
   switch (sdlMouseButton) {
@@ -135,7 +140,7 @@ void UpdateInput() {
 
   inputState.modState = SDL_GetModState();
 
-  imGuiIo.DeltaTime = static_cast<float>(Globals::elapsedTime);
+  imGuiIo.DeltaTime = std::max(1.0f / 60.0f, static_cast<float>(Globals::elapsedTime));
 
   // Update mouse
   imGuiIo.MousePos = ImVec2(static_cast<float>(inputState.mouseX), static_cast<float>(inputState.mouseY));
@@ -202,7 +207,7 @@ void MainLoop() {
     GlobalRenderData::get().setMatrix(GlobalRenderData::MatrixType::ScreenOrthographic, screenOrtho);
   }
 
-  View::GetCurrentView()->Render(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
+  viewController.GetCurrent()->Render(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
 
   SDL_GL_SwapWindow(sdlWindow);
 
@@ -333,6 +338,23 @@ bool InitGL() {
       })
   );
 
+  // Common textures
+  GLint lastTexture;
+  glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
+
+  int width, height;
+  uint8* iconData = nullptr;
+  glGenTextures(1, &Globals::stopButtonTexture);
+  glBindTexture(GL_TEXTURE_2D, Globals::stopButtonTexture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  iconData = SOIL_load_image("Assets\\stop_icon.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, iconData);
+  SOIL_free_image_data(iconData);
+
+  // Restore original state
+  glBindTexture(GL_TEXTURE_2D, lastTexture);
+
   return true;
 }
 
@@ -379,6 +401,12 @@ bool Init() {
     return false;
   }
 
+  // Initialize instrument bank
+  if (!InstrumentBank::InitSingleton()) {
+    MCLOG(Error, "Unable to init instrument bank");
+    return false;
+  }
+
   // Initialize sequencer
   if (!Sequencer::InitSingleton()) {
     MCLOG(Error, "Unable to initialize sequencer");
@@ -386,10 +414,12 @@ bool Init() {
     return false;
   }
 
+  Globals::mainWindowHandle = reinterpret_cast<uint32>(sysWmInfo.info.win.window);
+
   // Initialize the views
-  View::RegisterView<ComposerView>(new ComposerView(reinterpret_cast<uint32>(sysWmInfo.info.win.window)));
-  View::RegisterView<GamePreviewView>(new GamePreviewView(reinterpret_cast<uint32>(sysWmInfo.info.win.window)));
-  View::SetCurrentView<ComposerView>();
+  viewController.Register(new ComposerView(&viewController));
+  viewController.Register(new GamePreviewView(&viewController));
+  viewController.SetCurrent<ComposerView>();
 
   //Sequencer::Get().LoadInstrument("Instrument\\808\\808.json", "");
   //Sequencer::Get().LoadSongJson("Songs\\tapsimple.json");
@@ -406,11 +436,14 @@ void Term() {
   // Term the sequencer
   Sequencer::TermSingleton();
 
+  // Term the instrument bank
+  InstrumentBank::TermSingleton();
+
   // Term the WAV bank
   WavBank::TermSingleton();
 
   // Term all views
-  View::Term();
+  viewController.Term();
 
   TermImGui();
   TermGL();

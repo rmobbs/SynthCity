@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 
+class InstrumentInstance;
 class Instrument {
 public:
   static constexpr const char* kDefaultName = "My Instrument";
@@ -14,9 +15,12 @@ private:
   std::string name;
   std::string fileName;
   uint32 nextTrackId = 0;
+  std::vector<InstrumentInstance*> instrumentInstances;
+
 public:
-  Instrument(const ReadSerializer& r);
+  Instrument();
   Instrument(std::string instrumentName);
+  Instrument(const ReadSerializer& r);
   ~Instrument();
 
   std::string GetName(void) const {
@@ -32,15 +36,16 @@ public:
     return tracksById;
   }
 
-  static Instrument* LoadInstrument(std::string fileName);
-
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
   std::pair<bool, std::string> SerializeWrite(const WriteSerializer& serializer);
 
   void AddTrack(Track* track);
   bool SaveInstrument(std::string fileName);
+  bool Save();
   void ReplaceTrackById(uint32 trackId, Track* track);
   void RemoveTrackById(uint32 trackId);
   Track* GetTrackById(uint32 trackId);
+  InstrumentInstance* Instance();
+  void RemoveInstance(InstrumentInstance* instrumentInstance);
 };
 

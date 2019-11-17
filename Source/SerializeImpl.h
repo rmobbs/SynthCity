@@ -10,6 +10,7 @@ struct WriteSerializer {
   rapidjson::PrettyWriter<rapidjson::StringBuffer>& w;
 
   std::filesystem::path rootPath;
+  std::string fileName;
 };
 
 struct ReadSerializer {
