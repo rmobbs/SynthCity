@@ -5,6 +5,7 @@
 #include "Song.h"
 #include "OddsAndEnds.h"
 #include "DialogTrack.h"
+#include "DialogInstrument.h"
 #include "ComposerView.h"
 
 #include "SDL.h"
@@ -224,8 +225,10 @@ void InstrumentTab::DoLockedActions() {
 
   if (pendingSaveAsInstrument != nullptr) {
     if (SaveInstrument(pendingSaveAsInstrument)) {
-      assert(newInstruments.find(pendingSaveAsInstrument) != newInstruments.end());
-      newInstruments.erase(pendingSaveAsInstrument);
+      auto newInstrument = newInstruments.find(pendingSaveAsInstrument);
+      if (newInstrument != newInstruments.end()) {
+        newInstruments.erase(newInstrument);
+      }
     }
   }
 
@@ -420,6 +423,11 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
           }
           ConditionalEnableEnd();
 
+          if (ImGui::MenuItem("Properties")) {
+            pendingDialog = new DialogInstrument("Instrument", instrumentInstanceIter.first->second->instrument);
+            closePopup = true;
+          }
+
           if (closePopup) {
             ImGui::CloseCurrentPopup();
           }
@@ -461,8 +469,7 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
 
               imGuiStyle.ItemSpacing.x = 0.0f;
 
-              uint32 flashColor = Globals::kPlayTrackFlashColor;
-              composerView->SetTrackColors(t->GetColorScheme(), flashColor);
+              composerView->SetTrackColors(i, t->GetColorScheme());
 
               // Track hamburger menu
               ImGui::PushID(c->second.uniqueGuiIdHamburgerMenu.c_str());
@@ -510,7 +517,7 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
 
               char newTrackName[256] = { 0 };
 
-              composerView->SetTrackColors(t->GetColorScheme(), flashColor);
+              composerView->SetTrackColors(i, t->GetColorScheme());
 
               strcpy(newTrackName, t->GetName().c_str());
               ImGui::PushID(c->second.uniqueGuiIdTrackButton.c_str());

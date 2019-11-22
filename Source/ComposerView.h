@@ -15,6 +15,7 @@
 
 class Dialog;
 class InstrumentInstance;
+class Instrument;
 
 class ComposerView : public View, public Sequencer::Listener {
 protected:
@@ -63,8 +64,7 @@ public:
 
   void OnBeat(uint32 beatIndex) override;
   void DoLockedActions() override;
-
-  void SetTrackColors(std::string colorScheme, uint32& flashColor);
+  void SetTrackColors(Instrument* instrument, std::string paletteEntryName);
 
   inline void SetSoloTrackInstance(InstrumentInstance* instrumentInstance, int32 trackId) {
     soloTrackInstance = { instrumentInstance, trackId };

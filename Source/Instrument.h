@@ -10,12 +10,23 @@ class InstrumentInstance;
 class Instrument {
 public:
   static constexpr const char* kDefaultName = "My Instrument";
+  enum class TrackPalette {
+    BackgroundNormal,
+    BackgroundHighlighted,
+    TextNormal,
+  };
+
+  // Absolutely pathetic that C++ still has no real way to do this
+  static constexpr uint32 kColorPaletteSize =
+    static_cast<uint32>(TrackPalette::TextNormal) -
+    static_cast<uint32>(TrackPalette::BackgroundNormal) + 1;
 private:
   std::map<uint32, Track*> tracksById;
   std::string name;
   std::string fileName;
   uint32 nextTrackId = 0;
   std::vector<InstrumentInstance*> instrumentInstances;
+  std::map<std::string, std::array<uint32, kColorPaletteSize>> trackPalette;
 
 public:
   Instrument();
@@ -47,5 +58,11 @@ public:
   Track* GetTrackById(uint32 trackId);
   InstrumentInstance* Instance();
   void RemoveInstance(InstrumentInstance* instrumentInstance);
+
+  const auto& GetTrackPalette() const {
+    return trackPalette;
+  }
+
+  void SetColorKeys(std::map<std::string, std::array<uint32, kColorPaletteSize>> trackPalette);
 };
 

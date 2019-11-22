@@ -7,9 +7,11 @@
 
 class Sound;
 class Patch;
+class Instrument;
 
 class Track {
 protected:
+  Instrument* instrument = nullptr;
   std::string name;
   std::string colorScheme;
   float volume = 1.0f;
@@ -53,6 +55,9 @@ public:
   }
   inline uint32 GetUniqueId() const {
     return uniqueId;
+  }
+  inline void SetInstrument(Instrument* newInstrument) {
+    instrument = newInstrument;
   }
 
   // @DEPRECATE For version 1 songs, will be deprecated in version 3

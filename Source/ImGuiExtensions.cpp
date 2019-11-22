@@ -38,11 +38,11 @@ namespace ImGui {
     bool hovered, held;
     bool pressed = ButtonBehavior(check_bb, id, &hovered, &held);
     RenderNavHighlight(check_bb, id);
+    window->DrawList->AddRect(check_bb.GetTL(), check_bb.GetBR(), GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 0);
     if (active)
     {
-      window->DrawList->AddRectFilled(check_bb.GetTL(), check_bb.GetBR(), GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 0);
+      window->DrawList->AddRectFilled(check_bb.GetTL() + ImVec2(1, 1), check_bb.GetBR() - ImVec2(1, 1), GetColorU32(ImGuiCol_CheckMark, 0.7f), 0);
     }
-    window->DrawList->AddRect(check_bb.GetTL(), check_bb.GetBR(), GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 0);
 
     if (g.LogEnabled)
       LogRenderedText(&check_bb.Min, active ? "(x)" : "( )");
