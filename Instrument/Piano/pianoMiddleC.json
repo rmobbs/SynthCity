@@ -1,7 +1,25 @@
 {
-    "version": 2,
+    "version": 3,
     "name": "Middle C Piano",
     "nextid": 12,
+    "Palette": [
+        {
+            "name": "Piano:Black",
+            "Colors": [
+                4278190080,
+                2159260595,
+                4294967295
+            ]
+        },
+        {
+            "name": "Piano:White",
+            "Colors": [
+                4289967027,
+                2154194534,
+                4278190080
+            ]
+        }
+    ],
     "tracks": [
         {
             "name": "B4",

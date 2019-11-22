@@ -117,7 +117,7 @@ bool DialogInstrument::Render() {
 
       auto colorColumnWidth = Globals::kKeyboardKeyHeight + defaultItemSpacing.x * 2.0f;
 
-      ImGui::Columns(5);
+      ImGui::Columns(4);
       ImGui::SetColumnWidth(0, scrollRegionWidth - colorColumnWidth * 4.0f - Globals::kKeyboardKeyHeight);
       ImGui::Text("Name");
       ImGui::NextColumn();
