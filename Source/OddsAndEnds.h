@@ -14,6 +14,25 @@ std::shared_ptr<WCHAR[]> StringToWChar(const std::string& sourceString);
 std::shared_ptr<WCHAR[]> StringToWChar(const std::string_view& sourceString);
 bool iequals(const std::string& a, const std::string& b);
 
+template<typename T, typename K> inline bool contains(const T& collection, const K& value) {
+  return collection.find(value) != collection.end();
+}
+
+template<typename T> inline bool icontains(const T& collection, const std::string& value) {
+  if (collection.empty()) {
+    return false;
+  }
+
+  auto iter = collection.begin();
+  while (iter != collection.end()) {
+    if (iequals(iter->first, value)) {
+      break;
+    }
+    ++iter;
+  }
+  return iter != collection.end();
+}
+
 template<typename T> inline bool set_contains(const std::set<T>& theSet, const T& theValue) {
   return (theSet.find(theValue) != theSet.end());
 }

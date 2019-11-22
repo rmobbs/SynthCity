@@ -604,8 +604,7 @@ void SongTab::Render(ImVec2 canvasSize) {
           auto track = instrument->GetTrackById(trackId);
           assert(track != nullptr);
 
-          uint32 flashColor = Globals::kPlayTrackFlashColor;
-          composerView->SetTrackColors(track->GetColorScheme(), flashColor);
+          composerView->SetTrackColors(instrumentInstance->instrument, track->GetColorScheme());
 
           bool isSoloTrack = std::make_pair(instrumentInstance, static_cast<int32>(trackId)) == soloTrackInstance;
 
@@ -651,8 +650,7 @@ void SongTab::Render(ImVec2 canvasSize) {
 
           ImGui::SameLine();
 
-          flashColor = Globals::kPlayTrackFlashColor;
-          composerView->SetTrackColors(track->GetColorScheme(), flashColor);
+          composerView->SetTrackColors(instrumentInstance->instrument, track->GetColorScheme());
 
           // Track button
           auto trackButtonBegCursor = ImGui::GetCursorPos();
@@ -690,7 +688,7 @@ void SongTab::Render(ImVec2 canvasSize) {
           if (flashPct > 0.0f) {
             ImGui::SetCursorPos(trackButtonBegCursor);
             ImGui::FillRect(ImVec2(trackLabelWidth, Globals::kKeyboardKeyHeight),
-              (static_cast<uint32>(flashPct * 255.0f) << 24) | flashColor);
+              (static_cast<uint32>(flashPct * 255.0f) << 24) | 0xFFFFFFFF);
             ImGui::SetCursorPos(trackButtonEndCursor);
           }
         }

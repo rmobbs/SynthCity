@@ -192,6 +192,9 @@
     <ClInclude Include="SongTab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DialogInstrument.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SynthCity.cpp">
@@ -324,6 +327,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InstrumentBank.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DialogInstrument.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

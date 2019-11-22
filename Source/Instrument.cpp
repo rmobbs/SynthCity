@@ -10,12 +10,15 @@
 
 #include <stdexcept>
 #include <fstream>
+#include <array>
 
 static constexpr const char* kTracksTag("tracks");
 static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
-static constexpr uint32 kInstrumentFileVersion = 2;
+static constexpr uint32 kInstrumentFileVersion = 3;
 static constexpr const char* kNextUniqueIdTag("nextid");
+static constexpr const char* kPaletteTag("Palette");
+static constexpr const char* kColorsTag("Colors");
 
 Instrument::Instrument() {
 
@@ -65,6 +68,7 @@ void Instrument::AddTrack(Track* track) {
   assert(tracksById.find(trackId) == tracksById.end());
   tracksById[trackId] = track;
   track->SetUniqueId(trackId);
+  track->SetInstrument(this);
 
   for (auto& instance : instrumentInstances) {
     instance->trackInstances.insert({ trackId, { trackId } });
@@ -80,6 +84,7 @@ void Instrument::ReplaceTrackById(uint32 trackId, Track* newTrack) {
     // TODO: see if modifying the iterator works
     tracksById[trackId] = newTrack;
     newTrack->SetUniqueId(trackId);
+    newTrack->SetInstrument(this);
   }
 }
 
@@ -97,6 +102,10 @@ void Instrument::RemoveTrackById(uint32 trackId) {
       }
     }
   }
+}
+
+void Instrument::SetColorKeys(std::map<std::string, std::array<uint32, kColorPaletteSize>> newColorKeys) {
+  trackPalette = std::move(newColorKeys);
 }
 
 InstrumentInstance* Instrument::Instance() {
@@ -121,7 +130,7 @@ std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& ser
 
   auto version = d[Globals::kVersionTag].GetUint();
 
-  if (version != 1 && version != 2) {
+  if (version != 1 && version != 2 && version != 3) {
     return std::make_pair(false, "Invalid instrument file version");
   }
 
@@ -137,6 +146,42 @@ std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& ser
       return std::make_pair(false, "Missing/invalid next unique ID tag in instrument file");
     }
     nextTrackId = d[kNextUniqueIdTag].GetUint();
+
+    if (version > 2) {
+      // Palette
+      if (d.HasMember(kPaletteTag) && d[kPaletteTag].IsArray()) {
+        const auto& paletteArray = d[kPaletteTag];
+        for (rapidjson::SizeType paletteArrayIndex = 0; paletteArrayIndex < paletteArray.Size(); ++paletteArrayIndex) {
+          const auto& paletteReadEntry = paletteArray[paletteArrayIndex];
+
+          if (!paletteReadEntry.HasMember(Globals::kNameTag) || !paletteReadEntry[Globals::kNameTag].IsString()) {
+            MCLOG(Warn, "Invalid palette entry");
+            continue;
+          }
+
+          std::string keyName = paletteReadEntry[Globals::kNameTag].GetString();
+
+          if (!paletteReadEntry.HasMember(kColorsTag) || !paletteReadEntry[kColorsTag].IsArray()) {
+            MCLOG(Warn, "Inavlid palette colors entry");
+            continue;
+          }
+
+          auto paletteWriteEntry = trackPalette.insert({ keyName, { 0 } });
+
+          const auto& colorsArray = paletteReadEntry[kColorsTag];
+          auto numColors = std::min(colorsArray.Size(), Instrument::kColorPaletteSize);
+          for (rapidjson::SizeType colorArrayIndex = 0; colorArrayIndex < numColors; ++colorArrayIndex) {
+            const auto& colorEntry = colorsArray[colorArrayIndex];
+            uint32 color = 0;
+            if (colorEntry.IsUint()) {
+              color = colorEntry.GetUint();
+            }
+
+            paletteWriteEntry.first->second[colorArrayIndex] = color;
+          }
+        }
+      }
+    }
   }
 
   // Tracks
@@ -159,8 +204,8 @@ std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& ser
     }
   }
 
-  if (version < 2) {
-    MCLOG(Warn, "Instrument is version 1 and this will be deprecated. Please re-save.")
+  if (version < kInstrumentFileVersion) {
+    MCLOG(Warn, "Instrument is version %d and this will be deprecated. Please re-save.", version)
     nextTrackId = tracksById.size();
   }
 
@@ -185,6 +230,26 @@ std::pair<bool, std::string> Instrument::SerializeWrite(const WriteSerializer& s
   // Next unique ID
   w.Key(kNextUniqueIdTag);
   w.Uint(nextTrackId);
+
+  // Palette
+  w.Key(kPaletteTag);
+  w.StartArray();
+  for (const auto& paletteReadEntry : trackPalette  ) {
+    w.StartObject();
+
+    w.Key(Globals::kNameTag);
+    w.String(paletteReadEntry.first.c_str());
+
+    w.Key(kColorsTag);
+    w.StartArray();
+    for (const auto& color : paletteReadEntry.second) {
+      w.Uint(color);
+    }
+    w.EndArray();
+
+    w.EndObject();
+  }
+  w.EndArray();
 
   // Tracks tag:array_start
   w.Key(kTracksTag);
