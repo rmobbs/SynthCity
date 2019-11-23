@@ -29,6 +29,10 @@ public:
   inline const std::string& GetColorScheme(void) const {
     return colorScheme;
   }
+  inline void SetColorScheme(std::string newColorScheme) {
+    colorScheme = newColorScheme;
+  }
+
   inline void SetName(const std::string& newName) {
     name = newName;
   }
@@ -58,6 +62,9 @@ public:
   }
   inline void SetInstrument(Instrument* newInstrument) {
     instrument = newInstrument;
+  }
+  inline Instrument* GetInstrument() const {
+    return instrument;
   }
 
   // @DEPRECATE For version 1 songs, will be deprecated in version 3

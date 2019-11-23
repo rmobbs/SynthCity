@@ -11,7 +11,7 @@
 #include "imgui_internal.h"
 
 static constexpr float kMinDialogWidth(600.0f);
-static constexpr float kMinDialogHeight(650.0f);
+static constexpr float kMinDialogHeight(730.0f);
 
 DialogTrack::DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track)
   : title(title)
@@ -70,9 +70,22 @@ bool DialogTrack::Render() {
 
     imGuiStyle.ItemSpacing = oldItemSpacing;
 
+    // Volume slider
     float volume = track->GetVolume();
     if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
       track->SetVolume(volume);
+    }
+
+    // Instrument palette key
+    auto& trackPaletteKey = track->GetColorScheme();
+    if (ImGui::BeginCombo("Palette Key", trackPaletteKey.empty() ? "<None>" : trackPaletteKey.c_str())) {
+      auto& instrumentPalette = instrument->GetTrackPalette();
+      for (auto& paletteKey : instrumentPalette) {
+        if (ImGui::Selectable(paletteKey.first.c_str(), paletteKey.first == trackPaletteKey)) {
+          track->SetColorScheme(paletteKey.first);
+        }
+      }
+      ImGui::EndCombo();
     }
 
     track->GetPatch()->RenderDialog();
