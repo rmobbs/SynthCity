@@ -110,7 +110,7 @@ void SongTab::Hide() {
 
 }
 
-std::string SongTab:: GetUniqueInstrumentInstanceName(std::string instrumentInstanceNameBase) {
+std::string SongTab::GetUniqueInstrumentInstanceName(std::string instrumentInstanceNameBase) {
   // Pick an available name
   std::string instrumentInstanceName = instrumentInstanceNameBase;
 
@@ -482,8 +482,7 @@ void SongTab::Render(ImVec2 canvasSize) {
 
       int currentBpm = song->GetTempo();
       if (ImGui::InputInt("BPM", &currentBpm)) {
-        // @Delay
-        pendingTempo = currentBpm;
+        pendingTempo = std::max(static_cast<uint32>(currentBpm), Globals::kMinTempo);
       }
 
       ImGui::SameLine();
@@ -499,7 +498,6 @@ void SongTab::Render(ImVec2 canvasSize) {
       ImGui::SameLine();
 
       if (ImGui::Button("Add measure(s)")) {
-        // @Delay
         pendingAddMeasures = addMeasureCount;
       }
 
@@ -934,13 +932,7 @@ void SongTab::Render(ImVec2 canvasSize) {
       ImGui::EndChild();
     } // Track + Song vertical scroling region
 
-#if 0
     // Bottom tool bar
-    ImGui::BeginChild("##SongTabBottomBar",
-      ImVec2(canvasSize.x, kBottomToolbarHeight),
-      false,
-      ImGuiWindowFlags_AlwaysAutoResize);
-#endif
     {
       imGuiStyle.ItemSpacing.y = defaultItemSpacing.y;
 
@@ -989,7 +981,6 @@ void SongTab::Render(ImVec2 canvasSize) {
           bool isSelected = (sequencer.GetSubdivision() == *revIter);
           if (ImGui::Selectable((std::string("1/") +
             std::to_string(*revIter)).c_str(), isSelected)) {
-            // @Delay
             pendingSubdivision = *revIter;
           }
           else {
@@ -1029,8 +1020,6 @@ void SongTab::Render(ImVec2 canvasSize) {
         // @Atomic
         sequencer.SetMasterVolume(masterVolume);
       }
-      //ImGui::EndChild();
     } // Bottom toolbar
-
   } // Sequencer window
 }

@@ -12,6 +12,7 @@ namespace Globals {
   static constexpr float kScrollBarWidth = 15.0f;
   static constexpr float kScrollBarHeight = 15.0f;
   static constexpr uint32 kDefaultMinNote = 8;
+  static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kDefaultTempo = 120;
 
   static constexpr float kHamburgerMenuWidth(20.0f);

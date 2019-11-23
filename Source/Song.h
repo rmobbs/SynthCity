@@ -76,9 +76,8 @@ public:
   uint32 GetTempo() const {
     return tempo;
   }
-  void SetTempo(uint32 tempo) {
-    this->tempo = tempo;
-  }
+  void SetTempo(uint32 tempo);
+
   uint32 GetNumMeasures() const {
     return numMeasures;
   }

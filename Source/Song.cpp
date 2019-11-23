@@ -116,6 +116,11 @@ void Song::RemoveInstrumentInstance(InstrumentInstance* instrumentInstance) {
   instrumentInstance->instrument->RemoveInstance(instrumentInstance);
 }
 
+void Song::SetTempo(uint32 tempo) {
+  this->tempo = std::max(tempo, Globals::kMinTempo);
+}
+
+
 std::pair<bool, std::string> Song::SerializeReadInstrument23(const ReadSerializer& serializer) {
   const auto& i = serializer.d;
 
@@ -274,7 +279,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
     return std::make_pair(false, "Missing/invalid tempo");
   }
 
-  tempo = d[kTempoTag].GetUint();
+  tempo = std::max(d[kTempoTag].GetUint(), Globals::kMinTempo);
 
   // Get time signature
   if (!d.HasMember(kTimeSignatureTag) || !d[kTimeSignatureTag].IsString()) {
