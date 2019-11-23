@@ -4,7 +4,7 @@
 
 namespace Globals {
   static constexpr const char* kVersionTag("version");
-  static constexpr const char* kVersionString("0.0.13");
+  static constexpr const char* kVersionString("0.0.14");
   static constexpr const char* kMidiTags[] = { ".midi", ".mid" };
   static constexpr const char* kJsonTag(".json");
   static constexpr const char* kNameTag("name");
