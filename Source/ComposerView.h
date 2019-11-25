@@ -19,6 +19,13 @@ class Instrument;
 
 class ComposerView : public View, public Sequencer::Listener {
 protected:
+  enum class DialogState {
+    NoDialog,
+    Pending,
+    Active,
+    Finish,
+  };
+
   class  OutputWindowState {
   public:
     std::vector<std::string> displayHistory;
@@ -34,8 +41,7 @@ protected:
 
   HashedController<View> tabController;
 
-  Dialog* pendingDialog = nullptr;
-  Dialog* activeDialog = nullptr;
+  std::pair<DialogState, Dialog*> dialogState = { DialogState::NoDialog, nullptr };
 
   bool wasPlaying = false;
 
@@ -63,8 +69,10 @@ public:
   void Hide() override;
 
   void OnBeat(uint32 beatIndex) override;
+  void HandleInput() override;
   void DoLockedActions() override;
   void SetTrackColors(Instrument* instrument, std::string paletteEntryName);
+  void ShowDialog(Dialog* dialog);
 
   inline void SetSoloTrackInstance(InstrumentInstance* instrumentInstance, int32 trackId) {
     soloTrackInstance = { instrumentInstance, trackId };

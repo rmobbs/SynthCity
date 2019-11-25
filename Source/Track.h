@@ -21,6 +21,7 @@ protected:
   Patch* patch = nullptr;
 
 public:
+  Track(Instrument* instrument);
   Track(const Track& that);
   Track(const std::string& name);
   Track(const ReadSerializer& serializer);

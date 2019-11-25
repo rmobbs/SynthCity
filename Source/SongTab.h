@@ -51,8 +51,6 @@ public:
   glm::vec4 dragBox = { -1.0f, -1.0f, -1.0f, -1.0f };
   uint32 stopButtonIconTexture = 0;
   uint32 pauseButtonIconTexture = 0;
-  Dialog* pendingDialog = nullptr;
-  Dialog* activeDialog = nullptr;
   ImGuiRenderable renderable;
   bool songWindowClicked = false;
   uint32 addMeasureCount = 1;

@@ -16,10 +16,15 @@ static constexpr const char* kColorSchemeTag("colorscheme");
 static constexpr const char* kSoundsTag("sounds");
 static constexpr const char* kTrackIdTag("id");
 
+Track::Track(Instrument* instrument)
+  : instrument(instrument) {
+
+}
+
 Track::Track(const Track& that)
-: name(that.name)
-, colorScheme(that.colorScheme)
-, volume(that.volume) {
+  : name(that.name)
+  , colorScheme(that.colorScheme)
+  , volume(that.volume) {
   patch = new Patch(*that.patch);
 }
 
@@ -91,6 +96,10 @@ bool Track::SerializeRead(const ReadSerializer& serializer) {
 
   if (d.HasMember(kColorSchemeTag) && d[kColorSchemeTag].IsString()) {
     colorScheme = d[kColorSchemeTag].GetString();
+
+    if (instrument->GetTrackPalette().find(colorScheme) == instrument->GetTrackPalette().end()) {
+      colorScheme.clear();
+    }
   }
 
   try {

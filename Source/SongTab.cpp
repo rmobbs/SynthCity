@@ -67,10 +67,7 @@ SongTab::SongTab(ComposerView* composerView)
 }
 
 SongTab::~SongTab() {
-  delete activeDialog;
-  activeDialog = nullptr;
-  delete pendingDialog;
-  pendingDialog = nullptr;
+
 }
 
 void SongTab::InitResources() {
@@ -204,10 +201,6 @@ void SongTab::SelectedGroupAction(std::function<void(InstrumentInstance*, uint32
 }
 
 void SongTab::HandleInput() {
-  if (activeDialog != nullptr || ImGui::IsEditing()) {
-    return;
-  }
-
   auto& inputState = InputState::Get();
 
   if (inputState.pressed[SDLK_DELETE]) {
@@ -259,8 +252,6 @@ void SongTab::HandleInput() {
 }
 
 void SongTab::DoLockedActions() {
-  HandleInput();
-
   auto& sequencer = Sequencer::Get();
 
   // Newly triggered notes are written to entry 1 in the audio callback
@@ -444,28 +435,6 @@ void SongTab::Render(ImVec2 canvasSize) {
 
   static constexpr float kTopToolbarHeight = 26.0f;
   static constexpr float kBottomToolbarHeight = 50.0f;
-
-  if (pendingDialog != nullptr) {
-    wasPlaying = Sequencer::Get().IsPlaying();
-
-    Sequencer::Get().PauseKill();
-
-    assert(activeDialog == nullptr);
-    activeDialog = pendingDialog;
-    activeDialog->Open();
-    pendingDialog = nullptr;
-  }
-
-  if (activeDialog != nullptr) {
-    if (!activeDialog->Render()) {
-      delete activeDialog;
-      activeDialog = nullptr;
-
-      if (wasPlaying) {
-        Sequencer::Get().Play();
-      }
-    }
-  }
 
   if (song != nullptr) {
     // Top bar

@@ -40,10 +40,6 @@ protected:
 
   ComposerView* composerView = nullptr;
 
-  Dialog* pendingDialog = nullptr;
-  Dialog* activeDialog = nullptr;
-  Dialog* finishDialog = nullptr;
-
   bool localGuiDisabled = false;
 
   void ConditionalEnableBegin(bool condition);

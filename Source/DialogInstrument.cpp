@@ -10,8 +10,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-static constexpr float kMinDialogWidth(400.0f);
-static constexpr float kMinDialogHeight(400.0f);
+static constexpr float kMinDialogWidth(600.0f);
+static constexpr float kMinDialogHeight(500.0f);
 static constexpr float kColorKeysRegionPercentage = 0.7f;
 static constexpr const char* kDefaultColorKeyName("ColorKey");
 static constexpr float kColorPreviewWidth(72.0f);

@@ -195,7 +195,8 @@ std::pair<bool, std::string> Instrument::SerializeRead(const ReadSerializer& ser
   const auto& tracksArray = d[kTracksTag];
   for (rapidjson::SizeType trackArrayIndex = 0; trackArrayIndex < tracksArray.Size(); ++trackArrayIndex) {
     try {
-      auto track = new Track({ tracksArray[trackArrayIndex] });
+      auto track = new Track(this);
+      track->SerializeRead({ tracksArray[trackArrayIndex] });
       track->SetLoadIndex(loadIndex++);
       AddTrack(track);
     }

@@ -25,6 +25,10 @@ public:
 
   }
 
+  virtual void HandleInput() {
+
+  }
+
   virtual void DoLockedActions() {
 
   }

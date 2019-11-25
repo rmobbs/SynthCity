@@ -86,10 +86,8 @@ ComposerView::~ComposerView() {
     logResponderId = UINT32_MAX;
   }
 
-  delete activeDialog;
-  activeDialog = nullptr;
-  delete pendingDialog;
-  pendingDialog = nullptr;
+  delete dialogState.second;
+  dialogState = { DialogState::NoDialog, nullptr };
 }
 
 void ComposerView::SetTrackColors(Instrument* instrument, std::string paletteEntryName) {
@@ -106,7 +104,25 @@ void ComposerView::SetTrackColors(Instrument* instrument, std::string paletteEnt
   }
 }
 
+void ComposerView::ShowDialog(Dialog* dialog) {
+  assert(dialogState.first == DialogState::NoDialog);
+  dialogState = { DialogState::Pending, dialog };
+}
+
+void ComposerView::HandleInput() {
+  if (dialogState.first == DialogState::NoDialog && !ImGui::IsEditing()) {
+    tabController.GetCurrent()->HandleInput();
+  }
+}
+
 void ComposerView::DoLockedActions() {
+  // End dialogs with the sequencer locked, as they can be editing shared data
+  if (dialogState.first == DialogState::Finish) {
+    dialogState.second->Close();
+    delete dialogState.second;
+    dialogState = { DialogState::NoDialog, nullptr };
+  }
+
   tabController.GetCurrent()->DoLockedActions();
 }
 
@@ -194,11 +210,25 @@ void ComposerView::Render(ImVec2 canvasSize) {
   glClear(GL_COLOR_BUFFER_BIT);
 
   AudioGlobals::LockAudio();
+  HandleInput();
   DoLockedActions();
   AudioGlobals::UnlockAudio();
 
   ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(canvasSize.x), static_cast<float>(canvasSize.y));
   ImGui::NewFrame();
+
+  // Open any pending dialog
+  if (dialogState.first == DialogState::Pending) {
+    dialogState.second->Open();
+    dialogState.first = DialogState::Active;
+  }
+
+  // Render any active dialog
+  if (dialogState.first == DialogState::Active) {
+    if (!dialogState.second->Render()) {
+      dialogState.first = DialogState::Finish;
+    }
+  }
 
   auto mainMenuBarHeight = 0.0f;
   if (ImGui::BeginMainMenuBar()) {
@@ -206,7 +236,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("Options")) {
-        pendingDialog = new DialogOptions;
+        ShowDialog(new DialogOptions);
       }
       if (ImGui::MenuItem("Exit")) {
         SDL_PushEvent(&SDL_Event({ SDL_QUIT }));
@@ -231,28 +261,6 @@ void ComposerView::Render(ImVec2 canvasSize) {
     }
 
     ImGui::EndMainMenuBar();
-  }
-
-  if (pendingDialog != nullptr) {
-    wasPlaying = Sequencer::Get().IsPlaying();
-
-    Sequencer::Get().PauseKill();
-
-    assert(activeDialog == nullptr);
-    activeDialog = pendingDialog;
-    activeDialog->Open();
-    pendingDialog = nullptr;
-  }
-
-  if (activeDialog != nullptr) {
-    if (!activeDialog->Render()) {
-      delete activeDialog;
-      activeDialog = nullptr;
-
-      if (wasPlaying) {
-        Sequencer::Get().Play();
-      }
-    }
   }
 
   // Vertically resize the main window based on console being open/closed

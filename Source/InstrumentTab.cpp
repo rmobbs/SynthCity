@@ -37,11 +37,6 @@ InstrumentTab::~InstrumentTab() {
     delete newInstrument;
   }
   newInstruments.clear();
-
-  delete activeDialog;
-  activeDialog = nullptr;
-  delete pendingDialog;
-  pendingDialog = nullptr;
 }
 
 void InstrumentTab::Show() {
@@ -138,13 +133,6 @@ std::string InstrumentTab::GetUniqueTrackName(Instrument* instrument, std::strin
 
 void InstrumentTab::DoLockedActions() {
   auto& sequencer = Sequencer::Get();
-
-  // Finish any dialogs that require the sequencer to be locked
-  if (finishDialog != nullptr) {
-    finishDialog->Close();
-    delete finishDialog;
-    finishDialog = nullptr;
-  }
 
   // Track volume changed
   if (pendingVolumeTrack.instrument != nullptr) {
@@ -282,20 +270,6 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
   static constexpr float kTopToolbarHeight = 26.0f;
   static constexpr float kBottomToolbarHeight = 50.0f;
 
-  if (pendingDialog != nullptr) {
-    assert(activeDialog == nullptr);
-    activeDialog = pendingDialog;
-    activeDialog->Open();
-    pendingDialog = nullptr;
-  }
-
-  if (activeDialog != nullptr) {
-    if (!activeDialog->Render()) {
-      finishDialog = activeDialog;
-      activeDialog = nullptr;
-    }
-  }
-
   ImVec4 defaultColors[ImGuiCol_COUNT];
   memcpy(defaultColors, imGuiStyle.Colors, sizeof(defaultColors));
 
@@ -400,10 +374,10 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
           bool closePopup = false;
 
           if (ImGui::MenuItem("Add Track")) {
-            pendingDialog = new DialogTrack("Add Track",
+            composerView->ShowDialog(new DialogTrack("Add Track",
               instrumentInstanceIter.first->second->instrument, -1,
               new Track(GetUniqueTrackName(instrumentInstanceIter.first->second->instrument,
-                Globals::kDefaultNewTrackName)));
+                Globals::kDefaultNewTrackName))));
           }
 
           ConditionalEnableBegin(!instrumentInstanceIter.first->second->instrument->GetFileName().empty());
@@ -424,7 +398,8 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
           ConditionalEnableEnd();
 
           if (ImGui::MenuItem("Properties")) {
-            pendingDialog = new DialogInstrument("Instrument", instrumentInstanceIter.first->second->instrument);
+            composerView->ShowDialog(new DialogInstrument("Instrument",
+              instrumentInstanceIter.first->second->instrument));
             closePopup = true;
           }
 
@@ -503,8 +478,8 @@ void InstrumentTab::Render(ImVec2 canvasSize) {
                 }
 
                 if (ImGui::MenuItem("Properties")) {
-                  pendingDialog = new DialogTrack("Edit Track",
-                    i, c->second.trackId, new Track(*t));
+                  composerView->ShowDialog(new DialogTrack("Edit Track",
+                    i, c->second.trackId, new Track(*t)));
                   closePopup = true;
                 }
 
