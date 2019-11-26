@@ -15,7 +15,6 @@ protected:
   int32 playingVoiceId = -1;
   Instrument* instrument = nullptr;
   Track* track = nullptr;
-  bool wasPlaying = false;
 public:
   DialogTrack(std::string title, Instrument* instrument, uint32 replaceTrackId, Track* track);
   ~DialogTrack();

@@ -44,8 +44,6 @@ DialogInstrument::~DialogInstrument() {
 }
 
 void DialogInstrument::Open() {
-  wasPlaying = Sequencer::Get().IsPlaying();
-  Sequencer::Get().PauseKill();
   ImGui::OpenPopup(title.c_str());
 }
 
@@ -216,11 +214,6 @@ bool DialogInstrument::Render() {
 }
 
 void DialogInstrument::Close() {
-  if (wasPlaying) {
-    Sequencer::Get().Play();
-    wasPlaying = false;
-  }
-
   if (exitedOk) {
     std::map<std::string, std::array<uint32, Instrument::kColorPaletteSize>> newColorKeys;
     for (auto& palette : trackPalette) {

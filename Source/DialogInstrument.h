@@ -11,7 +11,6 @@ class DialogInstrument : public Dialog {
 protected:
   std::string title;
   Instrument* instrument = nullptr;
-  bool wasPlaying = false;
   std::vector<std::pair<std::string, std::array<uint32, Instrument::kColorPaletteSize>>> trackPalette;
 
   std::string GetUniqueColorKeyName(std::string nameBase);

@@ -27,8 +27,6 @@ DialogTrack::~DialogTrack() {
 }
 
 void DialogTrack::Open() {
-  wasPlaying = Sequencer::Get().IsPlaying();
-  Sequencer::Get().PauseKill();
   ImGui::OpenPopup(title.c_str());
 }
 
@@ -136,10 +134,5 @@ void DialogTrack::Close() {
   }
 
   track = nullptr;
-
-  if (wasPlaying) {
-    Sequencer::Get().Play();
-    wasPlaying = false;
-  }
 }
 

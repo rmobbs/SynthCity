@@ -24,8 +24,6 @@ public:
     }
   };
 
-  bool wasPlaying = false;
-
   InstrumentInstanceTrackData<int32> pendingPlayTrackInstance;
   InstrumentInstanceTrackData<bool> pendingSoloTrackInstance;
   InstrumentInstanceTrackData<int32> pendingMoveInstrumentInstance;

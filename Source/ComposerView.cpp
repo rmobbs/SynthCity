@@ -107,6 +107,8 @@ void ComposerView::SetTrackColors(Instrument* instrument, std::string paletteEnt
 void ComposerView::ShowDialog(Dialog* dialog) {
   assert(dialogState.first == DialogState::NoDialog);
   dialogState = { DialogState::Pending, dialog };
+  wasPlaying = Sequencer::Get().IsPlaying();
+  Sequencer::Get().PauseKill();
 }
 
 void ComposerView::HandleInput() {
@@ -121,6 +123,10 @@ void ComposerView::DoLockedActions() {
     dialogState.second->Close();
     delete dialogState.second;
     dialogState = { DialogState::NoDialog, nullptr };
+    if (wasPlaying) {
+      Sequencer::Get().Play();
+      wasPlaying = false;
+    }
   }
 
   tabController.GetCurrent()->DoLockedActions();
