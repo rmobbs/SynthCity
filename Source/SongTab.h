@@ -10,6 +10,8 @@
 class ComposerView;
 class SongTab : public View {
 public:
+  static constexpr uint32 kDefaultBeatSubdivision = 4;
+
   template<typename T> class InstrumentInstanceTrackData {
   public:
     InstrumentInstance* instance = nullptr;
@@ -34,7 +36,7 @@ public:
   InstrumentInstance* pendingCreateInstrumentInstance = nullptr;
   InstrumentInstance* pendingRemoveInstrumentInstance = nullptr;
 
-  int32 pendingSubdivision = kInvalidUint32;
+  uint32 currBeatSubdivision = kDefaultBeatSubdivision;
   uint32 pendingTempo = kInvalidUint32;
   uint32 pendingAddMeasures = kInvalidUint32;
   bool pendingAddInstrument = false;

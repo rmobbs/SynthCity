@@ -2,6 +2,7 @@
 
 #include "BaseTypes.h"
 #include "SerializeFwd.h"
+#include "Globals.h"
 
 #include <vector>
 #include <string>
@@ -19,7 +20,6 @@ class InputState;
 
 class Sequencer {
 public:
-  static constexpr uint32 kDfeaultBeatSubdivision = 4;
   static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kMaxTempo = 220;
   static constexpr uint32 kDefaultTempo = 120;
@@ -44,7 +44,6 @@ public:
 private:
   static Sequencer* singleton;
 
-  uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
   uint32 currBeat = 0;
   uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
@@ -65,7 +64,7 @@ private:
   std::chrono::high_resolution_clock::time_point frameTimePoint;
   double frameBeatTime = 0.0;
   double clockBeatTime = 0.0;
-  double increment = 0.0;
+  uint32 tempo = kDefaultTempo;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
@@ -80,14 +79,16 @@ public:
     return song;
   }
 
-  inline uint32 GetSubdivision() const {
-    return currBeatSubdivision;
-  }
-
   void SetSubdivision(uint32 subdivision);
 
   inline uint32 GetMinTempo() const {
     return kMinTempo;
+  }
+
+  void SetTempo(uint32 newTempo);
+
+  inline uint32 GetTempo() const {
+    return tempo;
   }
 
   inline uint32 GetMaxTempo() const {
@@ -122,7 +123,6 @@ public:
   void Loop();
   void StopVoice(int32 voiceId);
   int32 PlayPatch(const Patch* patch, float volume);
-  uint32 UpdateInterval();
 
   void PlayMetronome(bool downBeat);
 

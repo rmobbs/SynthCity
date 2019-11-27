@@ -257,11 +257,6 @@ void SongTab::DoLockedActions() {
   // Newly triggered notes are written to entry 1 in the audio callback
   playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
 
-  // Subdivision changed
-  if (pendingSubdivision != kInvalidUint32) {
-    sequencer.SetSubdivision(pendingSubdivision);
-  }
-
   auto song = sequencer.GetSong();
   if (song != nullptr) {
     // Track instance mute state changed
@@ -324,7 +319,7 @@ void SongTab::DoLockedActions() {
     // Beats per minute changed
     if (pendingTempo != kInvalidUint32) {
       song->SetTempo(pendingTempo);
-      sequencer.UpdateInterval();
+      sequencer.SetTempo(pendingTempo);
     }
 
     if (pendingSaveSong) {
@@ -358,7 +353,6 @@ void SongTab::DoLockedActions() {
   }
 
   // Reset all pendings
-  pendingSubdivision = kInvalidUint32;
   pendingTempo = kInvalidUint32;
   pendingMuteTrackInstance = { };
   pendingPlayTrackInstance = { };
@@ -694,7 +688,7 @@ void SongTab::Render(ImVec2 canvasSize) {
 
         ImGui::NewLine();
 
-        auto beatWidth = Globals::kFullBeatWidth / sequencer.GetSubdivision();
+        auto beatWidth = Globals::kFullBeatWidth / currBeatSubdivision;
         auto noteCount = song->GetNoteCount();
 
         const auto& instrumentInstances = song->GetInstrumentInstances();
@@ -714,7 +708,7 @@ void SongTab::Render(ImVec2 canvasSize) {
 
           for (auto& trackInstance : instrumentInstance->trackInstances) {
             // Notes (displayed at current beat zoom level)
-            uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
+            uint32 beatStep = song->GetMinNoteValue() / currBeatSubdivision;
             for (size_t beatIndex = 0; beatIndex < song->GetNoteCount(); beatIndex += beatStep) {
               // Bump the first square by 1 to the right so we can draw a 2-pixel beat line
               if (!beatIndex) {
@@ -937,7 +931,7 @@ void SongTab::Render(ImVec2 canvasSize) {
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
       if (ImGui::BeginCombo("Grid", (std::string("1/") +
-        std::to_string(sequencer.GetSubdivision())).c_str())) {
+        std::to_string(currBeatSubdivision)).c_str())) {
         std::vector<uint32> subDivs;
 
         uint32 subDiv = Globals::kDefaultMinNote;
@@ -947,10 +941,10 @@ void SongTab::Render(ImVec2 canvasSize) {
         }
 
         for (auto revIter = subDivs.rbegin(); revIter != subDivs.rend(); ++revIter) {
-          bool isSelected = (sequencer.GetSubdivision() == *revIter);
+          bool isSelected = (currBeatSubdivision == *revIter);
           if (ImGui::Selectable((std::string("1/") +
             std::to_string(*revIter)).c_str(), isSelected)) {
-            pendingSubdivision = *revIter;
+            currBeatSubdivision = *revIter;
           }
           else {
             ImGui::SetItemDefaultFocus();
