@@ -225,18 +225,6 @@ void Sequencer::SetTempo(uint32 tempo) {
   ticksRemaining = std::min(ticksRemaining, static_cast<int32>(interval));
 }
 
-#include "Song.h"
-void Sequencer::SetSong(Song* newSong) {
-  StopKill();
-
-  delete song;
-  song = newSong;
-
-  if (song != nullptr) {
-    SetTempo(song->GetTempo());
-  }
-}
-
 void Sequencer::PlayMetronome(bool downBeat) {
   uint32 metronomeSound = static_cast<uint32>(ReservedSounds::MetronomePartial);
   if (downBeat) {

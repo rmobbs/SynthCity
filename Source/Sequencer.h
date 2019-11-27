@@ -14,7 +14,6 @@
 #include <chrono>
 
 class Patch;
-class Song;
 class Voice;
 class InputState;
 
@@ -47,7 +46,6 @@ private:
   uint32 currBeat = 0;
   uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
-  Song* song = nullptr;
   Listener* listener = nullptr;
   std::vector<Patch*> reservedPatches;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
@@ -75,24 +73,10 @@ private:
 
 public:
 
-  inline Song* GetSong() const {
-    return song;
-  }
-
-  void SetSubdivision(uint32 subdivision);
-
-  inline uint32 GetMinTempo() const {
-    return kMinTempo;
-  }
-
   void SetTempo(uint32 newTempo);
 
   inline uint32 GetTempo() const {
     return tempo;
-  }
-
-  inline uint32 GetMaxTempo() const {
-    return kMaxTempo;
   }
 
   inline bool IsPlaying() const {
@@ -106,6 +90,7 @@ public:
   inline float GetMasterVolume() const {
     return masterVolume;
   }
+
   void SetMasterVolume(float masterVolume) {
     this->masterVolume = masterVolume;
   }
@@ -136,7 +121,6 @@ public:
   bool Init();
 
   void SetPosition(uint32 newPosition);
-  void SetSong(Song* newSong);
 
    Sequencer();
   ~Sequencer();

@@ -67,7 +67,7 @@ SongTab::SongTab(ComposerView* composerView)
 }
 
 SongTab::~SongTab() {
-
+  Song::Term();
 }
 
 void SongTab::InitResources() {
@@ -112,7 +112,7 @@ std::string SongTab::GetUniqueInstrumentInstanceName(std::string instrumentInsta
   std::string instrumentInstanceName = instrumentInstanceNameBase;
 
   // Has to end sometime
-  const auto& instrumentInstanceDataMap = Sequencer::Get().GetSong()->GetInstrumentInstances();
+  const auto& instrumentInstanceDataMap = Song::Get()->GetInstrumentInstances();
   for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
     auto instrumentInstanceData = instrumentInstanceDataMap.begin();
     while (instrumentInstanceData != instrumentInstanceDataMap.end()) {
@@ -134,12 +134,16 @@ std::string SongTab::GetUniqueInstrumentInstanceName(std::string instrumentInsta
 }
 
 void SongTab::NewSong() {
-  auto song = new Song(Song::kDefaultName, Globals::kDefaultTempo,
-    Song::kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
+  if (Song::NewSong()) {
+    selectedNotesByInstrumentInstance.clear();
+    selectingNotesByInstrumentInstance.clear();
 
-  selectedNotesByInstrumentInstance.clear();
-  selectingNotesByInstrumentInstance.clear();
-  Sequencer::Get().SetSong(song);
+    // Any active voices in the sequencer belong to the now-deleted previous song
+    Sequencer::Get().StopKill();
+
+    // Sequencer takes tempo from new song
+    Sequencer::Get().SetTempo(Song::Get()->GetTempo());
+  }
 }
 
 void SongTab::LoadSong() {
@@ -160,12 +164,15 @@ void SongTab::LoadSong() {
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   if (GetOpenFileName(&ofn)) {
-    auto song = Song::LoadSong(W2A(szFile));
-
-    if (song != nullptr) {
+    if (Song::LoadSong(W2A(szFile))) {
       selectedNotesByInstrumentInstance.clear();
       selectingNotesByInstrumentInstance.clear();
-      Sequencer::Get().SetSong(song);
+
+      // Any active voices in the sequencer belong to the now-deleted previous song
+      Sequencer::Get().StopKill();
+
+      // Sequencer takes tempo from loaded song
+      Sequencer::Get().SetTempo(Song::Get()->GetTempo());
     }
   }
 }
@@ -186,7 +193,7 @@ void SongTab::SaveSong() {
   ofn.Flags = OFN_OVERWRITEPROMPT;
 
   if (GetSaveFileName(&ofn)) {
-    Sequencer::Get().GetSong()->Save(W2A(szFile));
+    Song::Get()->Save(W2A(szFile));
   }
 }
 
@@ -257,7 +264,7 @@ void SongTab::DoLockedActions() {
   // Newly triggered notes are written to entry 1 in the audio callback
   playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
 
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
   if (song != nullptr) {
     // Track instance mute state changed
     if (pendingMuteTrackInstance.instance != nullptr) {
@@ -333,7 +340,7 @@ void SongTab::DoLockedActions() {
 
   if (pendingAddInstrument) {
     selectedNotesByInstrumentInstance.clear();
-    auto instrument = InstrumentBank::Get().LoadInstrumentName({ }, false);
+    auto instrument = InstrumentBank::Get().LoadInstrumentName({ }, true);
     if (instrument != nullptr) {
       Sequencer::Get().StopKill();
       auto instrumentInstance = instrument->Instance();
@@ -388,7 +395,7 @@ void SongTab::ConditionalEnableEnd() {
 void SongTab::DoMainMenuBar() {
   auto& sequencer = Sequencer::Get();
 
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
 
   if (ImGui::BeginMenu("Song")) {
     if (ImGui::MenuItem("New")) {
@@ -421,7 +428,7 @@ void SongTab::DoMainMenuBar() {
 
 void SongTab::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
   auto imGuiFont = ImGui::GetFont();
   auto& imGuiStyle = ImGui::GetStyle();
   auto defaultItemSpacing = imGuiStyle.ItemSpacing;

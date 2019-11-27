@@ -25,19 +25,58 @@ static constexpr uint32 kSongFileVersion = 3;
 static constexpr uint32 kDefaultNoteValue = 4;
 
 /* static */
-uint32 Song::nextUniqueTrackId = 0;
-uint32 Song::NextUniqueTrackId() {
-  return nextUniqueTrackId++;
+Song* Song::singleton = nullptr;
+
+/* static */
+bool Song::NewSong() {
+  try {
+    auto song = new Song(kDefaultName, Globals::kDefaultTempo,
+      kDefaultNumMeasures, kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
+
+    delete singleton;
+    singleton = song;
+  }
+  catch (...) {
+    return false;
+  }
 }
 
-uint32 Song::nextUniqueNoteId = 0;
-uint32 Song::NextUniqueNoteId() {
-  return nextUniqueNoteId++;
+/* static */
+bool Song::LoadSong(std::string fileName) {
+  if (check_fileext(fileName, Globals::kJsonTag)) {
+    try {
+      auto song = LoadSongJson(fileName);
+
+      delete singleton;
+      singleton = song;
+    }
+    catch (...) {
+      return false;
+    }
+    return true;
+  }
+
+  for (size_t m = 0; m < _countof(Globals::kMidiTags); ++m) {
+    if (check_fileext(fileName, Globals::kMidiTags[m])) {
+      try {
+        auto song = LoadSongMidi(fileName);
+
+        delete singleton;
+        singleton = song;
+      }
+      catch (...) {
+        return false;
+      }
+      return true;
+    }
+  }
+  return false;
 }
 
-uint32 Song::nextUniqueInstrumentInstanceId = 0;
-uint32 Song::NextUniqueInstrumentInstanceId() {
-  return nextUniqueInstrumentInstanceId++;
+/* static */
+void Song::Term() {
+  delete singleton;
+  singleton = nullptr;
 }
 
 Song::Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue)
@@ -139,7 +178,7 @@ std::pair<bool, std::string> Song::SerializeReadInstrument23(const ReadSerialize
   // Attempt to automatically load it
   auto instrument = InstrumentBank::Get().LoadInstrumentFile(instrumentPath, false);
   if (!instrument) {
-    instrument = InstrumentBank::Get().LoadInstrumentName(instrumentName, false);
+    instrument = InstrumentBank::Get().LoadInstrumentName(instrumentName, true);
     if (!instrument) {
       return std::make_pair(false, "Unable to load required instrument to load song");
     }
@@ -238,7 +277,7 @@ std::pair<bool, std::string> Song::SerializeRead(const ReadSerializer& serialize
 
       std::string instrumentName = d[kInstrumentTag].GetString();
 
-      instrument = InstrumentBank::Get().LoadInstrumentName(instrumentName, false);
+      instrument = InstrumentBank::Get().LoadInstrumentName(instrumentName, true);
       if (!instrument) {
         return std::make_pair(false, "Unable to load required instrument to load song");
       }
@@ -648,18 +687,3 @@ Song* Song::LoadSongMidi(std::string fileName) {
 #endif
   return nullptr;
 }
-
-/* static */
-Song* Song::LoadSong(std::string fileName) {
-  if (check_fileext(fileName, Globals::kJsonTag)) {
-    return LoadSongJson(fileName);
-  }
-  for (size_t m = 0; m < _countof(Globals::kMidiTags); ++m) {
-    if (check_fileext(fileName, Globals::kMidiTags[m])) {
-      return LoadSongMidi(fileName);
-    }
-  }
-  return nullptr;
-}
-
-

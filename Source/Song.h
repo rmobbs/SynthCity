@@ -18,6 +18,8 @@ public:
   static constexpr const char* kDefaultName = "Untitled";
 
 protected:
+  static Song* singleton;
+
   uint32 tempo = Globals::kDefaultTempo;
   uint32 numMeasures = 0;
   uint32 beatsPerMeasure = kDefaultBeatsPerMeasure;
@@ -35,10 +37,12 @@ protected:
   static Song* LoadSongJson(std::string fileName);
 
   std::pair<bool, std::string> SerializeReadInstrument23(const ReadSerializer& serializer);
-  
-public:
+
+  // Force using the LoadSong/NewSong interface to set the singleton
   Song(std::string name, uint32 tempo, uint32 numMeasures, uint32 beatsPerMeasure, uint32 minNoteValue);
   Song(const ReadSerializer& serializer);
+
+public:
   ~Song();
 
   std::pair<bool, std::string> SerializeRead(const ReadSerializer& serializer);
@@ -89,9 +93,10 @@ public:
   bool Save(std::string fileName);
   bool Save();
 
-  static uint32 NextUniqueTrackId();
-  static uint32 NextUniqueNoteId();
-  static uint32 NextUniqueInstrumentInstanceId();
-
-  static Song* LoadSong(std::string fileName);
+  static bool NewSong();
+  static bool LoadSong(std::string fileName);
+  static Song* Get() {
+    return singleton;
+  }
+  static void Term();
 };

@@ -279,9 +279,9 @@ void GamePreviewView::TermResources() {
 void GamePreviewView::OnBeat(uint32 beatIndex) {
 
   if (mode != Mode::Playing) {
-    if ((beatIndex % Sequencer::Get().GetSong()->GetMinNoteValue()) == 0) {
+    if ((beatIndex % Song::Get()->GetMinNoteValue()) == 0) {
 
-      auto fullBeat = beatIndex / Sequencer::Get().GetSong()->GetMinNoteValue();
+      auto fullBeat = beatIndex / Song::Get()->GetMinNoteValue();
       switch (fullBeat) {
         case 0:
           mode = Mode::Ready;
@@ -343,7 +343,7 @@ void GamePreviewView::Show() {
 
   sequencer.SetListener(this);
 
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
 
   uint32 numFallingNotes = 0;
 

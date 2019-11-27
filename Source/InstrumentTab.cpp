@@ -164,7 +164,7 @@ void InstrumentTab::DoLockedActions() {
 
     // Have to update any active instances of this instrument ... still not convinced this
     // is the right way.
-    auto song = sequencer.GetSong();
+    auto song = Song::Get();
     if (song != nullptr) {
       song->AddMeasures(0);
     }
@@ -199,7 +199,7 @@ void InstrumentTab::DoLockedActions() {
   }
 
   if (pendingLoadInstrument) {
-    auto instrument = InstrumentBank::Get().LoadInstrumentName({ }, true);
+    auto instrument = InstrumentBank::Get().LoadInstrumentName({ }, false);
     if (instrument != nullptr) {
       auto instrumentInstance = instrument->Instance();
       instrumentInstances.insert({ instrument, instrumentInstance });
@@ -261,7 +261,6 @@ void InstrumentTab::DoMainMenuBar() {
 
 void InstrumentTab::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
-  auto song = sequencer.GetSong();
   auto imGuiFont = ImGui::GetFont();
   auto& imGuiStyle = ImGui::GetStyle();
   auto defaultItemSpacing = imGuiStyle.ItemSpacing;

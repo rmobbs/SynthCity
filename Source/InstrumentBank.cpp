@@ -42,7 +42,7 @@ InstrumentBank::~InstrumentBank() {
   instrumentsByPath.clear();
 }
 
-Instrument* InstrumentBank::LoadInstrumentName(std::string requiredInstrument, bool uniqueOnly) {
+Instrument* InstrumentBank::LoadInstrumentName(std::string instrumentName, bool canInstance) {
   WCHAR szFile[FILENAME_MAX] = { 0 };
   OPENFILENAME ofn = { 0 };
 
@@ -50,8 +50,8 @@ Instrument* InstrumentBank::LoadInstrumentName(std::string requiredInstrument, b
   ofn.lStructSize = sizeof(ofn);
 
   std::string windowTitle("Load Instrument");
-  if (!requiredInstrument.empty()) {
-    windowTitle += " " + requiredInstrument;
+  if (!instrumentName.empty()) {
+    windowTitle += " " + instrumentName;
   }
   ofn.lpstrTitle = A2W(windowTitle.c_str());
   ofn.hwndOwner = reinterpret_cast<HWND>(Globals::mainWindowHandle);
@@ -65,9 +65,9 @@ Instrument* InstrumentBank::LoadInstrumentName(std::string requiredInstrument, b
 
   while (instrument == nullptr) {
     if (GetOpenFileName(&ofn)) {
-      instrument = InstrumentBank::Get().LoadInstrumentFile(std::string(W2A(szFile)), uniqueOnly);
+      instrument = InstrumentBank::Get().LoadInstrumentFile(std::string(W2A(szFile)), canInstance);
       if (instrument) {
-        if (!requiredInstrument.empty() && instrument->GetName() != requiredInstrument) {
+        if (!instrumentName.empty() && instrument->GetName() != instrumentName) {
           delete instrument;
           instrument = nullptr;
 
@@ -101,14 +101,14 @@ Instrument* InstrumentBank::LoadInstrumentName(std::string requiredInstrument, b
   return instrument;
 }
 
-Instrument* InstrumentBank::LoadInstrumentFile(std::string fileName, bool uniqueOnly) {
+Instrument* InstrumentBank::LoadInstrumentFile(std::string fileName, bool canInstance) {
   std::string absoluteFileName = std::filesystem::absolute(fileName).generic_string();
   std::replace(absoluteFileName.begin(), absoluteFileName.end(), '/', '\\');
 
   // See if it's already loaded
   auto loadedInstrument = instrumentsByPath.find(absoluteFileName);
   if (loadedInstrument != instrumentsByPath.end()) {
-    if (uniqueOnly) {
+    if (!canInstance) {
       return nullptr;
     }
     return loadedInstrument->second;

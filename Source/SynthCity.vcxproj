@@ -236,6 +236,7 @@
     <ClInclude Include="SoundFactory.h" />
     <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
+    <ClInclude Include="UniqueIdFactory.h" />
     <ClInclude Include="View.h" />
     <ClInclude Include="WavBank.h" />
     <ClInclude Include="WavSound.h" />

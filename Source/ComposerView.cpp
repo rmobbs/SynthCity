@@ -134,7 +134,7 @@ void ComposerView::DoLockedActions() {
 
 void ComposerView::OnBeat(uint32 beatIndex) {
   auto& sequencer = Sequencer::Get();
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
 
   if (isMetronomeOn) {
     auto mod = beatIndex % song->GetMinNoteValue();
@@ -154,7 +154,7 @@ void ComposerView::OnBeat(uint32 beatIndex) {
     }
   }
 
-  const auto& instrumentInstances = Sequencer::Get().GetSong()->GetInstrumentInstances();
+  const auto& instrumentInstances = Song::Get()->GetInstrumentInstances();
   for (const auto& instrumentInstanceData : instrumentInstances) {
     auto instanceTrack = std::make_pair(const_cast<InstrumentInstance*>(instrumentInstanceData), -1);
 
@@ -252,7 +252,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
     tabController.GetCurrent()->DoMainMenuBar();
 
-    auto song = Sequencer::Get().GetSong();
+    auto song = Song::Get();
     if (song != nullptr) {
       ConditionalEnableBegin(song->GetInstrumentInstances().size() > 0);
       if (ImGui::BeginMenu("Game")) {

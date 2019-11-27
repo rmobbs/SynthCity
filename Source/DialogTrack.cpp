@@ -123,7 +123,7 @@ void DialogTrack::Close() {
       instrument->AddTrack(track);
 
       // Force-update the instances
-      auto song = Sequencer::Get().GetSong();
+      auto song = Song::Get();
       if (song != nullptr) {
         song->AddMeasures(0);
       }
