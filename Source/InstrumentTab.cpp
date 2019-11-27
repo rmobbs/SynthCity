@@ -161,13 +161,6 @@ void InstrumentTab::DoLockedActions() {
 
     // Add track to instrument instance
     pendingCloneTrack.instrument->AddTrack(newTrack);
-
-    // Have to update any active instances of this instrument ... still not convinced this
-    // is the right way.
-    auto song = Song::Get();
-    if (song != nullptr) {
-      song->AddMeasures(0);
-    }
   }
 
   // Track removed via dialog previous frame

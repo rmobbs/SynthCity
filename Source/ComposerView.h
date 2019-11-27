@@ -49,6 +49,7 @@ protected:
   bool wasConsoleOpen = true;
   ImGuiRenderable renderable;
   bool localGuiDisabled = false;
+  uint32 pendingTab = kInvalidUint32;
   std::pair<InstrumentInstance*, int32> soloTrackInstance = { nullptr, -1 };
   std::atomic<bool> isMetronomeOn = false;
   std::atomic<bool> isLooping = false;

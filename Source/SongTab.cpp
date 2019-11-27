@@ -336,6 +336,9 @@ void SongTab::DoLockedActions() {
     if (pendingSaveAsSong) {
       SaveSong();
     }
+
+    // In case an instrument or track was added
+    song->AddMeasures(0);
   }
 
   if (pendingAddInstrument) {

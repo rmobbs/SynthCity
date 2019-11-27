@@ -129,6 +129,11 @@ void ComposerView::DoLockedActions() {
     }
   }
 
+  if (pendingTab != kInvalidUint32) {
+    tabController.SetCurrent(pendingTab);
+  }
+  pendingTab = kInvalidUint32;
+
   tabController.GetCurrent()->DoLockedActions();
 }
 
@@ -292,16 +297,15 @@ void ComposerView::Render(ImVec2 canvasSize) {
       Globals::kScrollBarWidth, sequencerCanvasSize.y - mainMenuBarHeight);
 
     ImGui::BeginTabBar("ComposerViewTabBar");
+
     for (auto& tab : tabController.GetAll()) {
       if (ImGui::BeginTabItem(tab.second->GetName().c_str())) {
-
-        tabController.SetCurrent(tab.first);
-
-        tab.second->Render(scrollingCanvasSize);
-
+        pendingTab = tab.first;
         ImGui::EndTabItem();
       }
     }
+
+    tabController.GetCurrent()->Render(scrollingCanvasSize);
 
     ImGui::EndTabBar();
     ImGui::End();
