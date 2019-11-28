@@ -138,52 +138,16 @@ void ComposerView::DoLockedActions() {
 }
 
 void ComposerView::OnBeat(uint32 beatIndex) {
-  auto& sequencer = Sequencer::Get();
   auto song = Song::Get();
 
   if (isMetronomeOn) {
     auto mod = beatIndex % song->GetMinNoteValue();
     if (!mod) {
-      sequencer.PlayMetronome((beatIndex / song->GetMinNoteValue()) % song->GetBeatsPerMeasure() == 0);
+      Sequencer::Get().PlayMetronome((beatIndex / song->GetMinNoteValue()) % song->GetBeatsPerMeasure() == 0);
     }
   }
 
-  if (beatIndex >= song->GetNoteCount()) {
-    if (isLooping) {
-      sequencer.Loop();
-      beatIndex = 0;
-    }
-    else {
-      sequencer.Stop();
-      return;
-    }
-  }
-
-  const auto& instrumentInstances = Song::Get()->GetInstrumentInstances();
-  for (const auto& instrumentInstanceData : instrumentInstances) {
-    auto instanceTrack = std::make_pair(const_cast<InstrumentInstance*>(instrumentInstanceData), -1);
-
-    for (const auto& trackInstance : instrumentInstanceData->trackInstances) {
-      // If muted ...
-      if (trackInstance.second.mute) {
-        continue;
-      }
-
-      // If not the solo track ...
-      instanceTrack.second = trackInstance.first;
-      if (soloTrackInstance.first != nullptr && soloTrackInstance != instanceTrack) {
-        continue;
-      }
-
-      auto track = instrumentInstanceData->instrument->GetTrackById(trackInstance.first);
-      assert(track != nullptr);
-
-      auto note = trackInstance.second.noteVector[beatIndex].note;
-      if (note != nullptr) {
-        sequencer.PlayPatch(track->GetPatch(), track->GetVolume());
-      }
-    }
-  }
+  tabController.Get<SongTab>()->OnBeat(beatIndex);
 }
 
 void ComposerView::InitResources() {

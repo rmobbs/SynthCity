@@ -107,6 +107,47 @@ void SongTab::Hide() {
 
 }
 
+void SongTab::OnBeat(uint32 beatIndex) {
+  auto song = Song::Get();
+
+  if (beatIndex >= song->GetNoteCount()) {
+    if (isLooping) {
+      Sequencer::Get().Loop();
+      beatIndex = 0;
+    }
+    else {
+      Sequencer::Get().Stop();
+      return;
+    }
+  }
+
+  const auto& instrumentInstances = Song::Get()->GetInstrumentInstances();
+  for (const auto& instrumentInstanceData : instrumentInstances) {
+    auto instanceTrack = std::make_pair(const_cast<InstrumentInstance*>(instrumentInstanceData), -1);
+
+    for (const auto& trackInstance : instrumentInstanceData->trackInstances) {
+      // If muted ...
+      if (trackInstance.second.mute) {
+        continue;
+      }
+
+      // If not the solo track ...
+      instanceTrack.second = trackInstance.first;
+      if (soloTrackInstance.first != nullptr && soloTrackInstance != instanceTrack) {
+        continue;
+      }
+
+      auto track = instrumentInstanceData->instrument->GetTrackById(trackInstance.first);
+      assert(track != nullptr);
+
+      auto note = trackInstance.second.noteVector[beatIndex].note;
+      if (note != nullptr) {
+        Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+      }
+    }
+  }
+}
+
 std::string SongTab::GetUniqueInstrumentInstanceName(std::string instrumentInstanceNameBase) {
   // Pick an available name
   std::string instrumentInstanceName = instrumentInstanceNameBase;
@@ -272,9 +313,8 @@ void SongTab::DoLockedActions() {
     }
 
     // Track instance solo state changed
-    auto& soloTrackIndex = composerView->GetSoloTrackInstance();
     if (pendingSoloTrackInstance.data) {
-      composerView->SetSoloTrackInstance(pendingSoloTrackInstance.instance, pendingSoloTrackInstance.trackId);
+      soloTrackInstance = { pendingSoloTrackInstance.instance, pendingSoloTrackInstance.trackId };
     }
 
     // Add voice
@@ -568,7 +608,6 @@ void SongTab::Render(ImVec2 canvasSize) {
         imGuiStyle.FramePadding = defaultFramePadding;
 
         // Tracks
-        auto& soloTrackInstance = composerView->GetSoloTrackInstance();
         for (const auto& trackInstance : instrumentInstance->trackInstances) {
           auto trackId = trackInstance.first;
 
@@ -968,10 +1007,10 @@ void SongTab::Render(ImVec2 canvasSize) {
       // Loop
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
-      bool localIsLooping = composerView->IsLooping();
+      bool localIsLooping = isLooping;
       if (ImGui::Checkbox("Loop", &localIsLooping)) {
         // @Atomic
-        composerView->SetLooping(localIsLooping);
+        isLooping = localIsLooping;
       }
       ImGui::PopItemWidth();
 

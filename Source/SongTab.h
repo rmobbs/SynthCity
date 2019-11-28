@@ -56,6 +56,8 @@ public:
   uint32 addMeasureCount = 1;
   bool localGuiDisabled = false;
   ComposerView* composerView = nullptr;
+  std::atomic<bool> isLooping = false;
+  std::pair<InstrumentInstance*, int32> soloTrackInstance = { nullptr, -1 };
 
   void ConditionalEnableBegin(bool condition);
   void ConditionalEnableEnd();
@@ -78,4 +80,6 @@ public:
   void DoMainMenuBar() override;
   void Render(ImVec2 canvasSize) override;
   void DoLockedActions() override;
+
+  void OnBeat(uint32 beatIndex);
 };
