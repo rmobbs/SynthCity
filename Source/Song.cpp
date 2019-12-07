@@ -39,6 +39,7 @@ bool Song::NewSong() {
   catch (...) {
     return false;
   }
+  return true;
 }
 
 /* static */

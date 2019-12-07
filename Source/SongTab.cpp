@@ -121,28 +121,33 @@ void SongTab::OnBeat(uint32 beatIndex) {
     }
   }
 
-  const auto& instrumentInstances = Song::Get()->GetInstrumentInstances();
-  for (const auto& instrumentInstanceData : instrumentInstances) {
-    auto instanceTrack = std::make_pair(const_cast<InstrumentInstance*>(instrumentInstanceData), -1);
-
-    for (const auto& trackInstance : instrumentInstanceData->trackInstances) {
-      // If muted ...
-      if (trackInstance.second.mute) {
-        continue;
-      }
-
-      // If not the solo track ...
-      instanceTrack.second = trackInstance.first;
-      if (soloTrackInstance.first != nullptr && soloTrackInstance != instanceTrack) {
-        continue;
-      }
-
-      auto track = instrumentInstanceData->instrument->GetTrackById(trackInstance.first);
+  // Solo track (don't want to look for it in the loop)
+  if (soloTrackInstance.first != nullptr) {
+    auto trackInstance = soloTrackInstance.first->trackInstances.find(soloTrackInstance.second);
+    assert(trackInstance != soloTrackInstance.first->trackInstances.end());
+    if (trackInstance->second.noteVector[beatIndex].note)
+    {
+      auto track = soloTrackInstance.first->instrument->GetTrackById(soloTrackInstance.second);
       assert(track != nullptr);
+      Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+    }
+  }
+  // Multi-track
+  else {
+    const auto& instrumentInstances = Song::Get()->GetInstrumentInstances();
+    for (const auto& instrumentInstanceData : instrumentInstances) {
+      for (const auto& trackInstance : instrumentInstanceData->trackInstances) {
+        // If muted ...
+        if (trackInstance.second.mute) {
+          continue;
+        }
 
-      auto note = trackInstance.second.noteVector[beatIndex].note;
-      if (note != nullptr) {
-        Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+        auto note = trackInstance.second.noteVector[beatIndex].note;
+        if (note != nullptr) {
+          auto track = instrumentInstanceData->instrument->GetTrackById(trackInstance.first);
+          assert(track != nullptr);
+          Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+        }
       }
     }
   }
