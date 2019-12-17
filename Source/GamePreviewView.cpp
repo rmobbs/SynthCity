@@ -9,7 +9,7 @@
 #include "Song.h"
 #include "Instrument.h"
 #include "AudioGlobals.h"
-#include "soil.h"
+#include "SOIL/soil.h"
 #include <chrono>
 
 static glm::vec2 noteLaneExtents(10, 800);

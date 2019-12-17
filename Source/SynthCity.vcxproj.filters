@@ -19,6 +19,9 @@
     <Filter Include="Source Files\glew">
       <UniqueIdentifier>{1d7de583-5880-4c6e-8377-7a6f3c81be4c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\soil">
+      <UniqueIdentifier>{4cba7262-6c5b-4a77-a05f-0fa1e1d0fee4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -198,6 +201,9 @@
     <ClInclude Include="UniqueIdFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="3rdParty\soil\inc\SOIL\SOIL.h">
+      <Filter>Source Files\soil</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SynthCity.cpp">
@@ -334,6 +340,18 @@
     </ClCompile>
     <ClCompile Include="DialogInstrument.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\soil\src\image_DXT.c">
+      <Filter>Source Files\soil</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\soil\src\image_helper.c">
+      <Filter>Source Files\soil</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\soil\src\SOIL.c">
+      <Filter>Source Files\soil</Filter>
+    </ClCompile>
+    <ClCompile Include="3rdParty\soil\src\stb_image_aug.c">
+      <Filter>Source Files\soil</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

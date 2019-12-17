@@ -1,6 +1,7 @@
 .vs
 Source/Debug
 Source/Release
+Source/x64
 *.aps
 SDL2d.dll
 SynthCityd.exe

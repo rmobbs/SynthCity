@@ -8,7 +8,7 @@
 #include "ComposerView.h"
 
 #include "SDL.h"
-#include "soil.h"
+#include "SOIL/soil.h"
 #include "GL/glew.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"

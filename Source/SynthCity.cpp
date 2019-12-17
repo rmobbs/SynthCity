@@ -26,7 +26,7 @@
 #include "ProcessFactory.h"
 #include "HashedController.h"
 
-#include "soil.h"
+#include "SOIL/soil.h"
 
 #include "SDL_syswm.h"
 #include <windows.h>

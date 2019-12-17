@@ -10,7 +10,7 @@
 #include "imgui_internal.h"
 #include "ImGuiExtensions.h"
 #include "SDL.h"
-#include "soil.h"
+#include "SOIL/soil.h"
 #include "Logging.h"
 #include "Sequencer.h"
 #include "AudioGlobals.h"
