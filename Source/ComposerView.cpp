@@ -10,7 +10,7 @@
 #include "imgui_internal.h"
 #include "ImGuiExtensions.h"
 #include "SDL.h"
-#include "soil.h"
+#include "SOIL/soil.h"
 #include "Logging.h"
 #include "Sequencer.h"
 #include "AudioGlobals.h"
@@ -129,56 +129,25 @@ void ComposerView::DoLockedActions() {
     }
   }
 
+  if (pendingTab != kInvalidUint32) {
+    tabController.SetCurrent(pendingTab);
+  }
+  pendingTab = kInvalidUint32;
+
   tabController.GetCurrent()->DoLockedActions();
 }
 
 void ComposerView::OnBeat(uint32 beatIndex) {
-  auto& sequencer = Sequencer::Get();
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
 
   if (isMetronomeOn) {
     auto mod = beatIndex % song->GetMinNoteValue();
     if (!mod) {
-      sequencer.PlayMetronome((beatIndex / song->GetMinNoteValue()) % song->GetBeatsPerMeasure() == 0);
+      Sequencer::Get().PlayMetronome((beatIndex / song->GetMinNoteValue()) % song->GetBeatsPerMeasure() == 0);
     }
   }
 
-  if (beatIndex >= song->GetNoteCount()) {
-    if (isLooping) {
-      sequencer.Loop();
-      beatIndex = 0;
-    }
-    else {
-      sequencer.Stop();
-      return;
-    }
-  }
-
-  const auto& instrumentInstances = Sequencer::Get().GetSong()->GetInstrumentInstances();
-  for (const auto& instrumentInstanceData : instrumentInstances) {
-    auto instanceTrack = std::make_pair(const_cast<InstrumentInstance*>(instrumentInstanceData), -1);
-
-    for (const auto& trackInstance : instrumentInstanceData->trackInstances) {
-      // If muted ...
-      if (trackInstance.second.mute) {
-        continue;
-      }
-
-      // If not the solo track ...
-      instanceTrack.second = trackInstance.first;
-      if (soloTrackInstance.first != nullptr && soloTrackInstance != instanceTrack) {
-        continue;
-      }
-
-      auto track = instrumentInstanceData->instrument->GetTrackById(trackInstance.first);
-      assert(track != nullptr);
-
-      auto note = trackInstance.second.noteVector[beatIndex].note;
-      if (note != nullptr) {
-        sequencer.PlayPatch(track->GetPatch(), track->GetVolume());
-      }
-    }
-  }
+  tabController.Get<SongTab>()->OnBeat(beatIndex);
 }
 
 void ComposerView::InitResources() {
@@ -252,7 +221,7 @@ void ComposerView::Render(ImVec2 canvasSize) {
 
     tabController.GetCurrent()->DoMainMenuBar();
 
-    auto song = Sequencer::Get().GetSong();
+    auto song = Song::Get();
     if (song != nullptr) {
       ConditionalEnableBegin(song->GetInstrumentInstances().size() > 0);
       if (ImGui::BeginMenu("Game")) {
@@ -292,16 +261,15 @@ void ComposerView::Render(ImVec2 canvasSize) {
       Globals::kScrollBarWidth, sequencerCanvasSize.y - mainMenuBarHeight);
 
     ImGui::BeginTabBar("ComposerViewTabBar");
+
     for (auto& tab : tabController.GetAll()) {
       if (ImGui::BeginTabItem(tab.second->GetName().c_str())) {
-
-        tabController.SetCurrent(tab.first);
-
-        tab.second->Render(scrollingCanvasSize);
-
+        pendingTab = tab.first;
         ImGui::EndTabItem();
       }
     }
+
+    tabController.GetCurrent()->Render(scrollingCanvasSize);
 
     ImGui::EndTabBar();
     ImGui::End();

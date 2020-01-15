@@ -8,7 +8,7 @@
 #include "ComposerView.h"
 
 #include "SDL.h"
-#include "soil.h"
+#include "SOIL/soil.h"
 #include "GL/glew.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
@@ -67,7 +67,7 @@ SongTab::SongTab(ComposerView* composerView)
 }
 
 SongTab::~SongTab() {
-
+  Song::Term();
 }
 
 void SongTab::InitResources() {
@@ -107,12 +107,58 @@ void SongTab::Hide() {
 
 }
 
+void SongTab::OnBeat(uint32 beatIndex) {
+  auto song = Song::Get();
+
+  if (beatIndex >= song->GetNoteCount()) {
+    if (isLooping) {
+      Sequencer::Get().Loop();
+      beatIndex = 0;
+    }
+    else {
+      Sequencer::Get().Stop();
+      return;
+    }
+  }
+
+  // Solo track (don't want to look for it in the loop)
+  if (soloTrackInstance.first != nullptr) {
+    auto trackInstance = soloTrackInstance.first->trackInstances.find(soloTrackInstance.second);
+    assert(trackInstance != soloTrackInstance.first->trackInstances.end());
+    if (trackInstance->second.noteVector[beatIndex].note)
+    {
+      auto track = soloTrackInstance.first->instrument->GetTrackById(soloTrackInstance.second);
+      assert(track != nullptr);
+      Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+    }
+  }
+  // Multi-track
+  else {
+    const auto& instrumentInstances = Song::Get()->GetInstrumentInstances();
+    for (const auto& instrumentInstanceData : instrumentInstances) {
+      for (const auto& trackInstance : instrumentInstanceData->trackInstances) {
+        // If muted ...
+        if (trackInstance.second.mute) {
+          continue;
+        }
+
+        auto note = trackInstance.second.noteVector[beatIndex].note;
+        if (note != nullptr) {
+          auto track = instrumentInstanceData->instrument->GetTrackById(trackInstance.first);
+          assert(track != nullptr);
+          Sequencer::Get().PlayPatch(track->GetPatch(), track->GetVolume());
+        }
+      }
+    }
+  }
+}
+
 std::string SongTab::GetUniqueInstrumentInstanceName(std::string instrumentInstanceNameBase) {
   // Pick an available name
   std::string instrumentInstanceName = instrumentInstanceNameBase;
 
   // Has to end sometime
-  const auto& instrumentInstanceDataMap = Sequencer::Get().GetSong()->GetInstrumentInstances();
+  const auto& instrumentInstanceDataMap = Song::Get()->GetInstrumentInstances();
   for (int nameSuffix = 1; nameSuffix < 1000; ++nameSuffix) {
     auto instrumentInstanceData = instrumentInstanceDataMap.begin();
     while (instrumentInstanceData != instrumentInstanceDataMap.end()) {
@@ -134,12 +180,16 @@ std::string SongTab::GetUniqueInstrumentInstanceName(std::string instrumentInsta
 }
 
 void SongTab::NewSong() {
-  auto song = new Song(Song::kDefaultName, Globals::kDefaultTempo,
-    Song::kDefaultNumMeasures, Song::kDefaultBeatsPerMeasure, Globals::kDefaultMinNote);
+  if (Song::NewSong()) {
+    selectedNotesByInstrumentInstance.clear();
+    selectingNotesByInstrumentInstance.clear();
 
-  selectedNotesByInstrumentInstance.clear();
-  selectingNotesByInstrumentInstance.clear();
-  Sequencer::Get().SetSong(song);
+    // Any active voices in the sequencer belong to the now-deleted previous song
+    Sequencer::Get().StopKill();
+
+    // Sequencer takes tempo from new song
+    Sequencer::Get().SetTempo(Song::Get()->GetTempo());
+  }
 }
 
 void SongTab::LoadSong() {
@@ -160,12 +210,15 @@ void SongTab::LoadSong() {
   ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
   if (GetOpenFileName(&ofn)) {
-    auto song = Song::LoadSong(W2A(szFile));
-
-    if (song != nullptr) {
+    if (Song::LoadSong(W2A(szFile))) {
       selectedNotesByInstrumentInstance.clear();
       selectingNotesByInstrumentInstance.clear();
-      Sequencer::Get().SetSong(song);
+
+      // Any active voices in the sequencer belong to the now-deleted previous song
+      Sequencer::Get().StopKill();
+
+      // Sequencer takes tempo from loaded song
+      Sequencer::Get().SetTempo(Song::Get()->GetTempo());
     }
   }
 }
@@ -186,7 +239,7 @@ void SongTab::SaveSong() {
   ofn.Flags = OFN_OVERWRITEPROMPT;
 
   if (GetSaveFileName(&ofn)) {
-    Sequencer::Get().GetSong()->Save(W2A(szFile));
+    Song::Get()->Save(W2A(szFile));
   }
 }
 
@@ -257,12 +310,7 @@ void SongTab::DoLockedActions() {
   // Newly triggered notes are written to entry 1 in the audio callback
   playingTrackFlashTimes[0].merge(playingTrackFlashTimes[1]);
 
-  // Subdivision changed
-  if (pendingSubdivision != kInvalidUint32) {
-    sequencer.SetSubdivision(pendingSubdivision);
-  }
-
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
   if (song != nullptr) {
     // Track instance mute state changed
     if (pendingMuteTrackInstance.instance != nullptr) {
@@ -270,9 +318,8 @@ void SongTab::DoLockedActions() {
     }
 
     // Track instance solo state changed
-    auto& soloTrackIndex = composerView->GetSoloTrackInstance();
     if (pendingSoloTrackInstance.data) {
-      composerView->SetSoloTrackInstance(pendingSoloTrackInstance.instance, pendingSoloTrackInstance.trackId);
+      soloTrackInstance = { pendingSoloTrackInstance.instance, pendingSoloTrackInstance.trackId };
     }
 
     // Add voice
@@ -324,7 +371,7 @@ void SongTab::DoLockedActions() {
     // Beats per minute changed
     if (pendingTempo != kInvalidUint32) {
       song->SetTempo(pendingTempo);
-      sequencer.UpdateInterval();
+      sequencer.SetTempo(pendingTempo);
     }
 
     if (pendingSaveSong) {
@@ -334,11 +381,14 @@ void SongTab::DoLockedActions() {
     if (pendingSaveAsSong) {
       SaveSong();
     }
+
+    // In case an instrument or track was added
+    song->AddMeasures(0);
   }
 
   if (pendingAddInstrument) {
     selectedNotesByInstrumentInstance.clear();
-    auto instrument = InstrumentBank::Get().LoadInstrumentName({ }, false);
+    auto instrument = InstrumentBank::Get().LoadInstrumentName({ }, true);
     if (instrument != nullptr) {
       Sequencer::Get().StopKill();
       auto instrumentInstance = instrument->Instance();
@@ -358,7 +408,6 @@ void SongTab::DoLockedActions() {
   }
 
   // Reset all pendings
-  pendingSubdivision = kInvalidUint32;
   pendingTempo = kInvalidUint32;
   pendingMuteTrackInstance = { };
   pendingPlayTrackInstance = { };
@@ -394,7 +443,7 @@ void SongTab::ConditionalEnableEnd() {
 void SongTab::DoMainMenuBar() {
   auto& sequencer = Sequencer::Get();
 
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
 
   if (ImGui::BeginMenu("Song")) {
     if (ImGui::MenuItem("New")) {
@@ -427,7 +476,7 @@ void SongTab::DoMainMenuBar() {
 
 void SongTab::Render(ImVec2 canvasSize) {
   auto& sequencer = Sequencer::Get();
-  auto song = sequencer.GetSong();
+  auto song = Song::Get();
   auto imGuiFont = ImGui::GetFont();
   auto& imGuiStyle = ImGui::GetStyle();
   auto defaultItemSpacing = imGuiStyle.ItemSpacing;
@@ -564,7 +613,6 @@ void SongTab::Render(ImVec2 canvasSize) {
         imGuiStyle.FramePadding = defaultFramePadding;
 
         // Tracks
-        auto& soloTrackInstance = composerView->GetSoloTrackInstance();
         for (const auto& trackInstance : instrumentInstance->trackInstances) {
           auto trackId = trackInstance.first;
 
@@ -694,7 +742,7 @@ void SongTab::Render(ImVec2 canvasSize) {
 
         ImGui::NewLine();
 
-        auto beatWidth = Globals::kFullBeatWidth / sequencer.GetSubdivision();
+        auto beatWidth = Globals::kFullBeatWidth / currBeatSubdivision;
         auto noteCount = song->GetNoteCount();
 
         const auto& instrumentInstances = song->GetInstrumentInstances();
@@ -714,7 +762,7 @@ void SongTab::Render(ImVec2 canvasSize) {
 
           for (auto& trackInstance : instrumentInstance->trackInstances) {
             // Notes (displayed at current beat zoom level)
-            uint32 beatStep = song->GetMinNoteValue() / sequencer.GetSubdivision();
+            uint32 beatStep = song->GetMinNoteValue() / currBeatSubdivision;
             for (size_t beatIndex = 0; beatIndex < song->GetNoteCount(); beatIndex += beatStep) {
               // Bump the first square by 1 to the right so we can draw a 2-pixel beat line
               if (!beatIndex) {
@@ -937,7 +985,7 @@ void SongTab::Render(ImVec2 canvasSize) {
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
       if (ImGui::BeginCombo("Grid", (std::string("1/") +
-        std::to_string(sequencer.GetSubdivision())).c_str())) {
+        std::to_string(currBeatSubdivision)).c_str())) {
         std::vector<uint32> subDivs;
 
         uint32 subDiv = Globals::kDefaultMinNote;
@@ -947,10 +995,10 @@ void SongTab::Render(ImVec2 canvasSize) {
         }
 
         for (auto revIter = subDivs.rbegin(); revIter != subDivs.rend(); ++revIter) {
-          bool isSelected = (sequencer.GetSubdivision() == *revIter);
+          bool isSelected = (currBeatSubdivision == *revIter);
           if (ImGui::Selectable((std::string("1/") +
             std::to_string(*revIter)).c_str(), isSelected)) {
-            pendingSubdivision = *revIter;
+            currBeatSubdivision = *revIter;
           }
           else {
             ImGui::SetItemDefaultFocus();
@@ -964,10 +1012,10 @@ void SongTab::Render(ImVec2 canvasSize) {
       // Loop
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
-      bool localIsLooping = composerView->IsLooping();
+      bool localIsLooping = isLooping;
       if (ImGui::Checkbox("Loop", &localIsLooping)) {
         // @Atomic
-        composerView->SetLooping(localIsLooping);
+        isLooping = localIsLooping;
       }
       ImGui::PopItemWidth();
 

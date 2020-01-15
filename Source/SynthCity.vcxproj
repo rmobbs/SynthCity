@@ -72,8 +72,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);3rdParty\glew;3rdParty\glm;3rdParty\imgui;3rdParty\rapidjson\include;3rdParty\sdl2;3rdParty\soil</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;3rdParty\sdl2\debug;3rdParty\soil\debug</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);3rdParty\glew;3rdParty\glm;3rdParty\imgui;3rdParty\rapidjson\include;3rdParty\sdl2;3rdParty\soil\inc</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;3rdParty\sdl2\debug</LibraryPath>
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
@@ -82,8 +82,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);3rdParty\glew;3rdParty\glm;3rdParty\imgui;3rdParty\rapidjson\include;3rdParty\sdl2;3rdParty\soil</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;3rdParty\sdl2\release;3rdParty\soil\release</LibraryPath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);3rdParty\glew;3rdParty\glm;3rdParty\imgui;3rdParty\rapidjson\include;3rdParty\sdl2;3rdParty\soil\inc</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86;3rdParty\sdl2\release</LibraryPath>
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -108,7 +108,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2maind.lib;SDL2d.lib;opengl32.lib;soil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2maind.lib;SDL2d.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy Debug\SynthCity.exe ..\SynthCityd.exe &amp;&amp; copy 3rdParty\sdl2\debug\sdl2d.dll ..</Command>
@@ -152,7 +152,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2main.lib;SDL2.lib;opengl32.lib;soil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy Release\SynthCity.exe ..\SynthCity.exe &amp;&amp; copy 3rdParty\sdl2\release\sdl2.dll ..</Command>
@@ -190,6 +190,7 @@
     <ClInclude Include="3rdParty\imgui\imstb_rectpack.h" />
     <ClInclude Include="3rdParty\imgui\imstb_textedit.h" />
     <ClInclude Include="3rdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="3rdParty\soil\inc\SOIL\SOIL.h" />
     <ClInclude Include="AudioGlobals.h" />
     <ClInclude Include="BaseTypes.h" />
     <ClInclude Include="BaseWindows.h" />
@@ -236,6 +237,7 @@
     <ClInclude Include="SoundFactory.h" />
     <ClInclude Include="SpriteRenderable.h" />
     <ClInclude Include="SynthSound.h" />
+    <ClInclude Include="UniqueIdFactory.h" />
     <ClInclude Include="View.h" />
     <ClInclude Include="WavBank.h" />
     <ClInclude Include="WavSound.h" />
@@ -246,6 +248,10 @@
     <ClCompile Include="3rdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="3rdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="3rdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="3rdParty\soil\src\image_DXT.c" />
+    <ClCompile Include="3rdParty\soil\src\image_helper.c" />
+    <ClCompile Include="3rdParty\soil\src\SOIL.c" />
+    <ClCompile Include="3rdParty\soil\src\stb_image_aug.c" />
     <ClCompile Include="AudioGlobals.cpp" />
     <ClCompile Include="ComposerView.cpp" />
     <ClCompile Include="DialogInstrument.cpp" />

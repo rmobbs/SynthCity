@@ -2,6 +2,7 @@
 
 #include "BaseTypes.h"
 #include "SerializeFwd.h"
+#include "Globals.h"
 
 #include <vector>
 #include <string>
@@ -13,13 +14,11 @@
 #include <chrono>
 
 class Patch;
-class Song;
 class Voice;
 class InputState;
 
 class Sequencer {
 public:
-  static constexpr uint32 kDfeaultBeatSubdivision = 4;
   static constexpr uint32 kMinTempo = 40;
   static constexpr uint32 kMaxTempo = 220;
   static constexpr uint32 kDefaultTempo = 120;
@@ -44,11 +43,9 @@ public:
 private:
   static Sequencer* singleton;
 
-  uint32 currBeatSubdivision = kDfeaultBeatSubdivision;
   uint32 currBeat = 0;
   uint32 nextBeat = 0;
   int32 interval = kDefaultInterval;
-  Song* song = nullptr;
   Listener* listener = nullptr;
   std::vector<Patch*> reservedPatches;
   std::function<bool(const class MidiSource&, MidiConversionParams&)> midiConversionParamsCallback;
@@ -65,7 +62,7 @@ private:
   std::chrono::high_resolution_clock::time_point frameTimePoint;
   double frameBeatTime = 0.0;
   double clockBeatTime = 0.0;
-  double increment = 0.0;
+  uint32 tempo = kDefaultTempo;
 
   void WriteOutput(float *input, int16 *output, int32 frames);
   void DrainExpiredPool();
@@ -76,22 +73,10 @@ private:
 
 public:
 
-  inline Song* GetSong() const {
-    return song;
-  }
+  void SetTempo(uint32 newTempo);
 
-  inline uint32 GetSubdivision() const {
-    return currBeatSubdivision;
-  }
-
-  void SetSubdivision(uint32 subdivision);
-
-  inline uint32 GetMinTempo() const {
-    return kMinTempo;
-  }
-
-  inline uint32 GetMaxTempo() const {
-    return kMaxTempo;
+  inline uint32 GetTempo() const {
+    return tempo;
   }
 
   inline bool IsPlaying() const {
@@ -105,6 +90,7 @@ public:
   inline float GetMasterVolume() const {
     return masterVolume;
   }
+
   void SetMasterVolume(float masterVolume) {
     this->masterVolume = masterVolume;
   }
@@ -122,7 +108,6 @@ public:
   void Loop();
   void StopVoice(int32 voiceId);
   int32 PlayPatch(const Patch* patch, float volume);
-  uint32 UpdateInterval();
 
   void PlayMetronome(bool downBeat);
 
@@ -136,7 +121,6 @@ public:
   bool Init();
 
   void SetPosition(uint32 newPosition);
-  void SetSong(Song* newSong);
 
    Sequencer();
   ~Sequencer();

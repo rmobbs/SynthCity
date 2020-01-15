@@ -26,7 +26,7 @@
 #include "ProcessFactory.h"
 #include "HashedController.h"
 
-#include "soil.h"
+#include "SOIL/soil.h"
 
 #include "SDL_syswm.h"
 #include <windows.h>
@@ -44,6 +44,7 @@ static SDL_SysWMinfo sysWmInfo;
 
 static constexpr uint32 kWindowWidth = 1200;
 static constexpr uint32 kWindowHeight = 800;
+static constexpr float kMinFrameTime = 1.0f / 1200.0f;
 
 static double computerFrequency = 0.0;
 static LONGLONG counterStart = 0;
@@ -140,7 +141,7 @@ void UpdateInput() {
 
   inputState.modState = SDL_GetModState();
 
-  imGuiIo.DeltaTime = std::max(1.0f / 60.0f, static_cast<float>(Globals::elapsedTime));
+  imGuiIo.DeltaTime = std::max(kMinFrameTime, static_cast<float>(Globals::elapsedTime));
 
   // Update mouse
   imGuiIo.MousePos = ImVec2(static_cast<float>(inputState.mouseX), static_cast<float>(inputState.mouseY));

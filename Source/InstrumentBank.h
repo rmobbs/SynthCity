@@ -18,8 +18,8 @@ protected:
 public:
   ~InstrumentBank();
 
-  Instrument* LoadInstrumentFile(std::string fileName, bool uniqueOnly);
-  Instrument* LoadInstrumentName(std::string requiredInstrument, bool uniqueOnly);
+  Instrument* LoadInstrumentFile(std::string fileName, bool canInstance);
+  Instrument* LoadInstrumentName(std::string instrumentName, bool canInstance);
 
   inline const std::map<std::string, Instrument*>& GetInstruments() const {
     return instrumentsByPath;

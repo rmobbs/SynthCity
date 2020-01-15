@@ -11,7 +11,6 @@
 #include "WavSound.h"
 #include "Instrument.h"
 #include "Patch.h"
-#include "Song.h"
 #include "FreeList.h"
 #include "InputState.h"
 #include "View.h"
@@ -196,9 +195,6 @@ bool Sequencer::Init() {
 Sequencer::~Sequencer() {
   AudioGlobals::LockAudio();
 
-  delete song;
-  song = nullptr;
-
   for (auto& reservedPatch : reservedPatches) {
     delete reservedPatch;
   }
@@ -218,39 +214,15 @@ uint32 Sequencer::GetFrequency() const {
   return kDefaultFrequency;
 }
 
-uint32 Sequencer::UpdateInterval() {
-  if (song != nullptr) {
-    // TODO: We should probably always tick at our fastest BPM and only
-    // update the song when necessary; this would get rid of last requirement
-    // to have a song loaded
-    // https://trello.com/c/hWgLfWZV
-    interval = static_cast<uint32>((kDefaultFrequency / (song->
-      GetTempo() * kBpmToBps)) / static_cast<double>(Globals::kDefaultMinNote));
-    increment = static_cast<double>(interval) /
-      (kDefaultFrequency / (song->GetTempo() * kBpmToBps));
-  }
-  else {
-    interval = kDefaultInterval;
-  }
+void Sequencer::SetTempo(uint32 tempo) {
+  this->tempo = tempo;
+
+  interval = static_cast<uint32>(kDefaultFrequency /
+    (static_cast<double>(tempo) * kBpmToBps *
+     static_cast<double>(Globals::kDefaultMinNote)));
 
   // Don't wait for a longer interval to apply a shorter interval
   ticksRemaining = std::min(ticksRemaining, static_cast<int32>(interval));
-
-  return interval;
-}
-
-void Sequencer::SetSubdivision(uint32 subdivision) {
-  currBeatSubdivision = std::min(subdivision, Globals::kDefaultMinNote);
-  if (song != nullptr) {
-    currBeatSubdivision = std::min(subdivision, song->GetMinNoteValue());
-  }
-}
-
-void Sequencer::SetSong(Song* newSong) {
-  StopKill();
-  delete song;
-  song = newSong;
-  UpdateInterval();
 }
 
 void Sequencer::PlayMetronome(bool downBeat) {
@@ -280,7 +252,7 @@ void Sequencer::PauseKill() {
 
 void Sequencer::Stop() {
   clockBeatTime = 0.0;
-  frameBeatTime = -increment;
+  frameBeatTime = -Globals::kInverseDefaultMinNote;
   isPlaying = false;
   SetPosition(0);
   clockTimePoint = kInvalidTimePoint;
@@ -293,7 +265,7 @@ void Sequencer::StopKill() {
 
 void Sequencer::Loop() {
   clockBeatTime = 0.0;
-  frameBeatTime = -increment;
+  frameBeatTime = -Globals::kInverseDefaultMinNote;
   currBeat = 0;
   nextBeat = 1;
   clockTimePoint = kInvalidTimePoint;
@@ -301,11 +273,9 @@ void Sequencer::Loop() {
 
 double Sequencer::GetClockBeatTime() {
   if (isPlaying && clockTimePoint != kInvalidTimePoint) {
-    assert(song != nullptr);
     auto timePoint = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> delta = timePoint - clockTimePoint;
-    clockBeatTime += delta.count() *
-      (static_cast<double>(song->GetTempo()) * kBpmToBps);
+    clockBeatTime += delta.count() * static_cast<double>(tempo) * kBpmToBps;
     clockTimePoint = timePoint;
   }
 
@@ -330,7 +300,7 @@ uint32 Sequencer::GetNextPosition() const {
 
 uint32 Sequencer::NextFrame()
 {
-  if (!song || !isPlaying) {
+  if (!isPlaying) {
     return interval;
   }
 
@@ -340,7 +310,7 @@ uint32 Sequencer::NextFrame()
   }
 
   frameTimePoint = std::chrono::high_resolution_clock::now();
-  frameBeatTime += increment;
+  frameBeatTime += Globals::kInverseDefaultMinNote;
 
   currBeat = nextBeat++;
 

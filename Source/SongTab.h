@@ -10,6 +10,8 @@
 class ComposerView;
 class SongTab : public View {
 public:
+  static constexpr uint32 kDefaultBeatSubdivision = 4;
+
   template<typename T> class InstrumentInstanceTrackData {
   public:
     InstrumentInstance* instance = nullptr;
@@ -34,7 +36,7 @@ public:
   InstrumentInstance* pendingCreateInstrumentInstance = nullptr;
   InstrumentInstance* pendingRemoveInstrumentInstance = nullptr;
 
-  int32 pendingSubdivision = kInvalidUint32;
+  uint32 currBeatSubdivision = kDefaultBeatSubdivision;
   uint32 pendingTempo = kInvalidUint32;
   uint32 pendingAddMeasures = kInvalidUint32;
   bool pendingAddInstrument = false;
@@ -54,6 +56,8 @@ public:
   uint32 addMeasureCount = 1;
   bool localGuiDisabled = false;
   ComposerView* composerView = nullptr;
+  std::atomic<bool> isLooping = false;
+  std::pair<InstrumentInstance*, int32> soloTrackInstance = { nullptr, -1 };
 
   void ConditionalEnableBegin(bool condition);
   void ConditionalEnableEnd();
@@ -76,4 +80,6 @@ public:
   void DoMainMenuBar() override;
   void Render(ImVec2 canvasSize) override;
   void DoLockedActions() override;
+
+  void OnBeat(uint32 beatIndex);
 };
